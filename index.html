@@ -4,30 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAX | Producimos con Pasión</title>
-  <meta name="description" content="Insumos agrícolas de calidad: fertilizantes, foliares, insecticidas, herbicidas y herramientas.">
-  
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   
   <style>
-    body { font-family: 'Segoe UI', system-ui, sans-serif; }
     .hero-bg {
-      background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&auto=format&fit=crop&q=80') center/cover no-repeat;
+      background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), 
+                  url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449') center/cover no-repeat;
     }
     .product-card:hover {
-      transform: translateY(-10px);
-      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    }
-    .logo-img {
-      max-height: 85px;
-    }
-    .btn-whatsapp {
-      background: #25D366;
-      transition: all 0.3s;
-    }
-    .btn-whatsapp:hover {
-      background: #128C7E;
-      transform: scale(1.08);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
     }
   </style>
 </head>
@@ -36,26 +23,25 @@
   <!-- HEADER -->
   <header class="bg-white shadow-md sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <img src="https://i.imgur.com/EVoS3.png" alt="Logo AGROMAX" class="logo-img">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-green-700 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow">
+          🌱
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-green-700">AGROMAX</h1>
+          <p class="text-xs text-green-600 -mt-1">Producimos con pasión, trabajamos por el futuro</p>
+        </div>
       </div>
-      
-      <nav class="hidden md:flex gap-8 font-medium text-lg">
-        <a href="#productos" class="hover:text-green-600 transition">Productos</a>
-        <a href="#categorias" class="hover:text-green-600 transition">Categorías</a>
-        <a href="#ofertas" class="hover:text-green-600 transition">Ofertas</a>
-      </nav>
       
       <div class="flex items-center gap-4">
         <button onclick="contactarWhatsApp()" 
-                class="btn-whatsapp text-white px-6 py-3 rounded-2xl font-semibold flex items-center gap-2 shadow-lg">
-          <i class="fab fa-whatsapp text-2xl"></i>
-          <span>WhatsApp</span>
+                class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-medium flex items-center gap-2">
+          <i class="fab fa-whatsapp text-xl"></i>
+          WhatsApp
         </button>
-        
-        <button onclick="toggleCart()" class="relative p-3 text-gray-700 hover:text-green-600 transition">
-          <i class="fa-solid fa-cart-shopping text-3xl"></i>
-          <span id="cart-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
+        <button onclick="toggleCart()" class="relative p-3 text-gray-700">
+          <i class="fa-solid fa-cart-shopping text-2xl"></i>
+          <span id="cart-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
         </button>
       </div>
     </div>
@@ -64,20 +50,33 @@
   <!-- HERO -->
   <section class="hero-bg h-screen flex items-center text-white">
     <div class="max-w-7xl mx-auto px-6 text-center">
-      <h2 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-        Insumos agrícolas de alta calidad
+      <h2 class="text-5xl md:text-6xl font-bold mb-4 leading-tight">
+        Insumos agrícolas<br>de alta calidad
       </h2>
-      <p class="text-2xl mb-10 max-w-3xl mx-auto">
-        Producimos con pasión, trabajamos por el futuro
-      </p>
+      <p class="text-2xl mb-10">Producimos con pasión, trabajamos por el futuro</p>
       
-      <div class="flex flex-col sm:flex-row gap-5 justify-center">
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <button onclick="document.getElementById('productos').scrollIntoView({behavior:'smooth'})" 
-                class="bg-green-600 hover:bg-green-700 text-white text-xl font-bold px-12 py-6 rounded-3xl flex items-center justify-center gap-3 transition">
-          <i class="fa-solid fa-store"></i>
+                class="bg-green-600 hover:bg-green-700 px-10 py-5 rounded-2xl text-xl font-semibold">
           Explorar Productos
         </button>
-        
         <button onclick="contactarWhatsApp()" 
-                class="btn-whatsapp text-white text-xl font-bold px-12 py-6 rounded-3xl flex items-center justify-center gap-3 shadow-xl">
-          <i class="fab fa-
+                class="bg-[#25D366] hover:bg-[#128C7E] px-10 py-5 rounded-2xl text-xl font-semibold flex items-center gap-2">
+          <i class="fab fa-whatsapp text-2xl"></i>
+          Pedir por WhatsApp
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function contactarWhatsApp() {
+      window.open('https://wa.me/573123456789?text=Hola%20AGROMAX,%20quiero%20información%20sobre%20insumos', '_blank');
+    }
+
+    function toggleCart() {
+      alert("🛒 Carrito de compras (en desarrollo)");
+    }
+  </script>
+</body>
+</html>
