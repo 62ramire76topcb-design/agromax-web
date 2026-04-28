@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAX | Catálogo de Insumos Agrícolas Guatemala</title>
+  <title>AGROMAX | Catálogo Guatemala</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   
@@ -13,8 +13,8 @@
                   url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449') center/cover no-repeat;
     }
     .product-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+      transform: translateY(-10px);
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
     }
     .cat-tab.active {
       background-color: #166534;
@@ -59,7 +59,7 @@
     </div>
   </section>
 
-  <!-- NAVEGACIÓN DE CATÁLOGOS -->
+  <!-- CATÁLOGOS -->
   <section id="categorias" class="py-12 bg-white">
     <div class="max-w-7xl mx-auto px-6">
       <h2 class="text-4xl font-bold text-center mb-10">Nuestros Catálogos</h2>
@@ -72,7 +72,7 @@
       </div>
 
       <div id="catalogo-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        <!-- Productos cargados por JavaScript -->
+        <!-- Productos se cargan aquí -->
       </div>
     </div>
   </section>
@@ -87,18 +87,17 @@
 
     let carrito = JSON.parse(localStorage.getItem('carritoAgromax')) || [];
 
-    // Catálogos con precios realistas para Guatemala + imágenes
     const catalogos = [
-      // 0 - Fertilizantes
+      // Fertilizantes
       [
         {id:101, nombre:"Urea 46-0-0", precio:245, unidad:"50 kg", img:"https://picsum.photos/id/201/400/300"},
         {id:102, nombre:"NPK 10-20-20", precio:285, unidad:"50 kg", img:"https://picsum.photos/id/237/400/300"},
         {id:103, nombre:"DAP 18-46-0", precio:320, unidad:"50 kg", img:"https://picsum.photos/id/180/400/300"},
         {id:104, nombre:"Sulfato de Amonio", precio:235, unidad:"50 kg", img:"https://picsum.photos/id/251/400/300"},
         {id:105, nombre:"Nitrato de Potasio", precio:395, unidad:"25 kg", img:"https://picsum.photos/id/870/400/300"},
-        {id:106, nombre:"Triple 15 (15-15-15)", precio:265, unidad:"50 kg", img:"https://picsum.photos/id/201/400/300"}
+        {id:106, nombre:"Triple 15", precio:265, unidad:"50 kg", img:"https://picsum.photos/id/201/400/300"}
       ],
-      // 1 - Foliares
+      // Foliares
       [
         {id:201, nombre:"Foliar Calcio + Boro", precio:95, unidad:"1 L", img:"https://picsum.photos/id/237/400/300"},
         {id:202, nombre:"Foliar NPK 20-20-20", precio:85, unidad:"1 L", img:"https://picsum.photos/id/180/400/300"},
@@ -106,7 +105,7 @@
         {id:204, nombre:"Aminoácidos + Algas", precio:115, unidad:"1 L", img:"https://picsum.photos/id/870/400/300"},
         {id:205, nombre:"Foliar Potasio", precio:92, unidad:"1 L", img:"https://picsum.photos/id/201/400/300"}
       ],
-      // 2 - Protección
+      // Protección
       [
         {id:301, nombre:"Lambda Cyhalothrin", precio:165, unidad:"1 L", img:"https://picsum.photos/id/180/400/300"},
         {id:302, nombre:"Glifosato 480 SL", precio:135, unidad:"5 L", img:"https://picsum.photos/id/201/400/300"},
@@ -114,7 +113,7 @@
         {id:304, nombre:"Imidacloprid", precio:195, unidad:"1 L", img:"https://picsum.photos/id/251/400/300"},
         {id:305, nombre:"Clorpirifos", precio:145, unidad:"1 L", img:"https://picsum.photos/id/870/400/300"}
       ],
-      // 3 - Herramientas
+      // Herramientas
       [
         {id:401, nombre:"Machete Profesional", precio:85, unidad:"1 unidad", img:"https://picsum.photos/id/180/400/300"},
         {id:402, nombre:"Aspersora Manual 20L", precio:245, unidad:"1 unidad", img:"https://picsum.photos/id/201/400/300"},
@@ -142,7 +141,7 @@
 
     function contactarWhatsApp() {
       if (carrito.length === 0) {
-        window.open(`https://wa.me/${whatsappNumber}?text=Hola%20AGROMAX,%20quiero%20información%20de%20sus%20productos`, '_blank');
+        window.open(`https://wa.me/${whatsappNumber}?text=Hola%20AGROMAX,%20quiero%20información`, '_blank');
         return;
       }
 
@@ -150,7 +149,7 @@
       carrito.forEach(p => {
         mensaje += `- ${p.nombre} (${p.unidad}) - Q${p.precio}\n`;
       });
-      mensaje += "\nPor favor, cotización y disponibilidad.";
+      mensaje += "\nPor favor cotización y disponibilidad.";
 
       window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
     }
@@ -160,6 +159,7 @@
     }
 
     function cambiarCategoria(index) {
+      // Activar pestaña
       document.querySelectorAll('.cat-tab').forEach((btn, i) => {
         btn.classList.toggle('active', i === index);
       });
@@ -170,19 +170,20 @@
       catalogos[index].forEach(p => {
         const card = document.createElement('div');
         card.className = "product-card bg-white rounded-3xl overflow-hidden border border-gray-100";
+        
         card.innerHTML = `
-          <img src="${p.img}" class="w-full h-48 object-cover">
+          <img src="${p.img}" class="w-full h-48 object-cover" alt="${p.nombre}">
           <div class="p-6">
-            <h3 class="font-semibold text-lg leading-tight">${p.nombre}</h3>
-            <p class="text-sm text-gray-500 mt-1">${p.unidad}</p>
+            <h3 class="font-semibold text-lg leading-tight min-h-[50px]">${p.nombre}</h3>
+            <p class="text-sm text-gray-500">${p.unidad}</p>
             <p class="text-green-600 font-bold text-3xl mt-4">Q${p.precio}</p>
             
             <div class="grid grid-cols-2 gap-3 mt-8">
-              <button onclick="agregarAlCarrito(${JSON.stringify(p)}); event.stopImmediatePropagation()" 
+              <button onclick="agregarAlCarritoFromButton(${p.id}, ${index}); event.stopImmediatePropagation()" 
                       class="bg-green-600 text-white py-4 rounded-2xl text-sm font-medium hover:bg-green-700">
                 Añadir al carrito
               </button>
-              <button onclick="comprarRapido(${JSON.stringify(p)}); event.stopImmediatePropagation()" 
+              <button onclick="comprarRapidoFromButton(${p.id}, ${index}); event.stopImmediatePropagation()" 
                       class="border border-green-600 text-green-700 py-4 rounded-2xl text-sm font-medium hover:bg-green-50">
                 Comprar ya
               </button>
@@ -193,15 +194,24 @@
       });
     }
 
-    function comprarRapido(producto) {
-      const mensaje = `Quiero comprar: ${producto.nombre} (${producto.unidad}) - Q${producto.precio}`;
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    // Funciones auxiliares para evitar problemas con objetos en onclick
+    function agregarAlCarritoFromButton(id, catIndex) {
+      const producto = catalogos[catIndex].find(p => p.id === id);
+      if (producto) agregarAlCarrito(producto);
+    }
+
+    function comprarRapidoFromButton(id, catIndex) {
+      const producto = catalogos[catIndex].find(p => p.id === id);
+      if (producto) {
+        const mensaje = `Quiero comprar: ${producto.nombre} (${producto.unidad}) - Q${producto.precio}`;
+        window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
+      }
     }
 
     // Inicializar
     window.onload = () => {
       actualizarContador();
-      cambiarCategoria(0); // Fertilizantes por defecto
+      cambiarCategoria(0);
     };
   </script>
 </body>
