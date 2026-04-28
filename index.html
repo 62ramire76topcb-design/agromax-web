@@ -12,7 +12,7 @@
       background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), 
                   url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449') center/cover no-repeat;
     }
-    .product-card:hover {
+    .category-card:hover {
       transform: translateY(-8px);
       box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
     }
@@ -34,8 +34,7 @@
       </div>
       
       <div class="flex items-center gap-4">
-        <button onclick="contactarWhatsApp()" 
-                class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-medium flex items-center gap-2">
+        <button onclick="contactarWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-medium flex items-center gap-2">
           <i class="fab fa-whatsapp text-xl"></i>
           WhatsApp
         </button>
@@ -56,144 +55,89 @@
       <p class="text-2xl mb-10">Producimos con pasión, trabajamos por el futuro</p>
       
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <button onclick="document.getElementById('productos').scrollIntoView({behavior:'smooth'})" 
+        <button onclick="document.getElementById('categorias').scrollIntoView({behavior:'smooth'})" 
                 class="bg-green-600 hover:bg-green-700 px-10 py-5 rounded-2xl text-xl font-semibold">
-          Explorar Productos
+          Ver Categorías
         </button>
         <button onclick="contactarWhatsApp()" 
                 class="bg-[#25D366] hover:bg-[#128C7E] px-10 py-5 rounded-2xl text-xl font-semibold flex items-center gap-2">
           <i class="fab fa-whatsapp text-2xl"></i>
-          Pedir por WhatsApp
+          Contactar por WhatsApp
         </button>
       </div>
     </div>
   </section>
 
-  <!-- PRODUCTOS DESTACADOS -->
-  <section id="productos" class="py-16 bg-gray-50">
+  <!-- CATEGORÍAS (Ahora son clicables) -->
+  <section id="categorias" class="py-16 bg-white">
     <div class="max-w-7xl mx-auto px-6">
-      <h2 class="text-4xl font-bold text-center mb-12">Productos Destacados</h2>
+      <h2 class="text-4xl font-bold text-center mb-4">Nuestras Categorías</h2>
+      <p class="text-center text-gray-600 mb-12">Haz clic en cada categoría para ver todas las variedades disponibles</p>
       
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="productos-grid">
-        <!-- Se llenan con JavaScript -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div onclick="verCategoria('fertilizantes')" class="category-card bg-green-50 hover:bg-green-100 p-10 rounded-3xl text-center cursor-pointer transition-all">
+          <i class="fa-solid fa-leaf text-6xl text-green-600 mb-6"></i>
+          <h3 class="text-2xl font-semibold">Fertilizantes</h3>
+          <p class="text-sm text-gray-600 mt-2">Urea, NPK, Orgánicos y más</p>
+        </div>
+        
+        <div onclick="verCategoria('foliares')" class="category-card bg-green-50 hover:bg-green-100 p-10 rounded-3xl text-center cursor-pointer transition-all">
+          <i class="fa-solid fa-spray-can text-6xl text-emerald-600 mb-6"></i>
+          <h3 class="text-2xl font-semibold">Foliares</h3>
+          <p class="text-sm text-gray-600 mt-2">Calcio, Boro, Micronutrientes</p>
+        </div>
+        
+        <div onclick="verCategoria('proteccion')" class="category-card bg-green-50 hover:bg-green-100 p-10 rounded-3xl text-center cursor-pointer transition-all">
+          <i class="fa-solid fa-shield-halved text-6xl text-amber-600 mb-6"></i>
+          <h3 class="text-2xl font-semibold">Protección</h3>
+          <p class="text-sm text-gray-600 mt-2">Insecticidas, Herbicidas y Fungicidas</p>
+        </div>
+        
+        <div onclick="verCategoria('herramientas')" class="category-card bg-green-50 hover:bg-green-100 p-10 rounded-3xl text-center cursor-pointer transition-all">
+          <i class="fa-solid fa-wrench text-6xl text-gray-700 mb-6"></i>
+          <h3 class="text-2xl font-semibold">Herramientas</h3>
+          <p class="text-sm text-gray-600 mt-2">Equipo para el campo</p>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- WhatsApp flotante -->
-  <a href="#" onclick="contactarWhatsApp()" 
-     class="fixed bottom-6 right-6 bg-[#25D366] text-white w-16 h-16 rounded-full flex items-center justify-center shadow-2xl z-50 text-4xl hover:scale-110 transition-transform">
-    <i class="fab fa-whatsapp"></i>
-  </a>
-
   <script>
-    // === CONFIGURA AQUÍ TU NÚMERO DE WHATSAPP ===
-    const whatsappNumber = "50242664744";   // ←←← CAMBIA ESTE NÚMERO por el tuyo real
+    const whatsappNumber = "50242664744";   // ← Cambia por tu número real
 
-    let carrito = [];
+    function contactarWhatsApp(mensaje = "") {
+      const texto = mensaje || "Hola AGROMAX, quiero información sobre insumos agrícolas.";
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(texto)}`, '_blank');
+    }
 
-    const productos = [
-      {
-        id: 1,
-        nombre: "Fertilizante Urea 46-0-0",
-        precio: 89000,
-        img: "https://picsum.photos/id/201/400/300"
-      },
-      {
-        id: 2,
-        nombre: "Foliar Calcio + Boro 1L",
-        precio: 65000,
-        img: "https://picsum.photos/id/237/400/300"
-      },
-      {
-        id: 3,
-        nombre: "Insecticida Lambda Cyhalothrin",
-        precio: 125000,
-        img: "https://picsum.photos/id/180/400/300"
-      },
-      {
-        id: 4,
-        nombre: "Herbicida Glifosato 480",
-        precio: 95000,
-        img: "https://picsum.photos/id/251/400/300"
+    function verCategoria(categoria) {
+      let mensaje = "";
+      
+      switch(categoria) {
+        case 'fertilizantes':
+          mensaje = "Hola AGROMAX, quiero ver el catálogo completo de Fertilizantes (Urea, NPK, etc.) con precios de la región.";
+          break;
+        case 'foliares':
+          mensaje = "Hola AGROMAX, quiero ver todas las opciones de Foliares disponibles (Calcio, Boro, etc.).";
+          break;
+        case 'proteccion':
+          mensaje = "Hola AGROMAX, necesito el catálogo de Protección de cultivos: Insecticidas, Herbicidas y Fungicidas.";
+          break;
+        case 'herramientas':
+          mensaje = "Hola AGROMAX, quiero ver las herramientas y equipos agrícolas disponibles.";
+          break;
       }
-    ];
-
-    function actualizarContador() {
-      document.getElementById('cart-count').textContent = carrito.length;
+      
+      contactarWhatsApp(mensaje);
     }
 
-    function agregarAlCarrito(id) {
-      const producto = productos.find(p => p.id === id);
-      carrito.push(producto);
-      actualizarContador();
-
-      const notif = document.createElement('div');
-      notif.className = "fixed bottom-24 right-6 bg-green-600 text-white px-6 py-4 rounded-2xl shadow-xl z-50";
-      notif.innerHTML = `✅ ${producto.nombre}<br><small>Añadido al carrito</small>`;
-      document.body.appendChild(notif);
-      setTimeout(() => notif.remove(), 2500);
-    }
-
-    function contactarWhatsApp() {
-      let mensaje = "Hola AGROMAX, quiero información sobre insumos agrícolas.";
-      if (carrito.length > 0) {
-        mensaje = "Hola AGROMAX, mi carrito contiene:\n";
-        carrito.forEach(p => {
-          mensaje += `- ${p.nombre} - $${p.precio.toLocaleString('es-CO')}\n`;
-        });
-      }
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
-    }
-
-    function toggleCart() {
-      if (carrito.length === 0) {
-        alert("🛒 Tu carrito está vacío");
-        return;
-      }
-      contactarWhatsApp(); // Envía el carrito por WhatsApp
-    }
-
-    // Renderizar productos
-    function renderProductos() {
-      const grid = document.getElementById('productos-grid');
-      grid.innerHTML = '';
-
-      productos.forEach(p => {
-        const card = document.createElement('div');
-        card.className = "product-card bg-white rounded-3xl overflow-hidden border border-gray-100";
-        card.innerHTML = `
-          <img src="${p.img}" class="w-full h-56 object-cover">
-          <div class="p-6">
-            <h3 class="font-semibold text-lg">${p.nombre}</h3>
-            <p class="text-green-600 font-bold text-3xl mt-4">$${p.precio.toLocaleString('es-CO')}</p>
-            <div class="grid grid-cols-2 gap-3 mt-8">
-              <button onclick="agregarAlCarrito(${p.id}); event.stopImmediatePropagation()" 
-                      class="bg-green-600 text-white py-4 rounded-2xl text-sm font-medium">
-                Añadir al carrito
-              </button>
-              <button onclick="comprarRapido(${p.id}); event.stopImmediatePropagation()" 
-                      class="border border-green-600 text-green-700 py-4 rounded-2xl text-sm font-medium">
-                Comprar rápido
-              </button>
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    function comprarRapido(id) {
-      const producto = productos.find(p => p.id === id);
-      const mensaje = `Quiero comprar: ${producto.nombre} - $${producto.precio.toLocaleString('es-CO')}`;
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
-    }
-
-    // Inicializar
-    window.onload = () => {
-      renderProductos();
-      actualizarContador();
-    };
+    // WhatsApp flotante
+    document.body.innerHTML += `
+      <a href="#" onclick="contactarWhatsApp()" 
+         class="fixed bottom-6 right-6 bg-[#25D366] text-white w-16 h-16 rounded-full flex items-center justify-center shadow-2xl z-50 text-4xl hover:scale-110 transition-transform">
+        <i class="fab fa-whatsapp"></i>
+      </a>
+    `;
   </script>
 </body>
 </html>
