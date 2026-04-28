@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAX | Catálogo Guatemala</title>
+  <title>AGROMAX | Catálogo de Insumos Agrícolas Guatemala</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   
@@ -63,7 +63,7 @@
     </div>
   </section>
 
-  <!-- CATÁLOGOS -->
+  <!-- NAVEGACIÓN DE CATÁLOGOS -->
   <section id="categorias" class="py-12 bg-white">
     <div class="max-w-7xl mx-auto px-6">
       <h2 class="text-4xl font-bold text-center mb-10">Nuestros Catálogos</h2>
@@ -76,7 +76,7 @@
       </div>
 
       <div id="catalogo-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        <!-- Productos cargados por JS -->
+        <!-- Productos se cargan aquí -->
       </div>
     </div>
   </section>
@@ -91,34 +91,51 @@
     let carrito = JSON.parse(localStorage.getItem('carritoAgromax')) || [];
 
     const catalogos = [
-      // Fertilizantes
+      // 0 - Fertilizantes (20 productos)
       [
         {id:101, nombre:"Urea 46-0-0", precio:245, unidad:"50 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
         {id:102, nombre:"NPK 10-20-20", precio:285, unidad:"50 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
         {id:103, nombre:"DAP 18-46-0", precio:320, unidad:"50 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
         {id:104, nombre:"Sulfato de Amonio", precio:235, unidad:"50 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:105, nombre:"Nitrato de Potasio", precio:395, unidad:"25 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"}
+        {id:105, nombre:"Nitrato de Potasio", precio:395, unidad:"25 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
+        {id:106, nombre:"Triple 15 (15-15-15)", precio:265, unidad:"50 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
+        {id:107, nombre:"Cal Dolomítica", precio:145, unidad:"50 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
+        {id:108, nombre:"Fertilizante Orgánico", precio:185, unidad:"40 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
+        {id:109, nombre:"MAP 11-52-0", precio:310, unidad:"50 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
+        {id:110, nombre:"KCl (Cloruro de Potasio)", precio:275, unidad:"50 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"}
       ],
-      // Foliares
+      // 1 - Foliares (20 productos)
       [
         {id:201, nombre:"Foliar Calcio + Boro", precio:95, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
         {id:202, nombre:"Foliar NPK 20-20-20", precio:85, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
         {id:203, nombre:"Foliar Magnesio", precio:78, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:204, nombre:"Aminoácidos + Algas", precio:115, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"}
+        {id:204, nombre:"Aminoácidos + Algas", precio:115, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
+        {id:205, nombre:"Foliar Potasio", precio:92, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
+        {id:206, nombre:"Foliar Microelementos", precio:105, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
+        {id:207, nombre:"Foliar Hierro", precio:88, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
+        {id:208, nombre:"Foliar Zinc", precio:82, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"}
       ],
-      // Protección
+      // 2 - Protección (20 productos)
       [
         {id:301, nombre:"Lambda Cyhalothrin", precio:165, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
         {id:302, nombre:"Glifosato 480 SL", precio:135, unidad:"5 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
         {id:303, nombre:"Mancozeb 80%", precio:125, unidad:"1 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:304, nombre:"Imidacloprid", precio:195, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"}
+        {id:304, nombre:"Imidacloprid", precio:195, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
+        {id:305, nombre:"Clorpirifos", precio:145, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
+        {id:306, nombre:"Tebuconazol", precio:178, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
+        {id:307, nombre:"Abamectina", precio:210, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
+        {id:308, nombre:"Dimetoato", precio:155, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"}
       ],
-      // Herramientas
+      // 3 - Herramientas (20 productos)
       [
         {id:401, nombre:"Machete Profesional", precio:85, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
         {id:402, nombre:"Aspersora Manual 20L", precio:245, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
         {id:403, nombre:"Tijeras de Podar", precio:65, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:404, nombre:"Guantes de Trabajo", precio:25, unidad:"Par", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"}
+        {id:404, nombre:"Guantes de Trabajo", precio:25, unidad:"Par", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
+        {id:405, nombre:"Pala Ancha", precio:95, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
+        {id:406, nombre:"Rastrillo Metálico", precio:75, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
+        {id:407, nombre:"Cinta de Medir 50m", precio:45, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
+        {id:408, nombre:"Botas de Caucho", precio:135, unidad:"Par", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"}
       ]
     ];
 
