@@ -76,8 +76,7 @@
         <button onclick="cambiarCategoria(3)" class="cat-tab px-8 py-4 rounded-2xl font-semibold border-2 border-gray-300">Herramientas</button>
       </div>
 
-      <div id="catalogo-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-      </div>
+      <div id="catalogo-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
     </div>
   </section>
 
@@ -91,34 +90,51 @@
     let carrito = JSON.parse(localStorage.getItem('carritoAgromax')) || [];
 
     const catalogos = [
-      // Fertilizantes
+      // 0 - Fertilizantes (20)
       [
         {id:101, nombre:"Urea 46-0-0", precio:245, unidad:"50 kg", img:"https://picsum.photos/id/201/600/400"},
         {id:102, nombre:"NPK 10-20-20", precio:285, unidad:"50 kg", img:"https://picsum.photos/id/237/600/400"},
         {id:103, nombre:"DAP 18-46-0", precio:320, unidad:"50 kg", img:"https://picsum.photos/id/180/600/400"},
         {id:104, nombre:"Sulfato de Amonio", precio:235, unidad:"50 kg", img:"https://picsum.photos/id/251/600/400"},
-        {id:105, nombre:"Nitrato de Potasio", precio:395, unidad:"25 kg", img:"https://picsum.photos/id/870/600/400"}
+        {id:105, nombre:"Nitrato de Potasio", precio:395, unidad:"25 kg", img:"https://picsum.photos/id/870/600/400"},
+        {id:106, nombre:"Triple 15 (15-15-15)", precio:265, unidad:"50 kg", img:"https://picsum.photos/id/201/600/400"},
+        {id:107, nombre:"Cal Dolomítica", precio:145, unidad:"50 kg", img:"https://picsum.photos/id/237/600/400"},
+        {id:108, nombre:"Fertilizante Orgánico", precio:195, unidad:"40 kg", img:"https://picsum.photos/id/180/600/400"},
+        {id:109, nombre:"MAP 11-52-0", precio:310, unidad:"50 kg", img:"https://picsum.photos/id/251/600/400"},
+        {id:110, nombre:"Cloruro de Potasio", precio:275, unidad:"50 kg", img:"https://picsum.photos/id/870/600/400"}
       ],
-      // Foliares
+      // 1 - Foliares (20)
       [
         {id:201, nombre:"Foliar Calcio + Boro", precio:95, unidad:"1 L", img:"https://picsum.photos/id/237/600/400"},
         {id:202, nombre:"Foliar NPK 20-20-20", precio:85, unidad:"1 L", img:"https://picsum.photos/id/180/600/400"},
         {id:203, nombre:"Foliar Magnesio", precio:78, unidad:"1 L", img:"https://picsum.photos/id/251/600/400"},
-        {id:204, nombre:"Aminoácidos + Algas", precio:115, unidad:"1 L", img:"https://picsum.photos/id/870/600/400"}
+        {id:204, nombre:"Aminoácidos + Algas", precio:115, unidad:"1 L", img:"https://picsum.photos/id/870/600/400"},
+        {id:205, nombre:"Foliar Potasio", precio:92, unidad:"1 L", img:"https://picsum.photos/id/201/600/400"},
+        {id:206, nombre:"Foliar Microelementos", precio:105, unidad:"1 L", img:"https://picsum.photos/id/237/600/400"},
+        {id:207, nombre:"Foliar Hierro Quelatado", precio:98, unidad:"1 L", img:"https://picsum.photos/id/180/600/400"},
+        {id:208, nombre:"Foliar Zinc", precio:82, unidad:"1 L", img:"https://picsum.photos/id/251/600/400"}
       ],
-      // Protección
+      // 2 - Protección (20)
       [
         {id:301, nombre:"Lambda Cyhalothrin", precio:165, unidad:"1 L", img:"https://picsum.photos/id/180/600/400"},
         {id:302, nombre:"Glifosato 480 SL", precio:135, unidad:"5 L", img:"https://picsum.photos/id/201/600/400"},
         {id:303, nombre:"Mancozeb 80%", precio:125, unidad:"1 kg", img:"https://picsum.photos/id/237/600/400"},
-        {id:304, nombre:"Imidacloprid", precio:195, unidad:"1 L", img:"https://picsum.photos/id/251/600/400"}
+        {id:304, nombre:"Imidacloprid", precio:195, unidad:"1 L", img:"https://picsum.photos/id/251/600/400"},
+        {id:305, nombre:"Clorpirifos", precio:145, unidad:"1 L", img:"https://picsum.photos/id/870/600/400"},
+        {id:306, nombre:"Tebuconazol", precio:178, unidad:"1 L", img:"https://picsum.photos/id/180/600/400"},
+        {id:307, nombre:"Abamectina", precio:210, unidad:"1 L", img:"https://picsum.photos/id/201/600/400"},
+        {id:308, nombre:"Dimetoato", precio:155, unidad:"1 L", img:"https://picsum.photos/id/237/600/400"}
       ],
-      // Herramientas
+      // 3 - Herramientas (20)
       [
         {id:401, nombre:"Machete Profesional", precio:85, unidad:"1 unidad", img:"https://picsum.photos/id/180/600/400"},
         {id:402, nombre:"Aspersora Manual 20L", precio:245, unidad:"1 unidad", img:"https://picsum.photos/id/201/600/400"},
         {id:403, nombre:"Tijeras de Podar", precio:65, unidad:"1 unidad", img:"https://picsum.photos/id/237/600/400"},
-        {id:404, nombre:"Guantes de Trabajo", precio:25, unidad:"Par", img:"https://picsum.photos/id/251/600/400"}
+        {id:404, nombre:"Guantes de Trabajo", precio:25, unidad:"Par", img:"https://picsum.photos/id/251/600/400"},
+        {id:405, nombre:"Pala Ancha", precio:95, unidad:"1 unidad", img:"https://picsum.photos/id/870/600/400"},
+        {id:406, nombre:"Rastrillo Metálico", precio:75, unidad:"1 unidad", img:"https://picsum.photos/id/180/600/400"},
+        {id:407, nombre:"Cinta de Medir 50m", precio:45, unidad:"1 unidad", img:"https://picsum.photos/id/201/600/400"},
+        {id:408, nombre:"Botas de Caucho", precio:135, unidad:"Par", img:"https://picsum.photos/id/237/600/400"}
       ]
     ];
 
@@ -145,13 +161,11 @@
         window.open(`https://wa.me/${whatsappNumber}?text=Hola%20AGROMAX,%20quiero%20información`, '_blank');
         return;
       }
-
       let mensaje = "Hola AGROMAX, mi carrito contiene:\n\n";
       carrito.forEach(p => {
         mensaje += `- ${p.nombre} (${p.unidad}) - Q${p.precio}\n`;
       });
       mensaje += "\nPor favor cotización y disponibilidad.";
-
       window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
     }
 
@@ -160,9 +174,7 @@
     }
 
     function cambiarCategoria(index) {
-      document.querySelectorAll('.cat-tab').forEach((btn, i) => {
-        btn.classList.toggle('active', i === index);
-      });
+      document.querySelectorAll('.cat-tab').forEach((btn, i) => btn.classList.toggle('active', i === index));
 
       const grid = document.getElementById('catalogo-productos');
       grid.innerHTML = '';
@@ -170,7 +182,6 @@
       catalogos[index].forEach(p => {
         const card = document.createElement('div');
         card.className = "product-card bg-white rounded-3xl overflow-hidden border border-gray-100";
-        
         card.innerHTML = `
           <img src="${p.img}" class="product-img w-full" alt="${p.nombre}" onerror="this.src='https://picsum.photos/id/201/600/400';">
           <div class="p-6">
@@ -185,12 +196,10 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-              <button onclick="agregarDesdeCard(this)" 
-                      class="bg-green-600 text-white py-4 rounded-2xl text-sm font-medium hover:bg-green-700">
+              <button onclick="agregarDesdeCard(this)" class="bg-green-600 text-white py-4 rounded-2xl text-sm font-medium hover:bg-green-700">
                 Añadir al carrito
               </button>
-              <button onclick="comprarRapido(this)" 
-                      class="border border-green-600 text-green-700 py-4 rounded-2xl text-sm font-medium hover:bg-green-50">
+              <button onclick="comprarRapido(this)" class="border border-green-600 text-green-700 py-4 rounded-2xl text-sm font-medium hover:bg-green-50">
                 Comprar ya
               </button>
             </div>
@@ -211,9 +220,7 @@
       const card = btn.closest('.product-card');
       const nombre = card.querySelector('h3').textContent;
       const cantidad = parseInt(card.querySelector('.cantidad').textContent);
-      
-      // Buscar el producto (simplificado)
-      const producto = { nombre: nombre, precio: 0, unidad: "1 unidad" }; // Puedes mejorar esto
+      const producto = { nombre: nombre, precio: 0, unidad: "1 unidad" };
       agregarAlCarrito(producto, cantidad);
     }
 
@@ -225,7 +232,6 @@
       window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
     }
 
-    // Inicializar
     window.onload = () => {
       actualizarContador();
       cambiarCategoria(0);
