@@ -1,0 +1,22 @@
+{
+  "name": "AGROMAX - Insumos Agrícolas",
+  "short_name": "AGROMAX",
+  "description": "Catálogo de insumos agrícolas - Guatemala",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#166534",
+  "theme_color": "#166534",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
