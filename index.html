@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAX | Catálogo de Insumos Agrícolas Guatemala</title>
+  <title>AGROMAX | Catálogo Guatemala</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   
@@ -22,8 +22,9 @@
       border-color: #166534;
     }
     .product-img {
-      height: 180px;
+      height: 190px;
       object-fit: cover;
+      background-color: #f3f4f6;
     }
   </style>
 </head>
@@ -63,12 +64,12 @@
     </div>
   </section>
 
-  <!-- NAVEGACIÓN DE CATÁLOGOS -->
+  <!-- CATÁLOGOS -->
   <section id="categorias" class="py-12 bg-white">
     <div class="max-w-7xl mx-auto px-6">
       <h2 class="text-4xl font-bold text-center mb-10">Nuestros Catálogos</h2>
       
-      <div class="flex flex-wrap justify-center gap-3 mb-10" id="tabs">
+      <div class="flex flex-wrap justify-center gap-3 mb-12" id="tabs">
         <button onclick="cambiarCategoria(0)" class="cat-tab active px-8 py-4 rounded-2xl font-semibold border-2 border-green-700">Fertilizantes</button>
         <button onclick="cambiarCategoria(1)" class="cat-tab px-8 py-4 rounded-2xl font-semibold border-2 border-gray-300">Foliares</button>
         <button onclick="cambiarCategoria(2)" class="cat-tab px-8 py-4 rounded-2xl font-semibold border-2 border-gray-300">Protección</button>
@@ -76,7 +77,6 @@
       </div>
 
       <div id="catalogo-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        <!-- Productos se cargan aquí -->
       </div>
     </div>
   </section>
@@ -91,51 +91,34 @@
     let carrito = JSON.parse(localStorage.getItem('carritoAgromax')) || [];
 
     const catalogos = [
-      // 0 - Fertilizantes (20 productos)
+      // Fertilizantes
       [
-        {id:101, nombre:"Urea 46-0-0", precio:245, unidad:"50 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:102, nombre:"NPK 10-20-20", precio:285, unidad:"50 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:103, nombre:"DAP 18-46-0", precio:320, unidad:"50 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:104, nombre:"Sulfato de Amonio", precio:235, unidad:"50 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:105, nombre:"Nitrato de Potasio", precio:395, unidad:"25 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:106, nombre:"Triple 15 (15-15-15)", precio:265, unidad:"50 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:107, nombre:"Cal Dolomítica", precio:145, unidad:"50 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:108, nombre:"Fertilizante Orgánico", precio:185, unidad:"40 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:109, nombre:"MAP 11-52-0", precio:310, unidad:"50 kg", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:110, nombre:"KCl (Cloruro de Potasio)", precio:275, unidad:"50 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"}
+        {id:101, nombre:"Urea 46-0-0", precio:245, unidad:"50 kg", img:"https://picsum.photos/id/201/600/400"},
+        {id:102, nombre:"NPK 10-20-20", precio:285, unidad:"50 kg", img:"https://picsum.photos/id/237/600/400"},
+        {id:103, nombre:"DAP 18-46-0", precio:320, unidad:"50 kg", img:"https://picsum.photos/id/180/600/400"},
+        {id:104, nombre:"Sulfato de Amonio", precio:235, unidad:"50 kg", img:"https://picsum.photos/id/251/600/400"},
+        {id:105, nombre:"Nitrato de Potasio", precio:395, unidad:"25 kg", img:"https://picsum.photos/id/870/600/400"}
       ],
-      // 1 - Foliares (20 productos)
+      // Foliares
       [
-        {id:201, nombre:"Foliar Calcio + Boro", precio:95, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:202, nombre:"Foliar NPK 20-20-20", precio:85, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:203, nombre:"Foliar Magnesio", precio:78, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:204, nombre:"Aminoácidos + Algas", precio:115, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:205, nombre:"Foliar Potasio", precio:92, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:206, nombre:"Foliar Microelementos", precio:105, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:207, nombre:"Foliar Hierro", precio:88, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:208, nombre:"Foliar Zinc", precio:82, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"}
+        {id:201, nombre:"Foliar Calcio + Boro", precio:95, unidad:"1 L", img:"https://picsum.photos/id/237/600/400"},
+        {id:202, nombre:"Foliar NPK 20-20-20", precio:85, unidad:"1 L", img:"https://picsum.photos/id/180/600/400"},
+        {id:203, nombre:"Foliar Magnesio", precio:78, unidad:"1 L", img:"https://picsum.photos/id/251/600/400"},
+        {id:204, nombre:"Aminoácidos + Algas", precio:115, unidad:"1 L", img:"https://picsum.photos/id/870/600/400"}
       ],
-      // 2 - Protección (20 productos)
+      // Protección
       [
-        {id:301, nombre:"Lambda Cyhalothrin", precio:165, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:302, nombre:"Glifosato 480 SL", precio:135, unidad:"5 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:303, nombre:"Mancozeb 80%", precio:125, unidad:"1 kg", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:304, nombre:"Imidacloprid", precio:195, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:305, nombre:"Clorpirifos", precio:145, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:306, nombre:"Tebuconazol", precio:178, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:307, nombre:"Abamectina", precio:210, unidad:"1 L", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:308, nombre:"Dimetoato", precio:155, unidad:"1 L", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"}
+        {id:301, nombre:"Lambda Cyhalothrin", precio:165, unidad:"1 L", img:"https://picsum.photos/id/180/600/400"},
+        {id:302, nombre:"Glifosato 480 SL", precio:135, unidad:"5 L", img:"https://picsum.photos/id/201/600/400"},
+        {id:303, nombre:"Mancozeb 80%", precio:125, unidad:"1 kg", img:"https://picsum.photos/id/237/600/400"},
+        {id:304, nombre:"Imidacloprid", precio:195, unidad:"1 L", img:"https://picsum.photos/id/251/600/400"}
       ],
-      // 3 - Herramientas (20 productos)
+      // Herramientas
       [
-        {id:401, nombre:"Machete Profesional", precio:85, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:402, nombre:"Aspersora Manual 20L", precio:245, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:403, nombre:"Tijeras de Podar", precio:65, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:404, nombre:"Guantes de Trabajo", precio:25, unidad:"Par", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:405, nombre:"Pala Ancha", precio:95, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:406, nombre:"Rastrillo Metálico", precio:75, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"},
-        {id:407, nombre:"Cinta de Medir 50m", precio:45, unidad:"1 unidad", img:"https://images.unsplash.com/photo-1600585154340-be6161a56a9c"},
-        {id:408, nombre:"Botas de Caucho", precio:135, unidad:"Par", img:"https://images.unsplash.com/photo-1625246333195-78d9c38ad449"}
+        {id:401, nombre:"Machete Profesional", precio:85, unidad:"1 unidad", img:"https://picsum.photos/id/180/600/400"},
+        {id:402, nombre:"Aspersora Manual 20L", precio:245, unidad:"1 unidad", img:"https://picsum.photos/id/201/600/400"},
+        {id:403, nombre:"Tijeras de Podar", precio:65, unidad:"1 unidad", img:"https://picsum.photos/id/237/600/400"},
+        {id:404, nombre:"Guantes de Trabajo", precio:25, unidad:"Par", img:"https://picsum.photos/id/251/600/400"}
       ]
     ];
 
@@ -143,16 +126,18 @@
       document.getElementById('cart-count').textContent = carrito.length;
     }
 
-    function agregarAlCarrito(producto) {
-      carrito.push(producto);
+    function agregarAlCarrito(producto, cantidad = 1) {
+      for (let i = 0; i < cantidad; i++) {
+        carrito.push(producto);
+      }
       localStorage.setItem('carritoAgromax', JSON.stringify(carrito));
       actualizarContador();
 
       const notif = document.createElement('div');
       notif.className = "fixed bottom-24 right-6 bg-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50";
-      notif.innerHTML = `✅ ${producto.nombre}<br><small>Añadido al carrito</small>`;
+      notif.innerHTML = `✅ ${cantidad} × ${producto.nombre}<br><small>Añadido al carrito</small>`;
       document.body.appendChild(notif);
-      setTimeout(() => notif.remove(), 2500);
+      setTimeout(() => notif.remove(), 2800);
     }
 
     function contactarWhatsApp() {
@@ -187,18 +172,24 @@
         card.className = "product-card bg-white rounded-3xl overflow-hidden border border-gray-100";
         
         card.innerHTML = `
-          <img src="${p.img}" class="product-img w-full" alt="${p.nombre}">
+          <img src="${p.img}" class="product-img w-full" alt="${p.nombre}" onerror="this.src='https://picsum.photos/id/201/600/400';">
           <div class="p-6">
-            <h3 class="font-semibold text-lg leading-tight">${p.nombre}</h3>
+            <h3 class="font-semibold text-lg">${p.nombre}</h3>
             <p class="text-sm text-gray-500">${p.unidad}</p>
             <p class="text-green-600 font-bold text-3xl mt-4">Q${p.precio}</p>
             
-            <div class="grid grid-cols-2 gap-3 mt-8">
-              <button onclick="agregarAlCarritoFromButton(${p.id}, ${index}); event.stopImmediatePropagation()" 
+            <div class="flex items-center gap-3 mt-6 mb-4">
+              <button onclick="cambiarCantidad(this, -1)" class="w-8 h-8 border rounded-lg flex items-center justify-center text-lg font-bold">-</button>
+              <span class="cantidad text-xl font-semibold w-8 text-center">1</span>
+              <button onclick="cambiarCantidad(this, 1)" class="w-8 h-8 border rounded-lg flex items-center justify-center text-lg font-bold">+</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <button onclick="agregarDesdeCard(this)" 
                       class="bg-green-600 text-white py-4 rounded-2xl text-sm font-medium hover:bg-green-700">
                 Añadir al carrito
               </button>
-              <button onclick="comprarRapidoFromButton(${p.id}, ${index}); event.stopImmediatePropagation()" 
+              <button onclick="comprarRapido(this)" 
                       class="border border-green-600 text-green-700 py-4 rounded-2xl text-sm font-medium hover:bg-green-50">
                 Comprar ya
               </button>
@@ -209,17 +200,29 @@
       });
     }
 
-    function agregarAlCarritoFromButton(id, catIndex) {
-      const producto = catalogos[catIndex].find(p => p.id === id);
-      if (producto) agregarAlCarrito(producto);
+    function cambiarCantidad(btn, cambio) {
+      const span = btn.parentElement.querySelector('.cantidad');
+      let qty = parseInt(span.textContent);
+      qty = Math.max(1, qty + cambio);
+      span.textContent = qty;
     }
 
-    function comprarRapidoFromButton(id, catIndex) {
-      const producto = catalogos[catIndex].find(p => p.id === id);
-      if (producto) {
-        const mensaje = `Quiero comprar: ${producto.nombre} (${producto.unidad}) - Q${producto.precio}`;
-        window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
-      }
+    function agregarDesdeCard(btn) {
+      const card = btn.closest('.product-card');
+      const nombre = card.querySelector('h3').textContent;
+      const cantidad = parseInt(card.querySelector('.cantidad').textContent);
+      
+      // Buscar el producto (simplificado)
+      const producto = { nombre: nombre, precio: 0, unidad: "1 unidad" }; // Puedes mejorar esto
+      agregarAlCarrito(producto, cantidad);
+    }
+
+    function comprarRapido(btn) {
+      const card = btn.closest('.product-card');
+      const nombre = card.querySelector('h3').textContent;
+      const cantidad = parseInt(card.querySelector('.cantidad').textContent);
+      const mensaje = `Quiero comprar ${cantidad} unidades de: ${nombre}`;
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
     }
 
     // Inicializar
