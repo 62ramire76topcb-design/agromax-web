@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <!-- PWA Configuration -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#166534">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black"></head>
-<body class="bg-gray-50">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAX | Catálogo Guatemala</title>
+  
+  <!-- ==================== PWA CONFIG ==================== -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#166534">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="apple-touch-icon" href="images/icon-192.png">
+  <!-- ================================================== -->
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   
@@ -33,7 +36,10 @@
       background-color: #f3f4f6;
     }
   </style>
-<!-- HEADER -->
+</head>
+<body class="bg-gray-50">
+
+  <!-- HEADER -->
   <header class="bg-white shadow-md sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -67,17 +73,17 @@
     </div>
   </section>
 
-  <!-- NAVEGACIÓN DE CATÁLOGOS (5 categorías) -->
+  <!-- 5 CATEGORÍAS -->
   <section id="categorias" class="py-12 bg-white">
     <div class="max-w-7xl mx-auto px-6">
       <h2 class="text-4xl font-bold text-center mb-10">Nuestros Catálogos</h2>
       
-      <div class="flex flex-wrap justify-center gap-3 mb-12 overflow-x-auto pb-2" id="tabs">
-        <button onclick="cambiarCategoria(0)" class="cat-tab active px-6 py-3 rounded-2xl font-semibold border-2 border-green-700 text-sm">Fertilizantes</button>
-        <button onclick="cambiarCategoria(1)" class="cat-tab px-6 py-3 rounded-2xl font-semibold border-2 border-gray-300 text-sm">Foliares</button>
-        <button onclick="cambiarCategoria(2)" class="cat-tab px-6 py-3 rounded-2xl font-semibold border-2 border-gray-300 text-sm">Protección</button>
-        <button onclick="cambiarCategoria(3)" class="cat-tab px-6 py-3 rounded-2xl font-semibold border-2 border-gray-300 text-sm">Herramientas</button>
-        <button onclick="cambiarCategoria(4)" class="cat-tab px-6 py-3 rounded-2xl font-semibold border-2 border-gray-300 text-sm">Accesorios de Trabajo</button>
+      <div class="flex flex-wrap justify-center gap-3 mb-12" id="tabs">
+        <button onclick="cambiarCategoria(0)" class="cat-tab px-6 py-3 rounded-2xl font-semibold border-2 border-gray-300">Fertilizantes</button>
+        <button onclick="cambiarCategoria(1)" class="cat-tab px-6 py-3 rounded-2xl font-semibold border-2 border-gray-300">Foliares</button>
+        <button onclick="cambiarCategoria(2)" class="cat-tab px-6 py-3 rounded-2xl font-semibold border-2 border-gray-300">Protección</button>
+        <button onclick="cambiarCategoria(3)" class="cat-tab px-6 py-3 rounded-2xl font-semibold border-2 border-gray-300">Herramientas</button>
+        <button onclick="cambiarCategoria(4)" class="cat-tab active px-6 py-3 rounded-2xl font-semibold border-2 border-green-700">Accesorios de Trabajo</button>
       </div>
 
       <div id="catalogo-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
@@ -95,20 +101,20 @@
 
     const catalogos = [
       // 0 Fertilizantes
-      Array(20).fill(0).map((_, i) => ({id:100+i, nombre:"Urea 46-0-0", precio:245, unidad:"50 kg", img:"https://picsum.photos/id/201/600/400"})),
+      Array(12).fill(0).map((_,i) => ({id:100+i, nombre:"Urea 46-0-0", precio:245, unidad:"50 kg", img:"https://picsum.photos/id/201/600/400"})),
       // 1 Foliares
-      Array(20).fill(0).map((_, i) => ({id:200+i, nombre:"Foliar Calcio + Boro", precio:95, unidad:"1 L", img:"https://picsum.photos/id/237/600/400"})),
+      Array(12).fill(0).map((_,i) => ({id:200+i, nombre:"Foliar Calcio + Boro", precio:95, unidad:"1 L", img:"https://picsum.photos/id/237/600/400"})),
       // 2 Protección
-      Array(20).fill(0).map((_, i) => ({id:300+i, nombre:"Lambda Cyhalothrin", precio:165, unidad:"1 L", img:"https://picsum.photos/id/180/600/400"})),
+      Array(12).fill(0).map((_,i) => ({id:300+i, nombre:"Lambda Cyhalothrin", precio:165, unidad:"1 L", img:"https://picsum.photos/id/180/600/400"})),
       // 3 Herramientas
-      Array(20).fill(0).map((_, i) => ({id:400+i, nombre:"Machete Profesional", precio:85, unidad:"1 unidad", img:"https://picsum.photos/id/251/600/400"})),
-      // 4 Accesorios de Trabajo (Tus gorras)
+      Array(12).fill(0).map((_,i) => ({id:400+i, nombre:"Machete Profesional", precio:85, unidad:"1 unidad", img:"https://picsum.photos/id/251/600/400"})),
+      // 4 Accesorios de Trabajo
       [
         {id:501, nombre:"Gorra de Trabajo Azul", precio:65, unidad:"1 unidad", img:"images/IMG_1247.jpeg"},
         {id:502, nombre:"Gorra de Trabajo Negra", precio:65, unidad:"1 unidad", img:"images/IMG_1248.jpeg"},
         {id:503, nombre:"Gorra de Trabajo Verde", precio:65, unidad:"1 unidad", img:"images/IMG_1249.jpeg"},
         {id:504, nombre:"Gorra de Trabajo Gris", precio:65, unidad:"1 unidad", img:"images/IMG_1250.jpeg"},
-        {id:505, nombre:"Gorra de Trabajo con Logo", precio:75, unidad:"1 unidad", img:"images/IMG_1251.jpeg"}
+        {id:505, nombre:"Gorra de Trabajo con Visera", precio:75, unidad:"1 unidad", img:"images/IMG_1251.jpeg"}
       ]
     ];
 
@@ -143,7 +149,6 @@
 
     function cambiarCategoria(index) {
       document.querySelectorAll('.cat-tab').forEach((btn, i) => btn.classList.toggle('active', i === index));
-
       const grid = document.getElementById('catalogo-productos');
       grid.innerHTML = '';
 
@@ -151,7 +156,7 @@
         const card = document.createElement('div');
         card.className = "product-card bg-white rounded-3xl overflow-hidden border border-gray-100";
         card.innerHTML = `
-          <img src="${p.img}" class="product-img w-full" alt="${p.nombre}" onerror="this.src='https://picsum.photos/id/201/600/400';">
+          <img src="${p.img}" class="product-img w-full" alt="${p.nombre}">
           <div class="p-6">
             <h3 class="font-semibold text-lg">${p.nombre}</h3>
             <p class="text-sm text-gray-500">${p.unidad}</p>
@@ -184,7 +189,7 @@
       const card = btn.closest('.product-card');
       const nombre = card.querySelector('h3').textContent;
       const cantidad = parseInt(card.querySelector('.cantidad').textContent);
-      const producto = { nombre: nombre, precio: 0, unidad: "1 unidad" };
+      const producto = { nombre, precio: 0, unidad: "1 unidad" };
       agregarAlCarrito(producto, cantidad);
     }
 
@@ -198,7 +203,7 @@
 
     window.onload = () => {
       actualizarContador();
-      cambiarCategoria(0);
+      cambiarCategoria(4); // Abre en Accesorios de Trabajo
     };
   </script>
 </body>
