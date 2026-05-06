@@ -5,11 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAX | Catálogo Guatemala</title>
   
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#166534">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -23,12 +27,10 @@
 </head>
 <body class="bg-gray-50">
 
-  <div id="app">
-    <!-- El contenido se cargará dinámicamente -->
-  </div>
+  <div id="app" class="min-h-screen"></div>
 
   <script>
-    // ==================== CONFIGURACIÓN FIREBASE ====================
+    // ==================== FIREBASE CONFIG ====================
     const firebaseConfig = {
       apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
       authDomain: "agromaxgt-app.firebaseapp.com",
@@ -38,59 +40,72 @@
       appId: "1:648144313047:web:118a67464d99f2d0462e92"
     };
 
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    const storage = firebase.storage();
 
     let currentUser = null;
 
-    // ==================== FUNCIONES BÁSICAS ====================
+    // ==================== PANTALLA DE LOGIN ====================
     function mostrarLogin() {
       document.getElementById('app').innerHTML = `
-        <div class="min-h-screen flex items-center justify-center bg-gray-100">
-          <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md">
-            <h2 class="text-3xl font-bold text-center mb-8">Panel AGROMAX</h2>
-            <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
-            <button onclick="login()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-semibold">Iniciar Sesión</button>
-            <p class="text-center text-sm text-gray-500 mt-6">Usuario: tuemail@gmail.com</p>
+        <div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+          <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+              <div class="w-20 h-20 bg-green-700 rounded-2xl mx-auto flex items-center justify-center text-4xl">🌱</div>
+              <h1 class="text-3xl font-bold mt-4">AGROMAX</h1>
+              <p class="text-green-600">Panel Administrativo</p>
+            </div>
+            <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-4 border rounded-2xl mb-4 focus:outline-none focus:border-green-600">
+            <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6 focus:outline-none focus:border-green-600">
+            <button onclick="iniciarSesion()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-semibold text-lg">Iniciar Sesión</button>
+            <p class="text-center text-xs text-gray-500 mt-6">Usuario de prueba: usa tu correo registrado</p>
           </div>
         </div>
       `;
     }
 
-    async function login() {
+    async function iniciarSesion() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      
+
       try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        currentUser = userCredential.user;
+        const user = await auth.signInWithEmailAndPassword(email, password);
+        currentUser = user.user;
         mostrarPanelAdmin();
       } catch (error) {
         alert("Error: " + error.message);
       }
     }
 
-    function mostrarPanelAdmin() {
-      document.getElementById('app').innerHTML = `
-        <div class="p-6">
-          <h1 class="text-3xl font-bold">Panel de Administrador</h1>
-          <p class="text-green-600">Bienvenido, ${currentUser.email}</p>
-          <button onclick="logout()" class="mt-4 text-red-600">Cerrar Sesión</button>
-          <p class="mt-8 text-lg">Funcionalidad de agregar productos en desarrollo...</p>
-        </div>
-      `;
-    }
-
-    function logout() {
+    function cerrarSesion() {
       auth.signOut();
       mostrarLogin();
     }
 
-    // Inicializar
+    // ==================== PANEL DE ADMINISTRADOR ====================
+    function mostrarPanelAdmin() {
+      document.getElementById('app').innerHTML = `
+        <div class="p-6 max-w-7xl mx-auto">
+          <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Panel de Administrador</h1>
+            <button onclick="cerrarSesion()" class="text-red-600 font-medium">Cerrar Sesión</button>
+          </div>
+          <p class="text-green-600 mb-8">Bienvenido, ${currentUser.email}</p>
+          
+          <div class="bg-white rounded-3xl p-8 text-center">
+            <h2 class="text-2xl font-semibold mb-4">Funcionalidad de Administración</h2>
+            <p class="text-gray-600 mb-8">Aquí podrás agregar, editar y eliminar productos en el futuro.</p>
+            <button onclick="alert('Funcionalidad en desarrollo ✅')" 
+                    class="bg-green-600 text-white px-10 py-4 rounded-2xl text-lg font-medium">
+              Agregar Nuevo Producto
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==================== INICIALIZACIÓN ====================
     window.onload = () => {
       auth.onAuthStateChanged(user => {
         if (user) {
