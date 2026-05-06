@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAX - Panel Admin</title>
+  <title>AGROMAX - Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -11,7 +11,6 @@
   <div id="app"></div>
 
   <script>
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
       authDomain: "agromaxgt-app.firebaseapp.com",
@@ -30,7 +29,7 @@
           <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full">
             <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
             <p class="text-center text-green-600 mb-8">Panel Administrador</p>
-            <input id="email" type="email" placeholder="Correo" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-4 border rounded-2xl mb-4">
             <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
             <button onclick="login()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Iniciar Sesión</button>
           </div>
@@ -45,7 +44,9 @@
         await auth.signInWithEmailAndPassword(email, pass);
         alert("✅ Bienvenido al Panel de Administrador");
         mostrarPanel();
-      } catch(e) { alert("Error: " + e.message); }
+      } catch(e) {
+        alert("Error: " + e.message);
+      }
     }
 
     function mostrarPanel() {
@@ -64,7 +65,10 @@
     }
 
     window.onload = () => {
-      auth.onAuthStateChanged(user => user ? mostrarPanel() : mostrarLogin());
+      auth.onAuthStateChanged(user => {
+        if (user) mostrarPanel();
+        else mostrarLogin();
+      });
     };
   </script>
 </body>
