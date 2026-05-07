@@ -4,19 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAX - Panel Admin</title>
-  
-  <!-- Firebase SDKs -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100">
 
-  <div id="app"></div>
+  <div id="app" class="min-h-screen"></div>
 
   <script>
-    // ==================== FIREBASE CONFIG ====================
     const firebaseConfig = {
       apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
       authDomain: "agromaxgt-app.firebaseapp.com",
@@ -31,17 +27,13 @@
 
     function mostrarLogin() {
       document.getElementById('app').innerHTML = `
-        <div class="min-h-screen flex items-center justify-center p-4">
-          <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full">
+        <div class="min-h-screen flex items-center justify-center p-4 bg-gray-100">
+          <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full">
             <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
-            <p class="text-center text-green-600 mb-8">Panel Administrador</p>
-            
+            <p class="text-center text-green-600 mb-8">Panel de Administrador</p>
             <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-4 border rounded-2xl mb-4">
             <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
-            
-            <button onclick="login()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg">
-              Iniciar Sesión
-            </button>
+            <button onclick="login()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Iniciar Sesión</button>
           </div>
         </div>
       `;
@@ -52,19 +44,41 @@
       const pass = document.getElementById('password').value;
       try {
         await auth.signInWithEmailAndPassword(email, pass);
-        alert("✅ Bienvenido al Panel de Administrador");
-        mostrarPanel();
+        mostrarPanelPrincipal();
       } catch(e) {
         alert("Error: " + e.message);
       }
     }
 
-    function mostrarPanel() {
+    function mostrarPanelPrincipal() {
       document.getElementById('app').innerHTML = `
-        <div class="p-8 text-center">
-          <h1 class="text-4xl font-bold mb-4">Panel de Administrador</h1>
-          <p class="text-green-600 mb-8">Sesión iniciada correctamente</p>
-          <button onclick="logout()" class="bg-red-600 text-white px-10 py-4 rounded-2xl">Cerrar Sesión</button>
+        <div class="p-6 max-w-5xl mx-auto">
+          <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Panel de Administrador</h1>
+            <button onclick="logout()" class="bg-red-600 text-white px-6 py-3 rounded-2xl">Cerrar Sesión</button>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div onclick="alert('Función en desarrollo - Agregar Producto')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
+              <h3 class="text-xl font-semibold mb-2">➕ Agregar Producto</h3>
+              <p class="text-gray-600">Añadir nuevo producto al catálogo</p>
+            </div>
+            
+            <div onclick="alert('Función en desarrollo - Editar Catálogo')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
+              <h3 class="text-xl font-semibold mb-2">✏️ Editar Productos</h3>
+              <p class="text-gray-600">Modificar precios y descripciones</p>
+            </div>
+            
+            <div onclick="alert('Función en desarrollo - Gestionar Imágenes')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
+              <h3 class="text-xl font-semibold mb-2">🖼️ Gestionar Imágenes</h3>
+              <p class="text-gray-600">Subir y organizar fotos</p>
+            </div>
+            
+            <div onclick="alert('Función en desarrollo - Ver Pedidos')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
+              <h3 class="text-xl font-semibold mb-2">📋 Ver Pedidos WhatsApp</h3>
+              <p class="text-gray-600">Revisar solicitudes de clientes</p>
+            </div>
+          </div>
         </div>
       `;
     }
@@ -76,7 +90,7 @@
 
     window.onload = () => {
       auth.onAuthStateChanged(user => {
-        if (user) mostrarPanel();
+        if (user) mostrarPanelPrincipal();
         else mostrarLogin();
       });
     };
