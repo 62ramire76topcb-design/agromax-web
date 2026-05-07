@@ -1,163 +1,444 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAX - Panel Admin</title>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+  authDomain: "agromaxgt-app.firebaseapp.com",
+  projectId: "agromaxgt-app",
+  storageBucket: "agromaxgt-app.firebasestorage.app",
+  messagingSenderId: "648144313047",
+  appId: "1:648144313047:web:118a67464d99f2d0462e92"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+let currentUser = null;
+let editandoId = null;
+
+function mostrarLogin() {
+
+  document.getElementById('app').innerHTML = `
   
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+  <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+  
+    <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full">
+    
+      <h1 class="text-4xl font-bold text-center text-green-700">
+        AGROMAX
+      </h1>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
+      <p class="text-center text-gray-500 mb-8">
+        Panel Administrador
+      </p>
 
-  <div id="app" class="min-h-screen"></div>
+      <input
+        id="email"
+        type="email"
+        placeholder="Correo electrónico"
+        class="w-full p-4 border rounded-2xl mb-4"
+      >
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
-      authDomain: "agromaxgt-app.firebaseapp.com",
-      projectId: "agromaxgt-app",
-      storageBucket: "agromaxgt-app.firebasestorage.app",
-      messagingSenderId: "648144313047",
-      appId: "1:648144313047:web:118a67464d99f2d0462e92"
+      <input
+        id="password"
+        type="password"
+        placeholder="Contraseña"
+        class="w-full p-4 border rounded-2xl mb-6"
+      >
+
+      <button
+        onclick="login()"
+        class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold"
+      >
+        Iniciar Sesión
+      </button>
+
+    </div>
+
+  </div>
+  `;
+}
+
+async function login() {
+
+  const email = document.getElementById('email').value;
+  const pass = document.getElementById('password').value;
+
+  try {
+
+    const user = await auth.signInWithEmailAndPassword(email, pass);
+
+    currentUser = user.user;
+
+    mostrarPanel();
+
+  } catch(e) {
+
+    alert(e.message);
+  }
+}
+
+async function mostrarPanel() {
+
+  const snapshot = await db.collection("productos")
+  .orderBy("fecha", "desc")
+  .get();
+
+  let productosHTML = "";
+
+  snapshot.forEach(doc => {
+
+    const p = doc.data();
+
+    productosHTML += `
+    
+    <div class="bg-white rounded-3xl shadow overflow-hidden">
+    
+      <img
+        src="${p.imageUrl || 'https://via.placeholder.com/300'}"
+        class="w-full h-48 object-cover"
+      >
+
+      <div class="p-5">
+
+        <h3 class="text-xl font-bold">
+          ${p.nombre}
+        </h3>
+
+        <p class="text-green-700 font-bold text-2xl mt-2">
+          Q${p.precio}
+        </p>
+
+        <p class="text-gray-500 mt-2">
+          ${p.unidad}
+        </p>
+
+        <p class="text-sm text-gray-400 mt-1">
+          ${p.categoria}
+        </p>
+
+        <div class="flex gap-2 mt-5">
+
+          <button
+            onclick="editarProducto('${doc.id}')"
+            class="flex-1 bg-blue-600 text-white py-2 rounded-xl"
+          >
+            Editar
+          </button>
+
+          <button
+            onclick="eliminarProducto('${doc.id}')"
+            class="flex-1 bg-red-600 text-white py-2 rounded-xl"
+          >
+            Eliminar
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+    `;
+  });
+
+  document.getElementById('app').innerHTML = `
+  
+  <div class="min-h-screen bg-gray-100">
+
+    <div class="bg-white shadow p-6 flex justify-between items-center">
+
+      <div>
+
+        <h1 class="text-3xl font-bold text-green-700">
+          AGROMAX Admin
+        </h1>
+
+        <p class="text-gray-500">
+          Gestión de Catálogo
+        </p>
+
+      </div>
+
+      <div class="flex gap-3">
+
+        <button
+          onclick="mostrarFormulario()"
+          class="bg-green-600 text-white px-6 py-3 rounded-2xl"
+        >
+          + Agregar Producto
+        </button>
+
+        <button
+          onclick="verPedidos()"
+          class="bg-yellow-500 text-white px-6 py-3 rounded-2xl"
+        >
+          Pedidos WhatsApp
+        </button>
+
+        <button
+          onclick="logout()"
+          class="bg-red-600 text-white px-6 py-3 rounded-2xl"
+        >
+          Salir
+        </button>
+
+      </div>
+
+    </div>
+
+    <div class="p-6">
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        ${productosHTML}
+
+      </div>
+
+    </div>
+
+  </div>
+  `;
+}
+
+function mostrarFormulario(producto = null, id = null) {
+
+  editandoId = id;
+
+  document.getElementById('app').innerHTML = `
+  
+  <div class="max-w-2xl mx-auto p-6">
+
+    <div class="bg-white p-8 rounded-3xl shadow">
+
+      <h2 class="text-3xl font-bold mb-6">
+        ${producto ? 'Editar Producto' : 'Agregar Producto'}
+      </h2>
+
+      <input
+        id="nombre"
+        placeholder="Nombre"
+        value="${producto?.nombre || ''}"
+        class="w-full p-4 border rounded-2xl mb-4"
+      >
+
+      <input
+        id="precio"
+        type="number"
+        placeholder="Precio"
+        value="${producto?.precio || ''}"
+        class="w-full p-4 border rounded-2xl mb-4"
+      >
+
+      <input
+        id="unidad"
+        placeholder="Unidad"
+        value="${producto?.unidad || ''}"
+        class="w-full p-4 border rounded-2xl mb-4"
+      >
+
+      <input
+        id="categoria"
+        placeholder="Categoría"
+        value="${producto?.categoria || ''}"
+        class="w-full p-4 border rounded-2xl mb-4"
+      >
+
+      <input
+        id="imagen"
+        type="file"
+        accept="image/*"
+        class="w-full p-4 border rounded-2xl mb-6"
+      >
+
+      <div class="flex gap-4">
+
+        <button
+          onclick="guardarProducto()"
+          class="flex-1 bg-green-600 text-white py-4 rounded-2xl font-bold"
+        >
+          Guardar
+        </button>
+
+        <button
+          onclick="mostrarPanel()"
+          class="flex-1 border py-4 rounded-2xl"
+        >
+          Cancelar
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+  `;
+}
+
+async function guardarProducto() {
+
+  try {
+
+    const nombre = document.getElementById('nombre').value;
+    const precio = parseFloat(document.getElementById('precio').value);
+    const unidad = document.getElementById('unidad').value;
+    const categoria = document.getElementById('categoria').value;
+
+    const file = document.getElementById('imagen').files[0];
+
+    let imageUrl = "";
+
+    if(file){
+
+      const ref = storage
+      .ref()
+      .child("productos/" + Date.now() + "_" + file.name);
+
+      await ref.put(file);
+
+      imageUrl = await ref.getDownloadURL();
+    }
+
+    const data = {
+      nombre,
+      precio,
+      unidad,
+      categoria,
+      fecha: new Date()
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
-
-    let currentUser = null;
-
-    function mostrarLogin() {
-      document.getElementById('app').innerHTML = `
-        <div class="min-h-screen flex items-center justify-center p-4">
-          <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full">
-            <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
-            <p class="text-center text-green-600 mb-8">Panel Administrador</p>
-            <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
-            <button onclick="login()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Iniciar Sesión</button>
-          </div>
-        </div>
-      `;
+    if(imageUrl){
+      data.imageUrl = imageUrl;
     }
 
-    async function login() {
-      const email = document.getElementById('email').value;
-      const pass = document.getElementById('password').value;
-      try {
-        const user = await auth.signInWithEmailAndPassword(email, pass);
-        currentUser = user.user;
-        mostrarPanelPrincipal();
-      } catch(e) {
-        alert("Error: " + e.message);
-      }
+    if(editandoId){
+
+      await db.collection("productos")
+      .doc(editandoId)
+      .update(data);
+
+      alert("Producto actualizado");
+
+    } else {
+
+      await db.collection("productos")
+      .add(data);
+
+      alert("Producto agregado");
     }
 
-    function mostrarPanelPrincipal() {
-      document.getElementById('app').innerHTML = `
-        <div class="p-6 max-w-5xl mx-auto">
-          <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold">Panel de Administrador</h1>
-            <button onclick="logout()" class="bg-red-600 text-white px-6 py-3 rounded-2xl">Cerrar Sesión</button>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div onclick="mostrarFormularioAgregar()" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
-              <h3 class="text-xl font-semibold mb-2">➕ Agregar Producto</h3>
-              <p class="text-gray-600">Añadir nuevo producto al catálogo</p>
-            </div>
-            
-            <div onclick="alert('Próximamente: Editar y eliminar productos')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
-              <h3 class="text-xl font-semibold mb-2">✏️ Editar Productos</h3>
-              <p class="text-gray-600">Modificar precios y descripciones</p>
-            </div>
-            
-            <div onclick="alert('Próximamente: Gestionar Imágenes')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
-              <h3 class="text-xl font-semibold mb-2">🖼️ Gestionar Imágenes</h3>
-              <p class="text-gray-600">Subir y organizar fotos</p>
-            </div>
-            
-            <div onclick="alert('Próximamente: Ver Pedidos')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
-              <h3 class="text-xl font-semibold mb-2">📋 Ver Pedidos WhatsApp</h3>
-              <p class="text-gray-600">Revisar solicitudes de clientes</p>
-            </div>
-          </div>
-        </div>
-      `;
-    }
+    editandoId = null;
 
-    function mostrarFormularioAgregar() {
-      document.getElementById('app').innerHTML = `
-        <div class="max-w-2xl mx-auto p-6">
-          <h2 class="text-2xl font-bold mb-6">Agregar Nuevo Producto</h2>
-          <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
-          <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
-          <input id="unidad" placeholder="Unidad (ej: 50 kg, 1 L)" class="w-full p-4 border rounded-2xl mb-4">
-          <input id="categoria" placeholder="Categoría (Fertilizantes, Foliares, etc)" class="w-full p-4 border rounded-2xl mb-6">
-          <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
-          
-          <div class="flex gap-4">
-            <button onclick="guardarProducto()" class="flex-1 bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
-            <button onclick="mostrarPanelPrincipal()" class="flex-1 border border-gray-300 py-4 rounded-2xl">Cancelar</button>
-          </div>
-        </div>
-      `;
-    }
+    mostrarPanel();
 
-    async function guardarProducto() {
-      const nombre = document.getElementById('nombre').value;
-      const precio = parseFloat(document.getElementById('precio').value);
-      const unidad = document.getElementById('unidad').value;
-      const categoria = document.getElementById('categoria').value;
-      const file = document.getElementById('imagen').files[0];
+  } catch(error){
 
-      if (!nombre || !precio || !unidad) {
-        alert("Por favor completa los campos obligatorios");
-        return;
-      }
+    console.error(error);
 
-      try {
-        let imageUrl = "";
-        if (file) {
-          const storageRef = storage.ref('productos/' + Date.now() + '_' + file.name);
-          await storageRef.put(file);
-          imageUrl = await storageRef.getDownloadURL();
-        }
+    alert(error.message);
+  }
+}
 
-        await db.collection('productos').add({
-          nombre,
-          precio,
-          unidad,
-          categoria: categoria || "General",
-          imageUrl,
-          fecha: new Date()
-        });
+async function editarProducto(id) {
 
-        alert("✅ Producto guardado correctamente");
-        mostrarPanelPrincipal();
-      } catch(e) {
-        alert("Error al guardar: " + e.message);
-      }
-    }
+  const doc = await db.collection("productos")
+  .doc(id)
+  .get();
 
-    function logout() {
-      auth.signOut();
+  mostrarFormulario(doc.data(), id);
+}
+
+async function eliminarProducto(id) {
+
+  const confirmar = confirm("¿Eliminar producto?");
+
+  if(!confirmar) return;
+
+  await db.collection("productos")
+  .doc(id)
+  .delete();
+
+  mostrarPanel();
+}
+
+async function verPedidos() {
+
+  const snapshot = await db.collection("pedidos")
+  .orderBy("fecha", "desc")
+  .get();
+
+  let pedidosHTML = "";
+
+  snapshot.forEach(doc => {
+
+    const p = doc.data();
+
+    pedidosHTML += `
+    
+    <div class="bg-white p-5 rounded-2xl shadow mb-4">
+
+      <h3 class="font-bold text-xl">
+        ${p.nombre}
+      </h3>
+
+      <p class="text-gray-500">
+        ${p.telefono}
+      </p>
+
+      <p class="mt-2">
+        ${p.producto}
+      </p>
+
+    </div>
+    `;
+  });
+
+  document.getElementById('app').innerHTML = `
+  
+  <div class="p-6 max-w-3xl mx-auto">
+
+    <div class="flex justify-between items-center mb-6">
+
+      <h1 class="text-3xl font-bold">
+        Pedidos WhatsApp
+      </h1>
+
+      <button
+        onclick="mostrarPanel()"
+        class="bg-green-600 text-white px-6 py-3 rounded-2xl"
+      >
+        Volver
+      </button>
+
+    </div>
+
+    ${pedidosHTML || '<p>No hay pedidos aún</p>'}
+
+  </div>
+  `;
+}
+
+function logout() {
+
+  auth.signOut();
+
+  mostrarLogin();
+}
+
+window.onload = () => {
+
+  auth.onAuthStateChanged(user => {
+
+    if(user){
+
+      currentUser = user;
+
+      mostrarPanel();
+
+    } else {
+
       mostrarLogin();
     }
-
-    window.onload = () => {
-      auth.onAuthStateChanged(user => {
-        if (user) mostrarPanelPrincipal();
-        else mostrarLogin();
-      });
-    };
-  </script>
-</body>
-</html>
+  });
+};
+</script>
