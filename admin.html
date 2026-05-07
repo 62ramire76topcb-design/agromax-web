@@ -4,160 +4,86 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAX - Panel Admin</title>
-  
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 font-sans">
 
-  <div id="app" class="min-h-screen"></div>
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-72 bg-white shadow-xl">
+      <div class="p-6 border-b">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-green-700 rounded-2xl flex items-center justify-center text-white text-2xl">🌱</div>
+          <div>
+            <h1 class="text-2xl font-bold text-green-700">AGROMAX</h1>
+            <p class="text-xs text-gray-500">Administración</p>
+          </div>
+        </div>
+      </div>
+      <nav class="p-4">
+        <a href="#" onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 text-gray-700 active">
+          <i class="fas fa-home"></i> Dashboard
+        </a>
+        <a href="#" onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 text-gray-700">
+          <i class="fas fa-plus"></i> Agregar Producto
+        </a>
+        <a href="#" onclick="mostrarSeccion('editar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 text-gray-700">
+          <i class="fas fa-edit"></i> Editar Productos
+        </a>
+        <a href="#" onclick="mostrarSeccion('imagenes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 text-gray-700">
+          <i class="fas fa-images"></i> Gestionar Imágenes
+        </a>
+        <a href="#" onclick="mostrarSeccion('pedidos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 text-gray-700">
+          <i class="fas fa-bell"></i> Ver Pedidos WhatsApp
+        </a>
+        <a href="#" onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-8">
+          <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+        </a>
+      </nav>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="flex-1 overflow-auto" id="main-content">
+      <!-- Se cargará dinámicamente -->
+    </div>
+  </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
-      authDomain: "agromaxgt-app.firebaseapp.com",
-      projectId: "agromaxgt-app",
-      storageBucket: "agromaxgt-app.firebasestorage.app",
-      messagingSenderId: "648144313047",
-      appId: "1:648144313047:web:118a67464d99f2d0462e92"
-    };
+    function mostrarSeccion(seccion) {
+      let html = '';
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
-
-    let currentUser = null;
-
-    function mostrarLogin() {
-      document.getElementById('app').innerHTML = `
-        <div class="min-h-screen flex items-center justify-center p-4">
-          <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full">
-            <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
-            <p class="text-center text-green-600 mb-8">Panel Administrador</p>
-            <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
-            <button onclick="login()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Iniciar Sesión</button>
-          </div>
-        </div>
-      `;
-    }
-
-    async function login() {
-      const email = document.getElementById('email').value;
-      const pass = document.getElementById('password').value;
-      try {
-        const user = await auth.signInWithEmailAndPassword(email, pass);
-        currentUser = user.user;
-        mostrarPanelPrincipal();
-      } catch(e) {
-        alert("Error: " + e.message);
-      }
-    }
-
-    function mostrarPanelPrincipal() {
-      document.getElementById('app').innerHTML = `
-        <div class="p-6 max-w-5xl mx-auto">
-          <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold">Panel de Administrador</h1>
-            <button onclick="logout()" class="bg-red-600 text-white px-6 py-3 rounded-2xl">Cerrar Sesión</button>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div onclick="mostrarFormularioAgregar()" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
-              <h3 class="text-xl font-semibold mb-2">➕ Agregar Producto</h3>
-              <p class="text-gray-600">Añadir nuevo producto al catálogo</p>
+      if (seccion === 'dashboard') {
+        html = `
+          <div class="p-8">
+            <h1 class="text-3xl font-bold mb-8">Dashboard</h1>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div class="bg-white p-6 rounded-3xl shadow">Total Productos<br><span class="text-4xl font-bold">48</span></div>
+              <div class="bg-white p-6 rounded-3xl shadow">Pedidos Hoy<br><span class="text-4xl font-bold text-green-600">12</span></div>
+              <div class="bg-white p-6 rounded-3xl shadow">Stock Bajo<br><span class="text-4xl font-bold text-orange-600">7</span></div>
+              <div class="bg-white p-6 rounded-3xl shadow">Categorías<br><span class="text-4xl font-bold">5</span></div>
             </div>
-            
-            <div onclick="alert('Próximamente: Editar y eliminar productos')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
-              <h3 class="text-xl font-semibold mb-2">✏️ Editar Productos</h3>
-              <p class="text-gray-600">Modificar precios y descripciones</p>
-            </div>
-            
-            <div onclick="alert('Próximamente: Gestionar Imágenes')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
-              <h3 class="text-xl font-semibold mb-2">🖼️ Gestionar Imágenes</h3>
-              <p class="text-gray-600">Subir y organizar fotos</p>
-            </div>
-            
-            <div onclick="alert('Próximamente: Ver Pedidos')" class="bg-white p-8 rounded-3xl shadow cursor-pointer hover:shadow-xl">
-              <h3 class="text-xl font-semibold mb-2">📋 Ver Pedidos WhatsApp</h3>
-              <p class="text-gray-600">Revisar solicitudes de clientes</p>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function mostrarFormularioAgregar() {
-      document.getElementById('app').innerHTML = `
-        <div class="max-w-2xl mx-auto p-6">
-          <h2 class="text-2xl font-bold mb-6">Agregar Nuevo Producto</h2>
-          <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
-          <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
-          <input id="unidad" placeholder="Unidad (ej: 50 kg, 1 L)" class="w-full p-4 border rounded-2xl mb-4">
-          <input id="categoria" placeholder="Categoría (Fertilizantes, Foliares, etc)" class="w-full p-4 border rounded-2xl mb-6">
-          <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
-          
-          <div class="flex gap-4">
-            <button onclick="guardarProducto()" class="flex-1 bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
-            <button onclick="mostrarPanelPrincipal()" class="flex-1 border border-gray-300 py-4 rounded-2xl">Cancelar</button>
-          </div>
-        </div>
-      `;
-    }
-
-    async function guardarProducto() {
-      const nombre = document.getElementById('nombre').value;
-      const precio = parseFloat(document.getElementById('precio').value);
-      const unidad = document.getElementById('unidad').value;
-      const categoria = document.getElementById('categoria').value;
-      const file = document.getElementById('imagen').files[0];
-
-      if (!nombre || !precio || !unidad) {
-        alert("Por favor completa los campos obligatorios");
-        return;
+          </div>`;
+      } else if (seccion === 'agregar') {
+        html = `Formulario para agregar producto (en desarrollo)`;
+      } else if (seccion === 'editar') {
+        html = `Lista de productos para editar (en desarrollo)`;
+      } else if (seccion === 'imagenes') {
+        html = `Gestión de imágenes (en desarrollo)`;
+      } else if (seccion === 'pedidos') {
+        html = `Pedidos de WhatsApp (en desarrollo)`;
       }
 
-      try {
-        let imageUrl = "";
-        if (file) {
-          const storageRef = storage.ref('productos/' + Date.now() + '_' + file.name);
-          await storageRef.put(file);
-          imageUrl = await storageRef.getDownloadURL();
-        }
-
-        await db.collection('productos').add({
-          nombre,
-          precio,
-          unidad,
-          categoria: categoria || "General",
-          imageUrl,
-          fecha: new Date()
-        });
-
-        alert("✅ Producto guardado correctamente");
-        mostrarPanelPrincipal();
-      } catch(e) {
-        alert("Error al guardar: " + e.message);
-      }
+      document.getElementById('main-content').innerHTML = html;
     }
 
     function logout() {
-      auth.signOut();
-      mostrarLogin();
+      alert("Sesión cerrada");
+      window.location.href = "index.html";
     }
 
-    window.onload = () => {
-      auth.onAuthStateChanged(user => {
-        if (user) mostrarPanelPrincipal();
-        else mostrarLogin();
-      });
-    };
+    // Iniciar en Dashboard
+    window.onload = () => mostrarSeccion('dashboard');
   </script>
 </body>
 </html>
