@@ -4,20 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAX - Panel Admin</title>
-  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
 <body class="bg-gray-100">
 
   <div class="flex h-screen">
     <!-- Sidebar -->
-    <div class="w-72 bg-white border-r shadow">
+    <div class="w-72 bg-white border-r shadow-xl">
       <div class="p-6 border-b">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-green-700 rounded-2xl flex items-center justify-center text-white text-2xl">🌱</div>
@@ -28,7 +26,7 @@
         </div>
       </div>
       <nav class="p-4 space-y-1">
-        <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
+        <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer active"><i class="fas fa-home"></i> Dashboard</a>
         <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
         <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
         <a onclick="mostrarSeccion('pedidos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-bell"></i> Pedidos WhatsApp</a>
@@ -36,11 +34,12 @@
       </nav>
     </div>
 
-    <!-- Contenido -->
+    <!-- Contenido Principal -->
     <div class="flex-1 overflow-auto p-8" id="main-content"></div>
   </div>
 
   <script>
+    // ==================== FIREBASE ====================
     const firebaseConfig = {
       apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
       authDomain: "agromaxgt-app.firebaseapp.com",
@@ -55,17 +54,18 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
 
+    // ==================== FUNCIONES ====================
     function mostrarSeccion(seccion) {
       let html = '';
 
       if (seccion === 'dashboard') {
-        html = `<h1 class="text-3xl font-bold">Dashboard</h1><p class="mt-4 text-gray-600">Bienvenido al Panel de Administración</p>`;
+        html = `<h1 class="text-3xl font-bold">Dashboard</h1><p class="mt-8 text-gray-600">Bienvenido al Panel de Administración de AGROMAX</p>`;
       } else if (seccion === 'agregar') {
         html = `
           <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
           <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
             <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="precio" type="number" placeholder="Precio (Q)" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
             <input id="unidad" placeholder="Unidad (ej: 50 kg)" class="w-full p-4 border rounded-2xl mb-4">
             <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
               <option>Fertilizantes</option>
@@ -78,7 +78,8 @@
             <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
           </div>`;
       } else if (seccion === 'productos') {
-        html = `<h1 class="text-3xl font-bold">Productos Registrados</h1><p class="mt-4">Lista en desarrollo...</p>`;
+        html = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><div id="lista-productos" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>`;
+        cargarProductos();
       }
 
       document.getElementById('main-content').innerHTML = html;
@@ -91,12 +92,12 @@
       const categoria = document.getElementById('categoria').value;
       const file = document.getElementById('imagen').files[0];
 
-      if (!nombre || !precio) return alert("Faltan campos");
+      if (!nombre || !precio) return alert("Faltan campos obligatorios");
 
       try {
         let imageUrl = "https://picsum.photos/id/201/600/400";
         if (file) {
-          const ref = storage.ref('productos/' + Date.now() + file.name);
+          const ref = storage.ref('productos/' + Date.now() + '_' + file.name);
           await ref.put(file);
           imageUrl = await ref.getDownloadURL();
         }
@@ -112,6 +113,32 @@
       }
     }
 
+    async function cargarProductos() {
+      const snapshot = await db.collection('productos').get();
+      const container = document.getElementById('lista-productos');
+      container.innerHTML = '';
+
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        const div = document.createElement('div');
+        div.className = "bg-white p-6 rounded-3xl shadow";
+        div.innerHTML = `
+          <img src="${p.imageUrl}" class="w-full h-40 object-cover rounded-2xl mb-4">
+          <h3 class="font-semibold">${p.nombre}</h3>
+          <p class="text-green-600 font-bold">Q${p.precio}</p>
+          <button onclick="eliminarProducto('${doc.id}')" class="text-red-600 mt-4">Eliminar</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function eliminarProducto(id) {
+      if (confirm("¿Eliminar este producto?")) {
+        await db.collection('productos').doc(id).delete();
+        cargarProductos();
+      }
+    }
+
     function logout() {
       auth.signOut();
       window.location.reload();
@@ -119,7 +146,7 @@
 
     window.onload = () => {
       auth.onAuthStateChanged(user => {
-        if (!user) window.location.href = "admin.html"; // Redirigir si no está logueado
+        if (!user) window.location.href = "admin.html";
         else mostrarSeccion('dashboard');
       });
     };
