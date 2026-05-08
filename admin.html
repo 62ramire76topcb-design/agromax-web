@@ -3,58 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAX | Catálogo Guatemala</title>
+  <title>AGROMAX - Panel Admin</title>
   
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-100">
 
-  <!-- HEADER -->
-  <header class="bg-white shadow-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 bg-green-700 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">🌱</div>
-        <div>
-          <h1 class="text-2xl font-bold text-green-700">AGROMAX</h1>
-          <p class="text-xs text-green-600">Producimos con pasión, trabajamos por el futuro</p>
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-72 bg-white border-r shadow">
+      <div class="p-6 border-b">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-green-700 rounded-2xl flex items-center justify-center text-white text-2xl">🌱</div>
+          <div>
+            <h1 class="text-2xl font-bold text-green-700">AGROMAX</h1>
+            <p class="text-xs text-gray-500">Administración</p>
+          </div>
         </div>
       </div>
-      <button onclick="contactarWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-medium flex items-center gap-2">
-        <i class="fab fa-whatsapp"></i> WhatsApp
-      </button>
+      <nav class="p-4 space-y-1">
+        <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
+        <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
+        <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
+        <a onclick="mostrarSeccion('pedidos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-bell"></i> Pedidos WhatsApp</a>
+        <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-8"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+      </nav>
     </div>
-  </header>
 
-  <!-- HERO -->
-  <section class="hero-bg h-screen flex items-center text-white">
-    <div class="max-w-7xl mx-auto px-6 text-center">
-      <h2 class="text-5xl md:text-6xl font-bold mb-4">Catálogo de Insumos Agrícolas</h2>
-      <p class="text-2xl mb-10">Producimos con pasión, trabajamos por el futuro</p>
-      <button onclick="document.getElementById('categorias').scrollIntoView({behavior:'smooth'})" 
-              class="bg-green-600 hover:bg-green-700 px-12 py-6 rounded-3xl text-xl font-bold">
-        Ver Catálogos
-      </button>
-    </div>
-  </section>
-
-  <!-- CATÁLOGOS DINÁMICOS -->
-  <section id="categorias" class="py-12 bg-white">
-    <div class="max-w-7xl mx-auto px-6">
-      <h2 class="text-4xl font-bold text-center mb-10">Nuestros Catálogos</h2>
-      
-      <div id="catalogo-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
-    </div>
-  </section>
+    <!-- Contenido -->
+    <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+  </div>
 
   <script>
-    const whatsappNumber = "50242664744";
-
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
       authDomain: "agromaxgt-app.firebaseapp.com",
@@ -65,52 +51,78 @@
     };
 
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
+    const storage = firebase.storage();
 
-    async function cargarProductos() {
-      const grid = document.getElementById('catalogo-productos');
-      grid.innerHTML = '<p class="col-span-full text-center py-12">Cargando productos...</p>';
+    function mostrarSeccion(seccion) {
+      let html = '';
+
+      if (seccion === 'dashboard') {
+        html = `<h1 class="text-3xl font-bold">Dashboard</h1><p class="mt-4 text-gray-600">Bienvenido al Panel de Administración</p>`;
+      } else if (seccion === 'agregar') {
+        html = `
+          <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
+          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
+            <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="precio" type="number" placeholder="Precio (Q)" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="unidad" placeholder="Unidad (ej: 50 kg)" class="w-full p-4 border rounded-2xl mb-4">
+            <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
+              <option>Fertilizantes</option>
+              <option>Foliares</option>
+              <option>Protección</option>
+              <option>Herramientas</option>
+              <option>Accesorios</option>
+            </select>
+            <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
+            <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
+          </div>`;
+      } else if (seccion === 'productos') {
+        html = `<h1 class="text-3xl font-bold">Productos Registrados</h1><p class="mt-4">Lista en desarrollo...</p>`;
+      }
+
+      document.getElementById('main-content').innerHTML = html;
+    }
+
+    async function guardarProducto() {
+      const nombre = document.getElementById('nombre').value;
+      const precio = parseFloat(document.getElementById('precio').value);
+      const unidad = document.getElementById('unidad').value;
+      const categoria = document.getElementById('categoria').value;
+      const file = document.getElementById('imagen').files[0];
+
+      if (!nombre || !precio) return alert("Faltan campos");
 
       try {
-        const snapshot = await db.collection('productos').orderBy('fecha', 'desc').get();
-        
-        grid.innerHTML = '';
-
-        if (snapshot.empty) {
-          grid.innerHTML = '<p class="col-span-full text-center py-12 text-gray-500">No hay productos aún. Agrega desde el panel admin.</p>';
-          return;
+        let imageUrl = "https://picsum.photos/id/201/600/400";
+        if (file) {
+          const ref = storage.ref('productos/' + Date.now() + file.name);
+          await ref.put(file);
+          imageUrl = await ref.getDownloadURL();
         }
 
-        snapshot.forEach(doc => {
-          const p = doc.data();
-          const card = document.createElement('div');
-          card.className = "product-card bg-white rounded-3xl overflow-hidden border border-gray-100";
-          card.innerHTML = `
-            <img src="${p.imageUrl || 'https://picsum.photos/id/201/600/400'}" class="w-full h-48 object-cover">
-            <div class="p-6">
-              <h3 class="font-semibold text-lg">${p.nombre}</h3>
-              <p class="text-sm text-gray-500">${p.unidad}</p>
-              <p class="text-green-600 font-bold text-3xl mt-4">Q${p.precio}</p>
-              <button onclick="contactarWhatsApp('${p.nombre}')" 
-                      class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl text-sm font-medium">
-                Pedir por WhatsApp
-              </button>
-            </div>
-          `;
-          grid.appendChild(card);
+        await db.collection('productos').add({
+          nombre, precio, unidad, categoria, imageUrl, fecha: new Date()
         });
+
+        alert("✅ Producto guardado correctamente");
+        mostrarSeccion('productos');
       } catch(e) {
-        console.error(e);
-        grid.innerHTML = '<p class="col-span-full text-center text-red-500">Error al cargar productos</p>';
+        alert("Error: " + e.message);
       }
     }
 
-    function contactarWhatsApp(nombre) {
-      const mensaje = `Quiero información sobre: ${nombre}`;
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    function logout() {
+      auth.signOut();
+      window.location.reload();
     }
 
-    window.onload = cargarProductos;
+    window.onload = () => {
+      auth.onAuthStateChanged(user => {
+        if (!user) window.location.href = "admin.html"; // Redirigir si no está logueado
+        else mostrarSeccion('dashboard');
+      });
+    };
   </script>
 </body>
 </html>
