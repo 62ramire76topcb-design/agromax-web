@@ -12,7 +12,11 @@
   <div id="app" class="min-h-screen"></div>
 
   <script>
-    let productos = [];
+    let productos = JSON.parse(localStorage.getItem('productosAGROMAX')) || [];
+
+    function guardarEnStorage() {
+      localStorage.setItem('productosAGROMAX', JSON.stringify(productos));
+    }
 
     function mostrarLogin() {
       document.getElementById('app').innerHTML = `
@@ -35,14 +39,13 @@
     }
 
     function login() {
-      alert("✅ Bienvenido al Panel de Administración");
+      alert("✅ Bienvenido");
       mostrarPanelPrincipal();
     }
 
     function mostrarPanelPrincipal() {
       document.getElementById('app').innerHTML = `
         <div class="flex h-screen">
-          <!-- Sidebar -->
           <div class="w-72 bg-white border-r shadow-xl">
             <div class="p-6 border-b bg-green-700 text-white">
               <div class="flex items-center gap-3">
@@ -56,12 +59,10 @@
             <nav class="p-4 space-y-1">
               <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
               <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
-              <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver / Editar Productos</a>
+              <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
               <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
             </nav>
           </div>
-
-          <!-- Contenido -->
           <div class="flex-1 overflow-auto p-8" id="main-content"></div>
         </div>`;
       mostrarSeccion('dashboard');
@@ -69,9 +70,8 @@
 
     function mostrarSeccion(seccion) {
       const content = document.getElementById('main-content');
-      
       if (seccion === 'dashboard') {
-        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1><p class="mt-8">Bienvenido</p>`;
+        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1>`;
       } else if (seccion === 'agregar') {
         content.innerHTML = `
           <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
@@ -85,65 +85,55 @@
             <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
           </div>`;
       } else if (seccion === 'productos') {
-        mostrarTablaProductos();
+        let html = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1>`;
+        html += `<div class="bg-white rounded-3xl shadow overflow-hidden">`;
+        html += `<table class="w-full"><thead><tr class="bg-gray-50"><th class="p-4 text-left">Producto</th><th class="p-4 text-left">Categoría</th><th class="p-4 text-right">Precio</th><th class="p-4">Acciones</th></tr></thead><tbody>`;
+
+        productos.forEach(p => {
+          html += `<tr class="border-t">
+            <td class="p-4">${p.nombre}</td>
+            <td class="p-4">${p.categoria}</td>
+            <td class="p-4 text-right">Q${p.precio}</td>
+            <td class="p-4">
+              <button onclick="eliminarProducto(${p.id})" class="text-red-600">Eliminar</button>
+            </td>
+          </tr>`;
+        });
+        html += `</tbody></table></div>`;
+        document.getElementById('main-content').innerHTML = html;
       }
     }
 
     function guardarProducto() {
       const nombre = document.getElementById('nombre').value;
-      if (!nombre) return alert("Ingresa el nombre");
-      
+      const precio = document.getElementById('precio').value;
+      const categoria = document.getElementById('categoria').value;
+
+      if (!nombre) return alert("Ingresa el nombre del producto");
+
       productos.push({
         id: Date.now(),
         nombre: nombre,
-        precio: parseFloat(document.getElementById('precio').value) || 0,
-        unidad: document.getElementById('unidad').value || "1 unidad",
-        categoria: document.getElementById('categoria').value
+        precio: precio || 0,
+        categoria: categoria,
+        unidad: "1 unidad"
       });
-      
+
+      guardarEnStorage();
       alert("✅ Producto guardado correctamente");
       mostrarSeccion('productos');
-    }
-
-    function mostrarTablaProductos() {
-      let html = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1>`;
-      html += `<div class="bg-white rounded-3xl shadow overflow-hidden">`;
-      html += `<table class="w-full"><thead class="bg-gray-50"><tr>
-        <th class="p-4 text-left">Producto</th>
-        <th class="p-4 text-left">Categoría</th>
-        <th class="p-4 text-right">Precio</th>
-        <th class="p-4 text-center">Acciones</th>
-      </tr></thead><tbody>`;
-
-      productos.forEach(p => {
-        html += `<tr class="border-t">
-          <td class="p-4">${p.nombre}</td>
-          <td class="p-4">${p.categoria}</td>
-          <td class="p-4 text-right">Q${p.precio}</td>
-          <td class="p-4 text-center">
-            <button onclick="editarProducto(${p.id})" class="text-blue-600 mx-2">Editar</button>
-            <button onclick="eliminarProducto(${p.id})" class="text-red-600">Eliminar</button>
-          </td>
-        </tr>`;
-      });
-
-      html += `</tbody></table></div>`;
-      document.getElementById('main-content').innerHTML = html;
-    }
-
-    function editarProducto(id) {
-      alert("Editar producto ID: " + id + " (Funcionalidad en desarrollo)");
     }
 
     function eliminarProducto(id) {
       if (confirm("¿Eliminar este producto?")) {
         productos = productos.filter(p => p.id !== id);
-        mostrarTablaProductos();
+        guardarEnStorage();
+        mostrarSeccion('productos');
       }
     }
 
     function logout() {
-      if (confirm("¿Cerrar sesión y salir del panel?")) {
+      if (confirm("¿Cerrar sesión?")) {
         mostrarLogin();
       }
     }
