@@ -6,6 +6,10 @@
   <title>AGROMAX - Panel Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 </head>
 <body class="bg-gray-100">
 
@@ -24,54 +28,20 @@
       <nav class="p-4 space-y-1">
         <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
         <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
-        <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
+        <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver / Editar Productos</a>
         <a onclick="mostrarSeccion('pedidos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-bell"></i> Pedidos WhatsApp</a>
         <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
       </nav>
     </div>
 
-    <!-- Contenido -->
+    <!-- Contenido Principal -->
     <div class="flex-1 overflow-auto p-8" id="main-content"></div>
   </div>
 
   <script>
-    function mostrarSeccion(seccion) {
-      const content = document.getElementById('main-content');
-      
-      if (seccion === 'dashboard') {
-        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1><p class="mt-8">Bienvenido al Panel de AGROMAX</p>`;
-      } else if (seccion === 'agregar') {
-        content.innerHTML = `
-          <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
-          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
-            <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="unidad" placeholder="Unidad (ej: 50 kg)" class="w-full p-4 border rounded-2xl mb-4">
-            <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
-              <option>Fertilizantes</option><option>Foliares</option><option>Protección</option><option>Herramientas</option><option>Accesorios</option>
-            </select>
-            <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
-            <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
-          </div>`;
-      } else if (seccion === 'productos') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><p class="text-gray-500">En desarrollo...</p>`;
-      } else if (seccion === 'pedidos') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Pedidos WhatsApp</h1><p class="text-gray-500">En desarrollo...</p>`;
-      }
-    }
-
-    function guardarProducto() {
-      const nombre = document.getElementById('nombre').value || "Producto sin nombre";
-      alert(`✅ Producto "${nombre}" guardado correctamente`);
-    }
-
-    function logout() {
-      if (confirm("¿Cerrar sesión?")) {
-        window.location.reload();
-      }
-    }
-
-    window.onload = () => mostrarSeccion('dashboard');
-  </script>
-</body>
-</html>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+      authDomain: "agromaxgt-app.firebaseapp.com",
+      projectId: "agromaxgt-app",
+      storageBucket: "agromaxgt-app.firebasestorage.app",
+      messagingSenderId: "648144313047",
