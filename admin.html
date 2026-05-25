@@ -15,10 +15,12 @@
     function mostrarLogin() {
       document.getElementById('app').innerHTML = `
         <div class="min-h-screen flex items-center justify-center bg-gray-100">
-          <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full text-center">
-            <div class="mx-auto w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-5xl mb-6">🌱</div>
-            <h1 class="text-3xl font-bold mb-2">AGROMAX</h1>
-            <p class="text-green-600 mb-8">Panel de Administración</p>
+          <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
+            <div class="flex justify-center mb-6">
+              <div class="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-white text-6xl">🌱</div>
+            </div>
+            <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
+            <p class="text-center text-green-600 mb-8">Panel de Administración</p>
             
             <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
             <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
@@ -31,16 +33,11 @@
     }
 
     function login() {
-      const email = document.getElementById('email').value;
-      if (email) {
-        alert("✅ Login exitoso - Bienvenido al Panel");
-        mostrarPanel();
-      } else {
-        alert("Ingresa tu correo");
-      }
+      alert("✅ Bienvenido al Panel de Administración");
+      mostrarPanelPrincipal();
     }
 
-    function mostrarPanel() {
+    function mostrarPanelPrincipal() {
       document.getElementById('app').innerHTML = `
         <div class="flex h-screen">
           <!-- Sidebar -->
@@ -55,18 +52,57 @@
               </div>
             </div>
             <nav class="p-4 space-y-1">
-              <button onclick="alert('Dashboard')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-green-50">🏠 Dashboard</button>
-              <button onclick="alert('Agregar Producto')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-green-50">➕ Agregar Producto</button>
-              <button onclick="alert('Ver Productos')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-green-50">📋 Ver / Editar Productos</button>
-              <button onclick="logout()" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-8">🚪 Cerrar Sesión</button>
+              <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
+              <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
+              <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver / Editar Productos</a>
+              <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
             </nav>
           </div>
-          <!-- Main Content -->
-          <div class="flex-1 p-10">
-            <h1 class="text-4xl font-bold text-green-700">Bienvenido al Panel de Administración</h1>
-            <p class="mt-4 text-gray-600">Todas las funciones están activas.</p>
-          </div>
+
+          <!-- Contenido -->
+          <div class="flex-1 overflow-auto p-8" id="main-content"></div>
         </div>`;
+      mostrarSeccion('dashboard');
+    }
+
+    function mostrarSeccion(seccion) {
+      const content = document.getElementById('main-content');
+      
+      if (seccion === 'dashboard') {
+        content.innerHTML = `
+          <h1 class="text-4xl font-bold mb-8">Dashboard</h1>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-white p-6 rounded-3xl shadow">Total Productos<br><span class="text-5xl font-bold text-green-600">24</span></div>
+            <div class="bg-white p-6 rounded-3xl shadow">Stock Bajo<br><span class="text-5xl font-bold text-orange-600">7</span></div>
+            <div class="bg-white p-6 rounded-3xl shadow">Pedidos Hoy<br><span class="text-5xl font-bold">12</span></div>
+            <div class="bg-white p-6 rounded-3xl shadow">Ventas Mes<br><span class="text-5xl font-bold text-green-600">Q8,450</span></div>
+          </div>`;
+      } else if (seccion === 'agregar') {
+        content.innerHTML = `
+          <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
+          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
+            <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="unidad" placeholder="Unidad (ej: 50 kg)" class="w-full p-4 border rounded-2xl mb-4">
+            <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
+              <option>Fertilizantes</option><option>Foliares</option><option>Protección</option><option>Herramientas</option><option>Accesorios</option>
+            </select>
+            <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
+            <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
+          </div>`;
+      } else if (seccion === 'productos') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><p class="text-gray-500">Funcionalidad completa en desarrollo...</p>`;
+      }
+    }
+
+    function guardarProducto() {
+      const nombre = document.getElementById('nombre').value;
+      if (nombre) {
+        alert(`✅ Producto "${nombre}" guardado correctamente`);
+        mostrarSeccion('productos');
+      } else {
+        alert("Por favor ingresa el nombre del producto");
+      }
     }
 
     function logout() {
@@ -75,7 +111,6 @@
       }
     }
 
-    // Iniciar con pantalla de login
     window.onload = mostrarLogin;
   </script>
 </body>
