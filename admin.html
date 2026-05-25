@@ -5,74 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAX - Panel Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 </head>
 <body class="bg-gray-100">
 
-  <div id="app" class="min-h-screen"></div>
+  <div id="app" class="min-h-screen flex items-center justify-center">
+    <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full text-center">
+      <h1 class="text-4xl font-bold mb-8 text-green-700">AGROMAX</h1>
+      <p class="mb-8 text-gray-600">Panel de Administración</p>
+      
+      <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
+      <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
+      
+      <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+        Ingresar al Panel
+      </button>
+    </div>
+  </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
-      authDomain: "agromaxgt-app.firebaseapp.com",
-      projectId: "agromaxgt-app",
-      storageBucket: "agromaxgt-app.firebasestorage.app",
-      messagingSenderId: "648144313047",
-      appId: "1:648144313047:web:118a67464d99f2d0462e92"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
-    function mostrarLogin() {
+    function login() {
+      alert("✅ Botón funciona correctamente!\n\nAhora vamos a conectar Firebase.");
       document.getElementById('app').innerHTML = `
-        <div class="min-h-screen flex items-center justify-center bg-gray-100">
-          <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full text-center">
-            <div class="mx-auto w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-5xl mb-6">🌱</div>
-            <h1 class="text-3xl font-bold mb-2">AGROMAX</h1>
-            <p class="text-green-600 mb-8">Panel de Administración</p>
-            
-            <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
-            
-            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
-              Ingresar al Panel
-            </button>
-          </div>
+        <div class="p-10 text-center">
+          <h1 class="text-4xl font-bold text-green-700">✅ Bienvenido al Panel</h1>
+          <p class="mt-4">El botón ya responde.</p>
+          <button onclick="location.reload()" class="mt-8 bg-red-600 text-white px-8 py-4 rounded-2xl">Volver</button>
         </div>`;
     }
-
-    async function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-
-      try {
-        await auth.signInWithEmailAndPassword(email, password);
-        alert("✅ ¡Login exitoso! Bienvenido al Panel");
-        mostrarPanel();
-      } catch (error) {
-        alert("Error: " + error.message);
-      }
-    }
-
-    function mostrarPanel() {
-      document.getElementById('app').innerHTML = `
-        <div class="p-10">
-          <h1 class="text-4xl font-bold mb-6">✅ Bienvenido al Panel de Administración</h1>
-          <p class="text-green-600 text-xl">Funciona correctamente</p>
-          <button onclick="logout()" class="mt-8 bg-red-600 text-white px-8 py-4 rounded-2xl">Cerrar Sesión</button>
-        </div>`;
-    }
-
-    function logout() {
-      auth.signOut().then(() => {
-        alert("Sesión cerrada");
-        mostrarLogin();
-      });
-    }
-
-    window.onload = mostrarLogin;
   </script>
 </body>
 </html>
