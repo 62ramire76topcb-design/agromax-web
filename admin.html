@@ -14,6 +14,7 @@
 <body class="bg-gray-100">
 
   <div class="flex h-screen">
+    <!-- Sidebar -->
     <div class="w-72 bg-white border-r shadow-xl">
       <div class="p-6 border-b bg-green-700 text-white">
         <div class="flex items-center gap-3">
@@ -32,23 +33,114 @@
       </nav>
     </div>
 
+    <!-- Contenido Principal -->
     <div class="flex-1 overflow-auto p-8" id="main-content"></div>
   </div>
 
   <script>
-    // Firebase
-    const firebaseConfig = { /* tu config */ };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+      authDomain: "agromaxgt-app.firebaseapp.com",
+      projectId: "agromaxgt-app",
+      storageBucket: "agromaxgt-app.firebasestorage.app",
+      messagingSenderId: "648144313047",
+      appId: "1:648144313047:web:118a67464d99f2d0462e92"
+    };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
     const storage = firebase.storage();
 
     function mostrarSeccion(seccion) {
-      // ... (código completo con CRUD, búsqueda y stock)
+      const content = document.getElementById('main-content');
+      if (seccion === 'dashboard') {
+        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1><p class="mt-8">Bienvenido al Panel de AGROMAX</p>`;
+      } else if (seccion === 'agregar') {
+        content.innerHTML = `
+          <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
+          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
+            <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="unidad" placeholder="Unidad (ej: 50 kg)" class="w-full p-4 border rounded-2xl mb-4">
+            <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
+              <option>Fertilizantes</option><option>Foliares</option><option>Protección</option><option>Herramientas</option><option>Accesorios</option>
+            </select>
+            <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
+            <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
+          </div>`;
+      } else if (seccion === 'productos') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><div id="lista-productos" class="grid grid-cols-1 gap-6"></div>`;
+        cargarProductos();
+      }
     }
 
-    // Funciones completas de Agregar, Editar, Eliminar, Buscar, Stock
-    // ... (implementación completa)
+    async function guardarProducto() {
+      const nombre = document.getElementById('nombre').value;
+      const precio = parseFloat(document.getElementById('precio').value);
+      const unidad = document.getElementById('unidad').value;
+      const categoria = document.getElementById('categoria').value;
+      const file = document.getElementById('imagen').files[0];
+
+      if (!nombre || !precio) return alert("Faltan campos");
+
+      try {
+        let imageUrl = "https://picsum.photos/id/201/600/400";
+        if (file) {
+          const ref = storage.ref('productos/' + Date.now() + '_' + file.name);
+          await ref.put(file);
+          imageUrl = await ref.getDownloadURL();
+        }
+
+        await db.collection('productos').add({
+          nombre, precio, unidad, categoria, imageUrl, fecha: new Date()
+        });
+
+        alert("✅ Producto guardado");
+        mostrarSeccion('productos');
+      } catch(e) {
+        alert("Error: " + e.message);
+      }
+    }
+
+    async function cargarProductos() {
+      const snapshot = await db.collection('productos').get();
+      const container = document.getElementById('lista-productos');
+      container.innerHTML = '';
+
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        const div = document.createElement('div');
+        div.className = "bg-white p-6 rounded-3xl shadow";
+        div.innerHTML = `
+          <img src="${p.imageUrl}" class="w-full h-40 object-cover rounded-2xl mb-4">
+          <h3 class="font-semibold">${p.nombre}</h3>
+          <p class="text-green-600 font-bold">Q${p.precio}</p>
+          <button onclick="eliminarProducto('${doc.id}')" class="text-red-600 mt-4">Eliminar</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function eliminarProducto(id) {
+      if (confirm("¿Eliminar este producto?")) {
+        await db.collection('productos').doc(id).delete();
+        cargarProductos();
+      }
+    }
+
+    function logout() {
+      auth.signOut().then(() => window.location.reload());
+    }
+
+    window.onload = () => {
+      auth.onAuthStateChanged(user => {
+        if (user) mostrarSeccion('dashboard');
+        else {
+          document.getElementById('main-content').innerHTML = `Pantalla de login...`;
+        }
+      });
+    };
   </script>
 </body>
 </html>
