@@ -52,11 +52,16 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
 
+    let productoEditando = null;
+
     function mostrarSeccion(seccion) {
       const content = document.getElementById('main-content');
+      
       if (seccion === 'dashboard') {
         content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1><p class="mt-8">Bienvenido al Panel de AGROMAX</p>`;
-      } else if (seccion === 'agregar') {
+      } 
+      else if (seccion === 'agregar') {
+        productoEditando = null;
         content.innerHTML = `
           <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
           <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
@@ -69,8 +74,12 @@
             <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
             <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
           </div>`;
-      } else if (seccion === 'productos') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><div id="lista-productos" class="grid grid-cols-1 gap-6"></div>`;
+      } 
+      else if (seccion === 'productos') {
+        content.innerHTML = `
+          <h1 class="text-3xl font-bold mb-6">Productos Registrados</h1>
+          <input id="busqueda" placeholder="Buscar productos..." class="w-full p-4 border rounded-2xl mb-6" onkeyup="buscarProductos()">
+          <div id="lista-productos" class="grid grid-cols-1 gap-6"></div>`;
         cargarProductos();
       }
     }
@@ -82,7 +91,7 @@
       const categoria = document.getElementById('categoria').value;
       const file = document.getElementById('imagen').files[0];
 
-      if (!nombre || !precio) return alert("Faltan campos");
+      if (!nombre || !precio) return alert("Faltan campos obligatorios");
 
       try {
         let imageUrl = "https://picsum.photos/id/201/600/400";
@@ -92,34 +101,71 @@
           imageUrl = await ref.getDownloadURL();
         }
 
-        await db.collection('productos').add({
-          nombre, precio, unidad, categoria, imageUrl, fecha: new Date()
-        });
+        if (productoEditando) {
+          await db.collection('productos').doc(productoEditando).update({nombre, precio, unidad, categoria, imageUrl});
+          alert("✅ Producto actualizado");
+        } else {
+          await db.collection('productos').add({nombre, precio, unidad, categoria, imageUrl, fecha: new Date()});
+          alert("✅ Producto guardado");
+        }
 
-        alert("✅ Producto guardado");
         mostrarSeccion('productos');
       } catch(e) {
         alert("Error: " + e.message);
       }
     }
 
-    async function cargarProductos() {
+    async function cargarProductos(filtro = '') {
       const snapshot = await db.collection('productos').get();
       const container = document.getElementById('lista-productos');
       container.innerHTML = '';
 
       snapshot.forEach(doc => {
         const p = doc.data();
-        const div = document.createElement('div');
-        div.className = "bg-white p-6 rounded-3xl shadow";
-        div.innerHTML = `
-          <img src="${p.imageUrl}" class="w-full h-40 object-cover rounded-2xl mb-4">
-          <h3 class="font-semibold">${p.nombre}</h3>
-          <p class="text-green-600 font-bold">Q${p.precio}</p>
-          <button onclick="eliminarProducto('${doc.id}')" class="text-red-600 mt-4">Eliminar</button>
-        `;
-        container.appendChild(div);
+        if (p.nombre.toLowerCase().includes(filtro.toLowerCase())) {
+          const div = document.createElement('div');
+          div.className = "bg-white p-6 rounded-3xl shadow flex gap-6 items-center";
+          div.innerHTML = `
+            <img src="${p.imageUrl}" class="w-20 h-20 object-cover rounded-2xl">
+            <div class="flex-1">
+              <h3 class="font-semibold">${p.nombre}</h3>
+              <p class="text-green-600 font-bold">Q${p.precio} - ${p.unidad}</p>
+            </div>
+            <div>
+              <button onclick="editarProducto('${doc.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-xl mr-2">Editar</button>
+              <button onclick="eliminarProducto('${doc.id}')" class="bg-red-600 text-white px-4 py-2 rounded-xl">Eliminar</button>
+            </div>
+          `;
+          container.appendChild(div);
+        }
       });
+    }
+
+    function buscarProductos() {
+      const filtro = document.getElementById('busqueda').value;
+      cargarProductos(filtro);
+    }
+
+    async function editarProducto(id) {
+      const doc = await db.collection('productos').doc(id).get();
+      const p = doc.data();
+      productoEditando = id;
+
+      document.getElementById('main-content').innerHTML = `
+        <h1 class="text-3xl font-bold mb-6">Editar Producto</h1>
+        <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
+          <input id="nombre" value="${p.nombre}" class="w-full p-4 border rounded-2xl mb-4">
+          <input id="precio" type="number" value="${p.precio}" class="w-full p-4 border rounded-2xl mb-4">
+          <input id="unidad" value="${p.unidad}" class="w-full p-4 border rounded-2xl mb-4">
+          <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
+            <option ${p.categoria==='Fertilizantes'?'selected':''}>Fertilizantes</option>
+            <option ${p.categoria==='Foliares'?'selected':''}>Foliares</option>
+            <option ${p.categoria==='Protección'?'selected':''}>Protección</option>
+            <option ${p.categoria==='Herramientas'?'selected':''}>Herramientas</option>
+            <option ${p.categoria==='Accesorios'?'selected':''}>Accesorios</option>
+          </select>
+          <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Cambios</button>
+        </div>`;
     }
 
     async function eliminarProducto(id) {
@@ -130,16 +176,39 @@
     }
 
     function logout() {
-      auth.signOut().then(() => window.location.reload());
+      if (confirm("¿Cerrar sesión?")) {
+        auth.signOut().then(() => window.location.reload());
+      }
     }
 
     window.onload = () => {
       auth.onAuthStateChanged(user => {
         if (user) mostrarSeccion('dashboard');
-        else {
-          document.getElementById('main-content').innerHTML = `Pantalla de login...`;
-        }
+        else mostrarLogin();
       });
+    };
+
+    function mostrarLogin() {
+      document.getElementById('main-content').innerHTML = `
+        <div class="min-h-screen flex items-center justify-center">
+          <div class="bg-white p-8 rounded-3xl shadow max-w-md w-full">
+            <h1 class="text-3xl font-bold text-center mb-8">Iniciar Sesión</h1>
+            <input id="email" type="email" placeholder="Correo" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
+            <button onclick="login()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Entrar</button>
+          </div>
+        </div>`;
+    }
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const pass = document.getElementById('password').value;
+      try {
+        await auth.signInWithEmailAndPassword(email, pass);
+        mostrarSeccion('dashboard');
+      } catch(e) {
+        alert("Error: " + e.message);
+      }
     };
   </script>
 </body>
