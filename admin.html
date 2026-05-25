@@ -6,134 +6,418 @@
   <title>AGROMAX - Panel Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-100">
 
   <div id="app" class="min-h-screen"></div>
 
   <script>
-    let productos = JSON.parse(localStorage.getItem('productosAGROMAX')) || [];
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+      authDomain: "agromaxgt-app.firebaseapp.com",
+      projectId: "agromaxgt-app",
+      storageBucket: "agromaxgt-app.firebasestorage.app",
+      messagingSenderId: "648144313047",
+      appId: "1:648144313047:web:118a67464d99f2d0462e92"
+    };
 
-    function guardarEnStorage() {
-      localStorage.setItem('productosAGROMAX', JSON.stringify(productos));
-    }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Variables de sesión
+    let usuarioAutenticado = false;
+    let productos = [];
+    let cargandoProductos = false;
+
+    // Credenciales (cambiar en producción por backend)
+    const ADMIN_EMAIL = "admin@agromax.com";
+    const ADMIN_PASSWORD = "Agromax2024@Secure";
 
     function mostrarLogin() {
       document.getElementById('app').innerHTML = `
-        <div class="min-h-screen flex items-center justify-center bg-gray-100">
+        <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
           <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
             <div class="flex justify-center mb-6">
               <div class="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-white text-6xl">🌱</div>
             </div>
-            <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
-            <p class="text-center text-green-600 mb-8">Panel de Administración</p>
+            <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">AGROMAX</h1>
+            <p class="text-center text-green-600 mb-8 font-medium">Panel de Administración</p>
             
-            <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
+            <input id="email" type="email" placeholder="Correo del administrador" class="w-full p-4 border border-gray-300 rounded-2xl mb-4 focus:outline-none focus:border-green-600">
+            <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border border-gray-300 rounded-2xl mb-6 focus:outline-none focus:border-green-600">
             
-            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg transition-all">
               Ingresar al Panel
             </button>
+            
+            <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl text-xs text-yellow-800">
+              <i class="fas fa-info-circle mr-2"></i>
+              <strong>Demo:</strong> Contacta al administrador para obtener credenciales
+            </div>
           </div>
         </div>`;
     }
 
     function login() {
-      alert("✅ Bienvenido");
-      mostrarPanelPrincipal();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        alert("❌ Por favor completa todos los campos");
+        return;
+      }
+
+      // Validación de credenciales (temporal - usar backend en producción)
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        usuarioAutenticado = true;
+        mostrarPanelPrincipal();
+      } else {
+        alert("❌ Credenciales inválidas. Verifica tu correo y contraseña");
+      }
     }
 
     function mostrarPanelPrincipal() {
       document.getElementById('app').innerHTML = `
         <div class="flex h-screen">
-          <div class="w-72 bg-white border-r shadow-xl">
-            <div class="p-6 border-b bg-green-700 text-white">
+          <!-- SIDEBAR -->
+          <div class="w-72 bg-white border-r border-gray-200 shadow-xl overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 bg-green-700 text-white sticky top-0">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
                 <div>
                   <h1 class="text-2xl font-bold">AGROMAX</h1>
-                  <p class="text-xs">Administración</p>
+                  <p class="text-xs text-green-100">Administración</p>
                 </div>
               </div>
             </div>
-            <nav class="p-4 space-y-1">
-              <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
-              <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
-              <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
-              <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+            <nav class="p-4 space-y-2">
+              <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer text-gray-700 transition-all">
+                <i class="fas fa-chart-line text-green-600"></i> Dashboard
+              </a>
+              <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer text-gray-700 transition-all">
+                <i class="fas fa-plus-circle text-green-600"></i> Agregar Producto
+              </a>
+              <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer text-gray-700 transition-all">
+                <i class="fas fa-box text-green-600"></i> Ver Productos
+              </a>
+              <hr class="my-4">
+              <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 cursor-pointer transition-all">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+              </a>
             </nav>
           </div>
-          <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+
+          <!-- CONTENIDO PRINCIPAL -->
+          <div class="flex-1 overflow-auto bg-gray-50">
+            <div class="p-8" id="main-content"></div>
+          </div>
         </div>`;
+      
+      cargarProductos();
       mostrarSeccion('dashboard');
+    }
+
+    async function cargarProductos() {
+      if (cargandoProductos) return;
+      cargandoProductos = true;
+
+      try {
+        const snapshot = await db.collection('productos').orderBy('fecha', 'desc').get();
+        productos = [];
+        
+        snapshot.forEach(doc => {
+          productos.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+        
+        cargandoProductos = false;
+      } catch (e) {
+        console.error("Error cargando productos:", e);
+        alert("❌ Error al cargar productos de la base de datos");
+        cargandoProductos = false;
+      }
     }
 
     function mostrarSeccion(seccion) {
       const content = document.getElementById('main-content');
+      
       if (seccion === 'dashboard') {
-        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1>`;
+        mostrarDashboard();
       } else if (seccion === 'agregar') {
-        content.innerHTML = `
-          <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
-          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
-            <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="unidad" placeholder="Unidad" class="w-full p-4 border rounded-2xl mb-4">
-            <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
-              <option>Fertilizantes</option><option>Foliares</option><option>Protección</option><option>Herramientas</option><option>Accesorios</option>
-            </select>
-            <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
-          </div>`;
+        mostrarAgregarProducto();
       } else if (seccion === 'productos') {
-        let html = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1>`;
-        html += `<div class="bg-white rounded-3xl shadow overflow-hidden">`;
-        html += `<table class="w-full"><thead><tr class="bg-gray-50"><th class="p-4 text-left">Producto</th><th class="p-4 text-left">Categoría</th><th class="p-4 text-right">Precio</th><th class="p-4">Acciones</th></tr></thead><tbody>`;
-
-        productos.forEach(p => {
-          html += `<tr class="border-t">
-            <td class="p-4">${p.nombre}</td>
-            <td class="p-4">${p.categoria}</td>
-            <td class="p-4 text-right">Q${p.precio}</td>
-            <td class="p-4">
-              <button onclick="eliminarProducto(${p.id})" class="text-red-600">Eliminar</button>
-            </td>
-          </tr>`;
-        });
-        html += `</tbody></table></div>`;
-        document.getElementById('main-content').innerHTML = html;
+        mostrarProductos();
       }
     }
 
-    function guardarProducto() {
-      const nombre = document.getElementById('nombre').value;
-      const precio = document.getElementById('precio').value;
-      const categoria = document.getElementById('categoria').value;
+    function mostrarDashboard() {
+      const content = document.getElementById('main-content');
+      const total = productos.length;
+      const precioTotal = productos.reduce((sum, p) => sum + (p.precio || 0), 0);
+      const categorias = [...new Set(productos.map(p => p.categoria))].length;
 
-      if (!nombre) return alert("Ingresa el nombre del producto");
+      content.innerHTML = `
+        <div>
+          <h1 class="text-4xl font-bold text-gray-800 mb-8">📊 Dashboard</h1>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Total Productos -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-green-600">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 text-sm mb-1">Total de Productos</p>
+                  <h2 class="text-4xl font-bold text-green-600">${total}</h2>
+                </div>
+                <i class="fas fa-box text-5xl text-green-200"></i>
+              </div>
+            </div>
 
-      productos.push({
-        id: Date.now(),
-        nombre: nombre,
-        precio: precio || 0,
-        categoria: categoria,
-        unidad: "1 unidad"
-      });
+            <!-- Valor Total Inventario -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-blue-600">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 text-sm mb-1">Valor Total Inventario</p>
+                  <h2 class="text-4xl font-bold text-blue-600">Q${precioTotal.toFixed(2)}</h2>
+                </div>
+                <i class="fas fa-dollar-sign text-5xl text-blue-200"></i>
+              </div>
+            </div>
 
-      guardarEnStorage();
-      alert("✅ Producto guardado correctamente");
-      mostrarSeccion('productos');
+            <!-- Categorías -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-purple-600">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 text-sm mb-1">Categorías Activas</p>
+                  <h2 class="text-4xl font-bold text-purple-600">${categorias}</h2>
+                </div>
+                <i class="fas fa-tags text-5xl text-purple-200"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumen por Categoría -->
+          <div class="bg-white p-6 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">📈 Productos por Categoría</h3>
+            <div class="space-y-3">
+              ${productos.length === 0 ? 
+                '<p class="text-gray-400 text-center py-4">No hay productos aún</p>' :
+                Object.entries(
+                  productos.reduce((acc, p) => {
+                    acc[p.categoria] = (acc[p.categoria] || 0) + 1;
+                    return acc;
+                  }, {})
+                ).map(([cat, count]) => `
+                  <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-700">${cat}</span>
+                    <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold">${count}</span>
+                  </div>
+                `).join('')
+              }
+            </div>
+          </div>
+        </div>
+      `;
     }
 
-    function eliminarProducto(id) {
-      if (confirm("¿Eliminar este producto?")) {
-        productos = productos.filter(p => p.id !== id);
-        guardarEnStorage();
+    function mostrarAgregarProducto() {
+      const content = document.getElementById('main-content');
+      content.innerHTML = `
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800 mb-8">➕ Agregar Nuevo Producto</h1>
+          
+          <div class="max-w-2xl bg-white p-8 rounded-2xl shadow-lg">
+            <form onsubmit="guardarProducto(event)">
+              <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">Nombre del Producto *</label>
+                <input id="nombre" type="text" placeholder="Ej: Fertilizante NPK 20-20-20" required
+                  class="w-full p-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-200">
+              </div>
+
+              <div class="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">Precio (Q) *</label>
+                  <input id="precio" type="number" step="0.01" min="0" placeholder="150.00" required
+                    class="w-full p-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-200">
+                </div>
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">Unidad *</label>
+                  <input id="unidad" type="text" placeholder="Ej: Bolsa 25kg" required
+                    class="w-full p-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-200">
+                </div>
+              </div>
+
+              <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">Categoría *</label>
+                <select id="categoria" required
+                  class="w-full p-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-200">
+                  <option value="">-- Selecciona una categoría --</option>
+                  <option value="Fertilizantes">Fertilizantes</option>
+                  <option value="Foliares">Foliares</option>
+                  <option value="Protección">Protección (Insecticidas/Herbicidas)</option>
+                  <option value="Herramientas">Herramientas</option>
+                  <option value="Accesorios">Accesorios</option>
+                </select>
+              </div>
+
+              <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">Descripción (Opcional)</label>
+                <textarea id="descripcion" placeholder="Detalles adicionales del producto"
+                  class="w-full p-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-200" rows="3"></textarea>
+              </div>
+
+              <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-2">
+                <i class="fas fa-save"></i> Guardar Producto
+              </button>
+            </form>
+
+            <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-2xl text-sm text-blue-800">
+              <i class="fas fa-info-circle mr-2"></i>
+              <strong>Nota:</strong> Los productos se guardan automáticamente en la tienda online
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function guardarProducto(event) {
+      event.preventDefault();
+
+      const nombre = document.getElementById('nombre').value.trim();
+      const precio = parseFloat(document.getElementById('precio').value);
+      const unidad = document.getElementById('unidad').value.trim();
+      const categoria = document.getElementById('categoria').value;
+      const descripcion = document.getElementById('descripcion').value.trim();
+
+      if (!nombre || !precio || !unidad || !categoria) {
+        alert("❌ Por favor completa todos los campos requeridos");
+        return;
+      }
+
+      if (precio < 0) {
+        alert("❌ El precio no puede ser negativo");
+        return;
+      }
+
+      try {
+        await db.collection('productos').add({
+          nombre: nombre,
+          precio: precio,
+          unidad: unidad,
+          categoria: categoria,
+          descripcion: descripcion,
+          fecha: new Date(),
+          imageUrl: 'https://picsum.photos/id/201/600/400'
+        });
+
+        alert("✅ Producto guardado correctamente en la tienda");
+        document.querySelector('form').reset();
+        cargarProductos();
         mostrarSeccion('productos');
+      } catch (e) {
+        console.error("Error guardando producto:", e);
+        alert("❌ Error al guardar el producto: " + e.message);
+      }
+    }
+
+    async function mostrarProductos() {
+      const content = document.getElementById('main-content');
+      
+      if (productos.length === 0) {
+        content.innerHTML = `
+          <div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">📦 Productos Registrados</h1>
+            <div class="bg-white p-12 rounded-2xl shadow-lg text-center">
+              <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+              <p class="text-gray-500 text-lg">No hay productos registrados aún</p>
+              <button onclick="mostrarSeccion('agregar')" class="mt-4 bg-green-600 text-white px-6 py-3 rounded-2xl font-medium hover:bg-green-700">
+                <i class="fas fa-plus"></i> Agregar el primer producto
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      let html = `
+        <div>
+          <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">📦 Productos Registrados (${productos.length})</h1>
+            <button onclick="mostrarSeccion('agregar')" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-medium transition-all">
+              <i class="fas fa-plus"></i> Nuevo Producto
+            </button>
+          </div>
+          
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-gradient-to-r from-green-600 to-green-700 text-white">
+                  <th class="p-4 text-left font-semibold">Producto</th>
+                  <th class="p-4 text-left font-semibold">Categoría</th>
+                  <th class="p-4 text-left font-semibold">Unidad</th>
+                  <th class="p-4 text-right font-semibold">Precio</th>
+                  <th class="p-4 text-center font-semibold">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      productos.forEach((p, index) => {
+        const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+        html += `
+          <tr class="${rowClass} border-t border-gray-200 hover:bg-green-50 transition-all">
+            <td class="p-4 font-medium text-gray-800">${p.nombre}</td>
+            <td class="p-4">
+              <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">${p.categoria}</span>
+            </td>
+            <td class="p-4 text-gray-600">${p.unidad}</td>
+            <td class="p-4 text-right font-bold text-green-600">Q${p.precio.toFixed(2)}</td>
+            <td class="p-4 text-center">
+              <button onclick="confirmarEliminar('${p.id}', '${p.nombre}')" class="bg-red-100 hover:bg-red-600 text-red-600 hover:text-white px-3 py-2 rounded-lg transition-all font-medium">
+                <i class="fas fa-trash"></i> Eliminar
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      content.innerHTML = html;
+    }
+
+    function confirmarEliminar(id, nombre) {
+      if (confirm(`¿Estás seguro de que deseas eliminar "${nombre}"? Esta acción no se puede deshacer.`)) {
+        eliminarProducto(id);
+      }
+    }
+
+    async function eliminarProducto(id) {
+      try {
+        await db.collection('productos').doc(id).delete();
+        alert("✅ Producto eliminado correctamente");
+        cargarProductos();
+        mostrarSeccion('productos');
+      } catch (e) {
+        console.error("Error eliminando producto:", e);
+        alert("❌ Error al eliminar el producto: " + e.message);
       }
     }
 
     function logout() {
-      if (confirm("¿Cerrar sesión?")) {
+      if (confirm("¿Deseas cerrar sesión?")) {
+        usuarioAutenticado = false;
         mostrarLogin();
       }
     }
