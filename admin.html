@@ -30,17 +30,14 @@
       document.getElementById('app').innerHTML = `
         <div class="min-h-screen flex items-center justify-center bg-gray-100">
           <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
-            <div class="flex justify-center mb-6">
-              <div class="w-16 h-16 bg-green-700 rounded-3xl flex items-center justify-center text-white text-5xl">🌱</div>
+            <div class="text-center mb-8">
+              <div class="w-20 h-20 bg-green-700 mx-auto rounded-3xl flex items-center justify-center text-5xl">🌱</div>
+              <h1 class="text-3xl font-bold mt-4">AGROMAX</h1>
+              <p class="text-green-600">Panel de Administración</p>
             </div>
-            <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
-            <p class="text-center text-green-600 mb-8">Panel de Administración</p>
-            
             <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
             <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
-            
-            <button onclick="login()" 
-                    class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
               Ingresar al Panel
             </button>
           </div>
@@ -53,44 +50,30 @@
 
       try {
         await auth.signInWithEmailAndPassword(email, password);
-        mostrarPanelAdmin();
+        alert("✅ Login exitoso");
+        mostrarPanel();
       } catch (e) {
-        alert("Error al iniciar sesión: " + e.message + "\n\nVerifica que el usuario exista en Firebase Authentication");
+        alert("Error: " + e.message);
       }
     }
 
-    function mostrarPanelAdmin() {
+    function mostrarPanel() {
       document.getElementById('app').innerHTML = `
         <div class="flex h-screen">
-          <!-- Sidebar -->
-          <div class="w-72 bg-white border-r shadow-xl">
-            <div class="p-6 border-b bg-green-700 text-white">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
-                <div>
-                  <h1 class="text-2xl font-bold">AGROMAX</h1>
-                  <p class="text-xs opacity-90">Administración</p>
-                </div>
-              </div>
+          <div class="w-72 bg-white border-r shadow-xl p-6">
+            <h1 class="text-2xl font-bold text-green-700 mb-8">AGROMAX</h1>
+            <div class="space-y-3">
+              <button onclick="alert('Dashboard abierto')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-green-50">🏠 Dashboard</button>
+              <button onclick="alert('Agregar Producto')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-green-50">➕ Agregar Producto</button>
+              <button onclick="alert('Ver Productos')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-green-50">📋 Ver Productos</button>
             </div>
-            <nav class="p-4 space-y-1">
-              <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
-              <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
-              <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
-              <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
-            </nav>
+            <button onclick="logout()" class="mt-12 w-full bg-red-600 text-white py-3 rounded-2xl">Cerrar Sesión</button>
           </div>
-          <!-- Contenido -->
-          <div class="flex-1 overflow-auto p-8" id="main-content">
-            <h1 class="text-4xl font-bold">Dashboard</h1>
-            <p class="mt-8 text-gray-600">Bienvenido al Panel de Administración</p>
+          <div class="flex-1 p-10">
+            <h1 class="text-4xl font-bold">Bienvenido al Panel</h1>
+            <p class="mt-4 text-gray-600">Funciona correctamente</p>
           </div>
         </div>`;
-    }
-
-    function mostrarSeccion(seccion) {
-      const content = document.getElementById('main-content');
-      content.innerHTML = `<h1 class="text-3xl font-bold">Sección: ${seccion.toUpperCase()}</h1><p class="mt-4">Funcionalidad en desarrollo...</p>`;
     }
 
     function logout() {
@@ -99,14 +82,10 @@
       }
     }
 
-    // Iniciar
     window.onload = () => {
       auth.onAuthStateChanged(user => {
-        if (user) {
-          mostrarPanelAdmin();
-        } else {
-          mostrarLogin();
-        }
+        if (user) mostrarPanel();
+        else mostrarLogin();
       });
     };
   </script>
