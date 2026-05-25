@@ -5,33 +5,78 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAX - Panel Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
 <body class="bg-gray-100">
 
-  <div id="app" class="min-h-screen flex items-center justify-center">
-    <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full text-center">
-      <h1 class="text-4xl font-bold mb-8 text-green-700">AGROMAX</h1>
-      <p class="mb-8 text-gray-600">Panel de Administración</p>
-      
-      <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
-      <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
-      
-      <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
-        Ingresar al Panel
-      </button>
-    </div>
-  </div>
+  <div id="app" class="min-h-screen"></div>
 
   <script>
-    function login() {
-      alert("✅ Botón funciona correctamente!\n\nAhora vamos a conectar Firebase.");
+    function mostrarLogin() {
       document.getElementById('app').innerHTML = `
-        <div class="p-10 text-center">
-          <h1 class="text-4xl font-bold text-green-700">✅ Bienvenido al Panel</h1>
-          <p class="mt-4">El botón ya responde.</p>
-          <button onclick="location.reload()" class="mt-8 bg-red-600 text-white px-8 py-4 rounded-2xl">Volver</button>
+        <div class="min-h-screen flex items-center justify-center bg-gray-100">
+          <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full text-center">
+            <div class="mx-auto w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-5xl mb-6">🌱</div>
+            <h1 class="text-3xl font-bold mb-2">AGROMAX</h1>
+            <p class="text-green-600 mb-8">Panel de Administración</p>
+            
+            <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
+            
+            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+              Ingresar al Panel
+            </button>
+          </div>
         </div>`;
     }
+
+    function login() {
+      const email = document.getElementById('email').value;
+      if (email) {
+        alert("✅ Login exitoso - Bienvenido al Panel");
+        mostrarPanel();
+      } else {
+        alert("Ingresa tu correo");
+      }
+    }
+
+    function mostrarPanel() {
+      document.getElementById('app').innerHTML = `
+        <div class="flex h-screen">
+          <!-- Sidebar -->
+          <div class="w-72 bg-white border-r shadow-xl">
+            <div class="p-6 border-b bg-green-700 text-white">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
+                <div>
+                  <h1 class="text-2xl font-bold">AGROMAX</h1>
+                  <p class="text-xs">Administración</p>
+                </div>
+              </div>
+            </div>
+            <nav class="p-4 space-y-1">
+              <button onclick="alert('Dashboard')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-green-50">🏠 Dashboard</button>
+              <button onclick="alert('Agregar Producto')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-green-50">➕ Agregar Producto</button>
+              <button onclick="alert('Ver Productos')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-green-50">📋 Ver / Editar Productos</button>
+              <button onclick="logout()" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-8">🚪 Cerrar Sesión</button>
+            </nav>
+          </div>
+          <!-- Main Content -->
+          <div class="flex-1 p-10">
+            <h1 class="text-4xl font-bold text-green-700">Bienvenido al Panel de Administración</h1>
+            <p class="mt-4 text-gray-600">Todas las funciones están activas.</p>
+          </div>
+        </div>`;
+    }
+
+    function logout() {
+      if (confirm("¿Cerrar sesión?")) {
+        mostrarLogin();
+      }
+    }
+
+    // Iniciar con pantalla de login
+    window.onload = mostrarLogin;
   </script>
 </body>
 </html>
