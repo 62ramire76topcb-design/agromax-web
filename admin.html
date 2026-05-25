@@ -9,106 +9,146 @@
 </head>
 <body class="bg-gray-100">
 
-  <div class="flex h-screen">
-    <!-- Sidebar -->
-    <div class="w-72 bg-white border-r shadow-xl">
-      <div class="p-6 border-b bg-green-700 text-white">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
-          <div>
-            <h1 class="text-2xl font-bold">AGROMAX</h1>
-            <p class="text-xs opacity-90">Administración</p>
-          </div>
-        </div>
-      </div>
-      <nav class="p-4 space-y-1">
-        <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
-        <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer bg-green-50"><i class="fas fa-plus"></i> Agregar Producto</a>
-        <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-edit"></i> Editar Productos</a>
-        <a onclick="mostrarSeccion('imagenes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-images"></i> Gestionar Imágenes</a>
-        <a onclick="mostrarSeccion('pedidos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-bell"></i> Ver Pedidos WhatsApp</a>
-        <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
-      </nav>
-    </div>
-
-    <!-- Main Content -->
-    <div class="flex-1 overflow-auto" id="main-content">
-      <!-- Se carga dinámicamente -->
-    </div>
-  </div>
+  <div id="app" class="min-h-screen"></div>
 
   <script>
+    let productos = [];
+
+    function mostrarLogin() {
+      document.getElementById('app').innerHTML = `
+        <div class="min-h-screen flex items-center justify-center bg-gray-100">
+          <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
+            <div class="flex justify-center mb-6">
+              <div class="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-white text-6xl">🌱</div>
+            </div>
+            <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
+            <p class="text-center text-green-600 mb-8">Panel de Administración</p>
+            
+            <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
+            
+            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+              Ingresar al Panel
+            </button>
+          </div>
+        </div>`;
+    }
+
+    function login() {
+      alert("✅ Bienvenido al Panel de Administración");
+      mostrarPanelPrincipal();
+    }
+
+    function mostrarPanelPrincipal() {
+      document.getElementById('app').innerHTML = `
+        <div class="flex h-screen">
+          <!-- Sidebar -->
+          <div class="w-72 bg-white border-r shadow-xl">
+            <div class="p-6 border-b bg-green-700 text-white">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
+                <div>
+                  <h1 class="text-2xl font-bold">AGROMAX</h1>
+                  <p class="text-xs">Administración</p>
+                </div>
+              </div>
+            </div>
+            <nav class="p-4 space-y-1">
+              <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
+              <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
+              <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver / Editar Productos</a>
+              <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+            </nav>
+          </div>
+
+          <!-- Contenido -->
+          <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+        </div>`;
+      mostrarSeccion('dashboard');
+    }
+
     function mostrarSeccion(seccion) {
       const content = document.getElementById('main-content');
       
-      if (seccion === 'agregar') {
+      if (seccion === 'dashboard') {
+        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1><p class="mt-8">Bienvenido</p>`;
+      } else if (seccion === 'agregar') {
         content.innerHTML = `
-          <div class="p-8">
-            <h1 class="text-3xl font-bold mb-8">Agregar Nuevo Producto</h1>
-            <div class="bg-white rounded-3xl shadow p-8 max-w-2xl">
-              <div class="grid grid-cols-2 gap-6">
-                <div>
-                  <label class="block text-sm font-medium mb-2">Nombre del Producto</label>
-                  <input id="nombre" class="w-full p-4 border rounded-2xl" placeholder="Ej: Fertilizante Orgánico">
-                </div>
-                <div>
-                  <label class="block text-sm font-medium mb-2">Precio</label>
-                  <input id="precio" type="number" class="w-full p-4 border rounded-2xl" placeholder="Ej: 50">
-                </div>
-              </div>
-              <div class="mt-6">
-                <label class="block text-sm font-medium mb-2">Stock</label>
-                <input id="stock" type="number" class="w-full p-4 border rounded-2xl" placeholder="Ej: 100">
-              </div>
-              <div class="mt-6">
-                <label class="block text-sm font-medium mb-2">Categoría</label>
-                <select id="categoria" class="w-full p-4 border rounded-2xl">
-                  <option>Fertilizantes</option>
-                  <option>Foliares</option>
-                  <option>Protección</option>
-                  <option>Herramientas</option>
-                  <option>Accesorios</option>
-                </select>
-              </div>
-              <div class="mt-6">
-                <label class="block text-sm font-medium mb-2">Descripción</label>
-                <textarea id="descripcion" class="w-full p-4 border rounded-2xl h-24"></textarea>
-              </div>
-              <div class="mt-6">
-                <label class="block text-sm font-medium mb-2">Imagen del Producto</label>
-                <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl">
-              </div>
-              <div class="mt-8 flex gap-4">
-                <button onclick="guardarProducto()" class="flex-1 bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
-                <button onclick="mostrarSeccion('productos')" class="flex-1 border py-4 rounded-2xl">Cancelar</button>
-              </div>
-            </div>
+          <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
+          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
+            <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="unidad" placeholder="Unidad" class="w-full p-4 border rounded-2xl mb-4">
+            <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
+              <option>Fertilizantes</option><option>Foliares</option><option>Protección</option><option>Herramientas</option><option>Accesorios</option>
+            </select>
+            <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
           </div>`;
       } else if (seccion === 'productos') {
-        content.innerHTML = `<h1 class="text-3xl font-bold p-8">Productos Registrados (Tabla en desarrollo)</h1>`;
-      } else {
-        content.innerHTML = `<h1 class="text-3xl font-bold p-8">Sección: ${seccion}</h1>`;
+        mostrarTablaProductos();
       }
     }
 
     function guardarProducto() {
       const nombre = document.getElementById('nombre').value;
-      if (nombre) {
-        alert(`✅ Producto "${nombre}" guardado correctamente`);
-        mostrarSeccion('productos');
-      } else {
-        alert("Ingresa el nombre del producto");
+      if (!nombre) return alert("Ingresa el nombre");
+      
+      productos.push({
+        id: Date.now(),
+        nombre: nombre,
+        precio: parseFloat(document.getElementById('precio').value) || 0,
+        unidad: document.getElementById('unidad').value || "1 unidad",
+        categoria: document.getElementById('categoria').value
+      });
+      
+      alert("✅ Producto guardado correctamente");
+      mostrarSeccion('productos');
+    }
+
+    function mostrarTablaProductos() {
+      let html = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1>`;
+      html += `<div class="bg-white rounded-3xl shadow overflow-hidden">`;
+      html += `<table class="w-full"><thead class="bg-gray-50"><tr>
+        <th class="p-4 text-left">Producto</th>
+        <th class="p-4 text-left">Categoría</th>
+        <th class="p-4 text-right">Precio</th>
+        <th class="p-4 text-center">Acciones</th>
+      </tr></thead><tbody>`;
+
+      productos.forEach(p => {
+        html += `<tr class="border-t">
+          <td class="p-4">${p.nombre}</td>
+          <td class="p-4">${p.categoria}</td>
+          <td class="p-4 text-right">Q${p.precio}</td>
+          <td class="p-4 text-center">
+            <button onclick="editarProducto(${p.id})" class="text-blue-600 mx-2">Editar</button>
+            <button onclick="eliminarProducto(${p.id})" class="text-red-600">Eliminar</button>
+          </td>
+        </tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+      document.getElementById('main-content').innerHTML = html;
+    }
+
+    function editarProducto(id) {
+      alert("Editar producto ID: " + id + " (Funcionalidad en desarrollo)");
+    }
+
+    function eliminarProducto(id) {
+      if (confirm("¿Eliminar este producto?")) {
+        productos = productos.filter(p => p.id !== id);
+        mostrarTablaProductos();
       }
     }
 
     function logout() {
-      if (confirm("¿Cerrar sesión?")) {
-        window.location.reload();
+      if (confirm("¿Cerrar sesión y salir del panel?")) {
+        mostrarLogin();
       }
     }
 
-    // Iniciar
-    window.onload = () => mostrarSeccion('agregar');
+    window.onload = mostrarLogin;
   </script>
 </body>
 </html>
