@@ -24,72 +24,53 @@
       <nav class="p-4 space-y-1">
         <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
         <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
-        <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver / Editar Productos</a>
+        <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
         <a onclick="mostrarSeccion('pedidos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-bell"></i> Pedidos WhatsApp</a>
         <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
       </nav>
     </div>
 
-    <!-- Contenido Principal -->
+    <!-- Contenido -->
     <div class="flex-1 overflow-auto p-8" id="main-content"></div>
   </div>
 
   <script>
     function mostrarSeccion(seccion) {
       const content = document.getElementById('main-content');
-
+      
       if (seccion === 'dashboard') {
-        content.innerHTML = `
-          <h1 class="text-4xl font-bold mb-8">Dashboard</h1>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-3xl shadow">Total Productos<br><span class="text-5xl font-bold text-green-600">0</span></div>
-            <div class="bg-white p-6 rounded-3xl shadow">Pedidos Hoy<br><span class="text-5xl font-bold">0</span></div>
-            <div class="bg-white p-6 rounded-3xl shadow">Categorías<br><span class="text-5xl font-bold">5</span></div>
-          </div>`;
-      } 
-      else if (seccion === 'agregar') {
+        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1><p class="mt-8">Bienvenido al Panel de AGROMAX</p>`;
+      } else if (seccion === 'agregar') {
         content.innerHTML = `
           <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
           <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
             <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
             <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="unidad" placeholder="Unidad (ej: 50 kg, 1 L)" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="unidad" placeholder="Unidad (ej: 50 kg)" class="w-full p-4 border rounded-2xl mb-4">
             <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
-              <option>Fertilizantes</option>
-              <option>Foliares</option>
-              <option>Protección</option>
-              <option>Herramientas</option>
-              <option>Accesorios</option>
+              <option>Fertilizantes</option><option>Foliares</option><option>Protección</option><option>Herramientas</option><option>Accesorios</option>
             </select>
             <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
             <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
           </div>`;
-      } 
-      else if (seccion === 'productos') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><p class="text-gray-500">Funcionalidad en desarrollo...</p>`;
-      } 
-      else if (seccion === 'pedidos') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Pedidos WhatsApp</h1><p class="text-gray-500">Próximamente...</p>`;
+      } else if (seccion === 'productos') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><p class="text-gray-500">En desarrollo...</p>`;
+      } else if (seccion === 'pedidos') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Pedidos WhatsApp</h1><p class="text-gray-500">En desarrollo...</p>`;
       }
     }
 
     function guardarProducto() {
-      const nombre = document.getElementById('nombre').value;
-      if (nombre) {
-        alert(`✅ Producto "${nombre}" guardado correctamente`);
-        mostrarSeccion('productos');
-      } else {
-        alert("Por favor ingresa el nombre del producto");
-      }
+      const nombre = document.getElementById('nombre').value || "Producto sin nombre";
+      alert(`✅ Producto "${nombre}" guardado correctamente`);
     }
 
     function logout() {
-      if (confirm("¿Deseas cerrar sesión?")) {
+      if (confirm("¿Cerrar sesión?")) {
         window.location.reload();
       }
     }
 
-    // Iniciar en Dashboard
     window.onload = () => mostrarSeccion('dashboard');
   </script>
 </body>
