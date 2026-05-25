@@ -8,8 +8,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 </head>
 <body class="bg-gray-100">
 
@@ -27,8 +25,6 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
 
     function mostrarLogin() {
       document.getElementById('app').innerHTML = `
@@ -40,10 +36,11 @@
             <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
             <p class="text-center text-green-600 mb-8">Panel de Administración</p>
             
-            <input id="email" type="email" value="62ramire76topcb@gmail.com" placeholder="Correo" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="password" type="password" value="Maycol123@" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
+            <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
             
-            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+            <button onclick="login()" 
+                    class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
               Ingresar al Panel
             </button>
           </div>
@@ -52,18 +49,20 @@
 
     async function login() {
       const email = document.getElementById('email').value;
-      const pass = document.getElementById('password').value;
+      const password = document.getElementById('password').value;
+
       try {
-        await auth.signInWithEmailAndPassword(email, pass);
-        mostrarPanelPrincipal();
-      } catch(e) {
-        alert("Error: " + e.message + "\n\nVerifica que el usuario exista en Firebase Authentication");
+        await auth.signInWithEmailAndPassword(email, password);
+        mostrarPanelAdmin();
+      } catch (e) {
+        alert("Error al iniciar sesión: " + e.message + "\n\nVerifica que el usuario exista en Firebase Authentication");
       }
     }
 
-    function mostrarPanelPrincipal() {
+    function mostrarPanelAdmin() {
       document.getElementById('app').innerHTML = `
         <div class="flex h-screen">
+          <!-- Sidebar -->
           <div class="w-72 bg-white border-r shadow-xl">
             <div class="p-6 border-b bg-green-700 text-white">
               <div class="flex items-center gap-3">
@@ -81,14 +80,17 @@
               <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
             </nav>
           </div>
-          <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+          <!-- Contenido -->
+          <div class="flex-1 overflow-auto p-8" id="main-content">
+            <h1 class="text-4xl font-bold">Dashboard</h1>
+            <p class="mt-8 text-gray-600">Bienvenido al Panel de Administración</p>
+          </div>
         </div>`;
-      mostrarSeccion('dashboard');
     }
 
     function mostrarSeccion(seccion) {
       const content = document.getElementById('main-content');
-      content.innerHTML = `<h1 class="text-3xl font-bold">Sección: ${seccion}</h1><p class="mt-4 text-gray-600">Funcionalidad en desarrollo...</p>`;
+      content.innerHTML = `<h1 class="text-3xl font-bold">Sección: ${seccion.toUpperCase()}</h1><p class="mt-4">Funcionalidad en desarrollo...</p>`;
     }
 
     function logout() {
@@ -97,10 +99,14 @@
       }
     }
 
+    // Iniciar
     window.onload = () => {
       auth.onAuthStateChanged(user => {
-        if (user) mostrarPanelPrincipal();
-        else mostrarLogin();
+        if (user) {
+          mostrarPanelAdmin();
+        } else {
+          mostrarLogin();
+        }
       });
     };
   </script>
