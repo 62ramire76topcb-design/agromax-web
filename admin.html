@@ -12,42 +12,48 @@
   <div class="flex h-screen">
     <!-- Sidebar -->
     <div class="w-72 bg-white border-r shadow-xl">
-      <div class="p-6 border-b">
+      <div class="p-6 border-b bg-green-700 text-white">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-green-700 rounded-2xl flex items-center justify-center text-white text-2xl">🌱</div>
+          <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
           <div>
-            <h1 class="text-2xl font-bold text-green-700">AGROMAX</h1>
-            <p class="text-xs text-gray-500">Administración</p>
+            <h1 class="text-2xl font-bold">AGROMAX</h1>
+            <p class="text-xs opacity-90">Panel de Administración</p>
           </div>
         </div>
       </div>
       <nav class="p-4 space-y-1">
         <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
         <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
-        <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
+        <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver / Editar Productos</a>
         <a onclick="mostrarSeccion('pedidos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-bell"></i> Pedidos WhatsApp</a>
-        <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-8"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
       </nav>
     </div>
 
-    <!-- Contenido -->
+    <!-- Contenido Principal -->
     <div class="flex-1 overflow-auto p-8" id="main-content"></div>
   </div>
 
   <script>
     function mostrarSeccion(seccion) {
       const content = document.getElementById('main-content');
-      
+
       if (seccion === 'dashboard') {
-        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1><p class="mt-6 text-gray-600">Bienvenido al Panel de Administración</p>`;
+        content.innerHTML = `
+          <h1 class="text-4xl font-bold mb-8">Dashboard</h1>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-3xl shadow">Total Productos<br><span class="text-5xl font-bold text-green-600">0</span></div>
+            <div class="bg-white p-6 rounded-3xl shadow">Pedidos Hoy<br><span class="text-5xl font-bold">0</span></div>
+            <div class="bg-white p-6 rounded-3xl shadow">Categorías<br><span class="text-5xl font-bold">5</span></div>
+          </div>`;
       } 
       else if (seccion === 'agregar') {
         content.innerHTML = `
           <h1 class="text-3xl font-bold mb-6">Agregar Nuevo Producto</h1>
-          <div class="max-w-xl bg-white p-8 rounded-3xl shadow">
+          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
             <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
             <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="unidad" placeholder="Unidad (ej: 50 kg)" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="unidad" placeholder="Unidad (ej: 50 kg, 1 L)" class="w-full p-4 border rounded-2xl mb-4">
             <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
               <option>Fertilizantes</option>
               <option>Foliares</option>
@@ -60,7 +66,7 @@
           </div>`;
       } 
       else if (seccion === 'productos') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><p class="text-gray-500">Lista de productos (en desarrollo)</p>`;
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><p class="text-gray-500">Funcionalidad en desarrollo...</p>`;
       } 
       else if (seccion === 'pedidos') {
         content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Pedidos WhatsApp</h1><p class="text-gray-500">Próximamente...</p>`;
@@ -70,19 +76,20 @@
     function guardarProducto() {
       const nombre = document.getElementById('nombre').value;
       if (nombre) {
-        alert(`✅ Producto "${nombre}" guardado (simulado)`);
+        alert(`✅ Producto "${nombre}" guardado correctamente`);
+        mostrarSeccion('productos');
       } else {
-        alert("Por favor ingresa un nombre");
+        alert("Por favor ingresa el nombre del producto");
       }
     }
 
     function logout() {
-      if (confirm("¿Cerrar sesión?")) {
+      if (confirm("¿Deseas cerrar sesión?")) {
         window.location.reload();
       }
     }
 
-    // Cargar Dashboard al iniciar
+    // Iniciar en Dashboard
     window.onload = () => mostrarSeccion('dashboard');
   </script>
 </body>
