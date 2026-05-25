@@ -13,7 +13,7 @@
 </head>
 <body class="bg-gray-100">
 
-  <div id="app"></div>
+  <div id="app" class="min-h-screen"></div>
 
   <script>
     const firebaseConfig = {
@@ -35,13 +35,17 @@
         <div class="min-h-screen flex items-center justify-center bg-gray-100">
           <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
             <div class="flex justify-center mb-6">
-              <div class="w-16 h-16 bg-green-700 rounded-3xl flex items-center justify-center text-white text-4xl">🌱</div>
+              <div class="w-16 h-16 bg-green-700 rounded-3xl flex items-center justify-center text-white text-5xl">🌱</div>
             </div>
             <h1 class="text-3xl font-bold text-center mb-2">AGROMAX</h1>
-            <p class="text-center text-green-600 mb-8">Iniciar Sesión - Administrador</p>
-            <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
-            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold">Entrar al Panel</button>
+            <p class="text-center text-green-600 mb-8">Panel de Administración</p>
+            
+            <input id="email" type="email" value="62ramire76topcb@gmail.com" placeholder="Correo" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="password" type="password" value="Maycol123@" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
+            
+            <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+              Ingresar al Panel
+            </button>
           </div>
         </div>`;
     }
@@ -51,13 +55,13 @@
       const pass = document.getElementById('password').value;
       try {
         await auth.signInWithEmailAndPassword(email, pass);
-        mostrarPanelAdmin();
+        mostrarPanelPrincipal();
       } catch(e) {
-        alert("Error: " + e.message);
+        alert("Error: " + e.message + "\n\nVerifica que el usuario exista en Firebase Authentication");
       }
     }
 
-    function mostrarPanelAdmin() {
+    function mostrarPanelPrincipal() {
       document.getElementById('app').innerHTML = `
         <div class="flex h-screen">
           <div class="w-72 bg-white border-r shadow-xl">
@@ -73,7 +77,7 @@
             <nav class="p-4 space-y-1">
               <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
               <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
-              <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver / Editar Productos</a>
+              <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
               <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
             </nav>
           </div>
@@ -84,74 +88,18 @@
 
     function mostrarSeccion(seccion) {
       const content = document.getElementById('main-content');
-      if (seccion === 'dashboard') {
-        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1>`;
-      } else if (seccion === 'agregar') {
-        content.innerHTML = `
-          <h1 class="text-3xl font-bold mb-6">Agregar Producto</h1>
-          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
-            <input id="nombre" placeholder="Nombre" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="precio" type="number" placeholder="Precio" class="w-full p-4 border rounded-2xl mb-4">
-            <input id="unidad" placeholder="Unidad" class="w-full p-4 border rounded-2xl mb-4">
-            <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
-              <option>Fertilizantes</option><option>Foliares</option><option>Protección</option><option>Herramientas</option><option>Accesorios</option>
-            </select>
-            <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
-            <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
-          </div>`;
-      } else if (seccion === 'productos') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos</h1><div id="lista" class="grid grid-cols-1 gap-6"></div>`;
-        cargarProductos();
-      }
-    }
-
-    async function guardarProducto() {
-      const nombre = document.getElementById('nombre').value;
-      const precio = parseFloat(document.getElementById('precio').value);
-      if (!nombre || !precio) return alert("Completa los campos");
-
-      try {
-        await db.collection('productos').add({
-          nombre,
-          precio,
-          fecha: new Date()
-        });
-        alert("✅ Producto guardado correctamente");
-        mostrarSeccion('productos');
-      } catch(e) {
-        alert("Error al guardar");
-      }
-    }
-
-    async function cargarProductos() {
-      const snapshot = await db.collection('productos').get();
-      const container = document.getElementById('lista');
-      container.innerHTML = '';
-      snapshot.forEach(doc => {
-        const p = doc.data();
-        const div = document.createElement('div');
-        div.className = "bg-white p-6 rounded-3xl shadow";
-        div.innerHTML = `<h3>${p.nombre}</h3><p>Q${p.precio}</p><button onclick="eliminarProducto('${doc.id}')" class="text-red-600">Eliminar</button>`;
-        container.appendChild(div);
-      });
-    }
-
-    async function eliminarProducto(id) {
-      if (confirm("¿Eliminar?")) {
-        await db.collection('productos').doc(id).delete();
-        cargarProductos();
-      }
+      content.innerHTML = `<h1 class="text-3xl font-bold">Sección: ${seccion}</h1><p class="mt-4 text-gray-600">Funcionalidad en desarrollo...</p>`;
     }
 
     function logout() {
-      auth.signOut().then(() => {
-        window.location.reload();
-      });
+      if (confirm("¿Cerrar sesión?")) {
+        auth.signOut().then(() => mostrarLogin());
+      }
     }
 
     window.onload = () => {
       auth.onAuthStateChanged(user => {
-        if (user) mostrarPanelAdmin();
+        if (user) mostrarPanelPrincipal();
         else mostrarLogin();
       });
     };
