@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAX | Catálogo Guatemala</title>
-  
+
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -18,36 +18,36 @@
   <header class="bg-white shadow-md sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 bg-green-700 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">🌱</div>
+        <div class="w-12 h-12 bg-green-700 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg">🌱</div>
         <div>
           <h1 class="text-2xl font-bold text-green-700">AGROMAX</h1>
-          <p class="text-xs text-green-600">Producimos con pasión, trabajamos por el futuro</p>
+          <p class="text-xs text-green-600 font-semibold tracking-wide">Producimos con pasión, trabajamos por el futuro</p>
         </div>
       </div>
-      <button onclick="contactarWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-medium flex items-center gap-2">
+      <button onclick="contactarWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-semibold flex items-center gap-2 shadow-md transition-all">
         <i class="fab fa-whatsapp"></i> WhatsApp
       </button>
     </div>
   </header>
 
   <!-- HERO -->
-  <section class="hero-bg h-screen flex items-center text-white">
-    <div class="max-w-7xl mx-auto px-6 text-center">
-      <h2 class="text-5xl md:text-6xl font-bold mb-4">Catálogo de Insumos Agrícolas</h2>
-      <p class="text-2xl mb-10">Producimos con pasión, trabajamos por el futuro</p>
+  <section class="relative hero-bg min-h-[60vh] flex items-center text-white bg-gradient-to-br from-green-700 to-green-500">
+    <div class="absolute inset-0 bg-green-800 bg-opacity-20"></div>
+    <div class="relative max-w-7xl mx-auto px-6 py-24 w-full text-center z-10">
+      <h2 class="text-5xl md:text-6xl font-black mb-4 drop-shadow">Catálogo de Insumos Agrícolas</h2>
+      <p class="text-2xl mb-10 font-light">Producimos con pasión, trabajamos por el futuro</p>
       <button onclick="document.getElementById('categorias').scrollIntoView({behavior:'smooth'})" 
-              class="bg-green-600 hover:bg-green-700 px-12 py-6 rounded-3xl text-xl font-bold">
-        Ver Catálogos
+              class="bg-green-700 hover:bg-green-800 px-12 py-6 rounded-3xl text-xl font-bold shadow-xl ring-2 ring-white/50 transition transform hover:scale-105">
+        <i class="fas fa-seedling mr-2"></i> Ver Catálogos
       </button>
     </div>
   </section>
 
   <!-- CATÁLOGOS DINÁMICOS -->
-  <section id="categorias" class="py-12 bg-white">
+  <section id="categorias" class="py-16 bg-white">
     <div class="max-w-7xl mx-auto px-6">
-      <h2 class="text-4xl font-bold text-center mb-10">Nuestros Catálogos</h2>
-      
-      <div id="catalogo-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
+      <h2 class="text-4xl font-black text-center mb-10 text-green-700">Nuestros Catálogos</h2>
+      <div id="catalogo-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10"></div>
     </div>
   </section>
 
@@ -67,50 +67,86 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    async function cargarProductos() {
+    // Loader animado
+    function loadingHTML() {
+      return `
+      <div class="col-span-full flex flex-col items-center justify-center py-20 text-green-700 text-xl gap-3">
+        <span class="loader mb-4"><i class="fas fa-spinner fa-spin fa-3x"></i></span>
+        Cargando productos...
+      </div>
+      `;
+    }
+
+    function emptyHTML() {
+      return `
+        <div class="col-span-full flex flex-col items-center py-16">
+          <i class="fas fa-inbox text-6xl mb-4 text-gray-200"></i>
+          <p class="text-lg text-gray-500 mb-2">No hay productos disponibles en este momento.</p>
+          <p class="mb-6 text-gray-400">Comunícate para agregar productos o vuelve más tarde.</p>
+          <button onclick="contactarWhatsApp()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-2xl font-semibold flex items-center gap-2 shadow-md transition-all">
+            <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
+          </button>
+        </div>
+      `;
+    }
+
+    function cardHTML(p) {
+      return `
+        <div class="relative product-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl hover:shadow-2xl transition group">
+          <div class="h-48 w-full relative">
+            <img src="${p.imageUrl || 'https://picsum.photos/id/201/600/400'}" alt="${p.nombre}" class="h-48 w-full object-cover transition group-hover:scale-105" />
+            <span class="absolute right-3 top-3 z-20 bg-green-700 text-white text-xs font-bold px-3 py-1 rounded-xl shadow group-hover:bg-green-800">
+              ${p.categoria || 'Sin categoría'}
+            </span>
+          </div>
+          <div class="p-6 flex flex-col justify-between h-48">
+            <h3 class="font-black text-xl mb-1 capitalize text-gray-800">${p.nombre}</h3>
+            <div class="text-xs text-gray-500 mb-1">${p.unidad}</div>
+            ${p.descripcion ? `<div class="text-gray-600 text-sm mb-3 line-clamp-2">${p.descripcion}</div>` : ''}
+            <p class="text-green-600 font-extrabold text-2xl mt-auto">Q${Number(p.precio).toLocaleString('es-GT', {minimumFractionDigits:2})}</p>
+            <button onclick="contactarWhatsApp('${p.nombre}')" class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-2xl text-base font-semibold flex items-center justify-center gap-2 transition-all">
+              <i class="fab fa-whatsapp"></i> Pedir por WhatsApp
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Sincronización en tiempo real
+    function escucharProductosRealtime() {
       const grid = document.getElementById('catalogo-productos');
-      grid.innerHTML = '<p class="col-span-full text-center py-12">Cargando productos...</p>';
+      grid.innerHTML = loadingHTML();
 
-      try {
-        const snapshot = await db.collection('productos').orderBy('fecha', 'desc').get();
-        
+      db.collection('productos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
         grid.innerHTML = '';
-
         if (snapshot.empty) {
-          grid.innerHTML = '<p class="col-span-full text-center py-12 text-gray-500">No hay productos aún. Agrega desde el panel admin.</p>';
+          grid.innerHTML = emptyHTML();
           return;
         }
-
         snapshot.forEach(doc => {
           const p = doc.data();
-          const card = document.createElement('div');
-          card.className = "product-card bg-white rounded-3xl overflow-hidden border border-gray-100";
-          card.innerHTML = `
-            <img src="${p.imageUrl || 'https://picsum.photos/id/201/600/400'}" class="w-full h-48 object-cover">
-            <div class="p-6">
-              <h3 class="font-semibold text-lg">${p.nombre}</h3>
-              <p class="text-sm text-gray-500">${p.unidad}</p>
-              <p class="text-green-600 font-bold text-3xl mt-4">Q${p.precio}</p>
-              <button onclick="contactarWhatsApp('${p.nombre}')" 
-                      class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl text-sm font-medium">
-                Pedir por WhatsApp
-              </button>
-            </div>
-          `;
-          grid.appendChild(card);
+          grid.innerHTML += cardHTML(p);
         });
-      } catch(e) {
-        console.error(e);
-        grid.innerHTML = '<p class="col-span-full text-center text-red-500">Error al cargar productos</p>';
-      }
+      }, (e) => {
+        grid.innerHTML = `<div class='col-span-full text-center text-red-500 py-20'>Error de conexión. Intenta nuevamente (${e.message})</div>`;
+      });
     }
 
     function contactarWhatsApp(nombre) {
-      const mensaje = `Quiero información sobre: ${nombre}`;
+      let mensaje = 'Hola, quiero más información.';
+      if (nombre) mensaje = `Hola, quiero información sobre: ${nombre}`;
       window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
     }
 
-    window.onload = cargarProductos;
+    // Loader CSS para el spinner
+    const style = document.createElement('style');
+    style.textContent = `
+      .loader { display: inline-block; animation:spin 1s linear infinite; }
+      @keyframes spin { 100% { transform:rotate(360deg); } }
+    `;
+    document.head.appendChild(style);
+
+    window.onload = escucharProductosRealtime;
   </script>
 </body>
 </html>
