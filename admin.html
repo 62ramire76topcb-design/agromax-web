@@ -6,10 +6,13 @@
   <title>AGROMAX - Panel Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+  
+  <!-- reCAPTCHA -->
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body class="bg-gray-100">
 
@@ -27,8 +30,6 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
 
     function mostrarLogin() {
       document.getElementById('app').innerHTML = `
@@ -43,6 +44,11 @@
             <input id="email" type="email" value="62ramire76topcb@gmail.com" class="w-full p-4 border rounded-2xl mb-4">
             <input id="password" type="password" value="Maycol123@" class="w-full p-4 border rounded-2xl mb-6">
             
+            <!-- reCAPTCHA -->
+            <div class="flex justify-center my-6">
+              <div class="g-recaptcha" data-sitekey="6Leb7QUtAAAAAMNRBIjmhq4lUbzpo1FRE2SCeGX"></div>
+            </div>
+            
             <button onclick="login()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
               Ingresar al Panel
             </button>
@@ -51,14 +57,22 @@
     }
 
     async function login() {
+      const response = grecaptcha.getResponse();
+      if (!response) {
+        alert("❌ Por favor completa el reCAPTCHA");
+        return;
+      }
+
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+
       try {
         await auth.signInWithEmailAndPassword(email, password);
-        alert("✅ Bienvenido al Panel");
+        alert("✅ Login exitoso - Bienvenido al Panel");
         mostrarPanelPrincipal();
       } catch (e) {
         alert("Error: " + e.message);
+        grecaptcha.reset(); // Reinicia reCAPTCHA
       }
     }
 
@@ -82,60 +96,14 @@
               <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
             </nav>
           </div>
-          <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+          <div class="flex-1 overflow-auto p-8" id="main-content">
+            <h1 class="text-4xl font-bold">Bienvenido al Panel</h1>
+          </div>
         </div>`;
-      mostrarSeccion('dashboard');
     }
 
     function mostrarSeccion(seccion) {
-      const content = document.getElementById('main-content');
-      if (seccion === 'dashboard') {
-        content.innerHTML = `<h1 class="text-4xl font-bold">Dashboard</h1>`;
-      } else if (seccion === 'agregar') {
-        mostrarFormularioAgregar();
-      } else if (seccion === 'productos') {
-        mostrarTablaProductos();
-      }
-    }
-
-    function mostrarFormularioAgregar() {
-      document.getElementById('main-content').innerHTML = `
-        <h1 class="text-3xl font-bold mb-8">Agregar Nuevo Producto</h1>
-        <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
-          <input id="nombre" placeholder="Nombre del producto" class="w-full p-4 border rounded-2xl mb-4">
-          <input id="precio" type="number" placeholder="Precio en Quetzales" class="w-full p-4 border rounded-2xl mb-4">
-          <input id="unidad" placeholder="Unidad (ej: 50 kg)" class="w-full p-4 border rounded-2xl mb-4">
-          <select id="categoria" class="w-full p-4 border rounded-2xl mb-6">
-            <option>Fertilizantes</option><option>Foliares</option><option>Protección</option><option>Herramientas</option><option>Accesorios</option>
-          </select>
-          <input id="imagen" type="file" accept="image/*" class="w-full p-4 border rounded-2xl mb-6">
-          <button onclick="guardarProducto()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Guardar Producto</button>
-        </div>`;
-    }
-
-    async function guardarProducto() {
-      const nombre = document.getElementById('nombre').value;
-      const precio = parseFloat(document.getElementById('precio').value);
-      if (!nombre || !precio) return alert("Faltan campos");
-
-      try {
-        let imageUrl = "https://picsum.photos/id/201/600/400";
-        const file = document.getElementById('imagen').files[0];
-        if (file) {
-          const ref = storage.ref('productos/' + Date.now() + '_' + file.name);
-          await ref.put(file);
-          imageUrl = await ref.getDownloadURL();
-        }
-
-        await db.collection('productos').add({
-          nombre, precio, unidad: document.getElementById('unidad').value, categoria: document.getElementById('categoria').value, imageUrl, fecha: new Date()
-        });
-
-        alert("✅ Producto guardado");
-        mostrarSeccion('productos');
-      } catch (e) {
-        alert("Error: " + e.message);
-      }
+      document.getElementById('main-content').innerHTML = `<h1 class="text-3xl font-bold">Sección: ${seccion}</h1>`;
     }
 
     function logout() {
@@ -144,12 +112,7 @@
       }
     }
 
-    window.onload = () => {
-      auth.onAuthStateChanged(user => {
-        if (user) mostrarPanelPrincipal();
-        else mostrarLogin();
-      });
-    };
+    window.onload = mostrarLogin;
   </script>
 </body>
 </html>
