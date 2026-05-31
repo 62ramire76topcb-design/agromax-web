@@ -137,6 +137,40 @@
       }
     }
 
+    function mostrarTablaProductos() {
+      const content = document.getElementById('main-content');
+      content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><div id="tabla-productos" class="bg-white rounded-3xl shadow overflow-hidden"></div>`;
+
+      db.collection('productos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
+        let html = `<table class="w-full"><thead><tr class="bg-gray-100"><th class="p-4 text-left">Producto</th><th class="p-4 text-left">Categoría</th><th class="p-4 text-right">Precio</th><th class="p-4">Acciones</th></tr></thead><tbody>`;
+
+        snapshot.forEach(doc => {
+          const p = doc.data();
+          html += `<tr class="border-t">
+            <td class="p-4">${p.nombre}</td>
+            <td class="p-4">${p.categoria || ''}</td>
+            <td class="p-4 text-right">Q${p.precio}</td>
+            <td class="p-4">
+              <button onclick="editarProducto('${doc.id}')" class="text-blue-600 mx-2">Editar</button>
+              <button onclick="eliminarProducto('${doc.id}')" class="text-red-600">Eliminar</button>
+            </td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+        document.getElementById('tabla-productos').innerHTML = html;
+      });
+    }
+
+    function editarProducto(id) {
+      alert("Editar producto " + id + " (en desarrollo avanzado)");
+    }
+
+    async function eliminarProducto(id) {
+      if (confirm("¿Eliminar este producto?")) {
+        await db.collection('productos').doc(id).delete();
+      }
+    }
+
     function logout() {
       if (confirm("¿Cerrar sesión?")) {
         auth.signOut().then(() => mostrarLogin());
