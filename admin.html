@@ -59,7 +59,7 @@
       // Ejecutar reCAPTCHA Enterprise antes del login
       grecaptcha.enterprise.ready(async () => {
         try {
-          const token = await grecaptcha.enterprise.execute('6Leb7tQuTAAAAMNRBiZm hq41UbzpolFRE2SCeGX', {action: 'login'});
+          const token = await grecaptcha.enterprise.execute('6Leb7tQuTAAAAMNRBiZmhq41UbzpolFRE2SCeGX', {action: 'login'});
           // Puedes enviar este token a un backend para validación avanzada si quieres.
           // Aquí, solo ejecutamos el login si reCAPTCHA responde:
           firebase.auth().signInWithEmailAndPassword(email, password)
