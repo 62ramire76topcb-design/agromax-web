@@ -28,19 +28,27 @@
   </header>
 
   <!-- HERO -->
-  <section class="bg-gradient-to-br from-green-700 to-green-800 text-white py-24">
+  <section class="bg-gradient-to-br from-green-700 to-green-800 text-white py-20">
     <div class="max-w-7xl mx-auto px-6 text-center">
       <h2 class="text-5xl md:text-6xl font-bold mb-4">Catálogo de Insumos Agrícolas</h2>
-      <p class="text-2xl mb-10">AGROMAXGTM - Calidad profesional para el campo guatemalteco</p>
+      <p class="text-xl md:text-2xl mb-8">Calidad profesional para el campo guatemalteco</p>
+      
+      <!-- Buscador -->
+      <div class="max-w-xl mx-auto">
+        <div class="relative">
+          <input id="buscador" type="text" placeholder="Buscar productos..." 
+                 class="w-full pl-12 pr-6 py-4 rounded-3xl border-0 focus:ring-2 focus:ring-white text-gray-900 text-lg"
+                 onkeyup="filtrarProductos()">
+          <i class="fas fa-search absolute left-5 top-4 text-gray-400"></i>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- CATEGORÍAS CON PESTAÑAS -->
-  <section class="py-12 bg-white">
+  <!-- FILTROS -->
+  <section class="py-8 bg-white border-b">
     <div class="max-w-7xl mx-auto px-6">
-      <h2 class="text-4xl font-bold text-center mb-8">Nuestros Catálogos</h2>
-      
-      <div class="flex flex-wrap justify-center gap-3 mb-10" id="tabs">
+      <div class="flex flex-wrap gap-3 justify-center" id="tabs">
         <button onclick="filtrarCategoria('all')" class="cat-tab active px-8 py-3 rounded-2xl font-semibold border-2 border-green-600 text-green-600">Todos</button>
         <button onclick="filtrarCategoria('Fertilizantes')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Fertilizantes</button>
         <button onclick="filtrarCategoria('Foliares')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Foliares</button>
@@ -48,13 +56,19 @@
         <button onclick="filtrarCategoria('Herramientas')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Herramientas</button>
         <button onclick="filtrarCategoria('Accesorios')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Accesorios</button>
       </div>
+    </div>
+  </section>
 
+  <!-- PRODUCTOS -->
+  <section class="py-12">
+    <div class="max-w-7xl mx-auto px-6">
       <div id="lista-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
     </div>
   </section>
 
   <script>
     const whatsappNumber = "50242664744";
+    let allProductos = [];
 
     const firebaseConfig = {
       apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
@@ -68,32 +82,57 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let allProductos = [];
+    function contactarWhatsApp(nombre = '') {
+      const mensaje = nombre ? `Hola AGROMAXGTM, estoy interesado en: ${nombre}` : 'Hola AGROMAXGTM, quiero más información';
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    }
 
     function filtrarCategoria(categoria) {
       document.querySelectorAll('.cat-tab').forEach(tab => tab.classList.remove('active'));
       event.currentTarget.classList.add('active');
+      renderProductos(categoria);
+    }
 
+    function filtrarProductos() {
+      const termino = document.getElementById('buscador').value.toLowerCase().trim();
+      renderProductos('all', termino);
+    }
+
+    function renderProductos(categoria = 'all', busqueda = '') {
       const grid = document.getElementById('lista-productos');
       grid.innerHTML = '';
 
-      const filtered = categoria === 'all' ? allProductos : allProductos.filter(p => p.categoria === categoria);
+      let filtered = allProductos;
+
+      if (categoria !== 'all') {
+        filtered = filtered.filter(p => p.categoria === categoria);
+      }
+
+      if (busqueda) {
+        filtered = filtered.filter(p => 
+          p.nombre.toLowerCase().includes(busqueda) || 
+          (p.categoria && p.categoria.toLowerCase().includes(busqueda))
+        );
+      }
 
       if (filtered.length === 0) {
-        grid.innerHTML = '<p class="col-span-full text-center py-12 text-gray-500">No hay productos en esta categoría.</p>';
+        grid.innerHTML = `<p class="col-span-full text-center py-20 text-gray-500 text-xl">No se encontraron productos</p>`;
         return;
       }
 
       filtered.forEach(p => {
         const card = document.createElement('div');
-        card.className = "bg-white rounded-3xl overflow-hidden shadow hover:shadow-xl transition-all";
+        card.className = "bg-white rounded-3xl overflow-hidden shadow hover:shadow-2xl transition-all duration-300";
         card.innerHTML = `
-          <img src="${p.imageUrl || 'https://picsum.photos/id/201/600/400'}" class="w-full h-48 object-cover">
+          <div class="relative">
+            <img src="${p.imageUrl || 'https://picsum.photos/id/201/600/400'}" class="w-full h-52 object-cover">
+            <span class="absolute top-4 right-4 bg-green-700 text-white text-xs font-bold px-4 py-1.5 rounded-2xl">${p.categoria || 'General'}</span>
+          </div>
           <div class="p-6">
-            <h3 class="font-semibold text-lg">${p.nombre}</h3>
-            <p class="text-sm text-gray-500">${p.unidad || ''}</p>
-            <p class="text-green-600 font-bold text-3xl mt-3">Q${p.precio}</p>
-            <button onclick="contactarWhatsApp('${p.nombre}')" class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl font-medium">
+            <h3 class="font-bold text-lg mb-1">${p.nombre}</h3>
+            <p class="text-sm text-gray-500 mb-3">${p.unidad || ''}</p>
+            <p class="text-3xl font-extrabold text-green-600">Q${Number(p.precio).toLocaleString('es-GT')}</p>
+            <button onclick="contactarWhatsApp('${p.nombre}')" class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-medium transition-all">
               Pedir por WhatsApp
             </button>
           </div>
@@ -102,18 +141,11 @@
       });
     }
 
-    function contactarWhatsApp(nombre) {
-      const mensaje = `Hola AGROMAXGTM, estoy interesado en: ${nombre}`;
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
-    }
-
     window.onload = () => {
       db.collection('productos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
         allProductos = [];
-        snapshot.forEach(doc => {
-          allProductos.push(doc.data());
-        });
-        filtrarCategoria('all');
+        snapshot.forEach(doc => allProductos.push(doc.data()));
+        renderProductos('all');
       });
     };
   </script>
