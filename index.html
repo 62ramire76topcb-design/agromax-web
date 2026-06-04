@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AGROMAXGTM | Catálogo Guatemala</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -18,67 +18,56 @@
         <div class="w-12 h-12 bg-green-700 rounded-2xl flex items-center justify-center text-white text-3xl font-bold">🌱</div>
         <div>
           <h1 class="text-2xl font-bold text-green-700">AGROMAXGTM</h1>
-          <p class="text-xs text-green-600">Producimos con pasión, trabajamos por el futuro</p>
         </div>
       </div>
       
       <div class="flex items-center gap-4">
-        <button onclick="toggleCart()" class="relative flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-6 py-3 rounded-2xl font-medium transition">
+        <button onclick="toggleCart()" class="relative flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-6 py-3 rounded-2xl font-medium">
           <i class="fas fa-shopping-cart text-2xl"></i>
           <span id="cart-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full">0</span>
-          Carrito
         </button>
-        <button onclick="contactarWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-medium flex items-center gap-2">
-          <i class="fab fa-whatsapp text-xl"></i> WhatsApp
+        <button onclick="contactarWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-2xl font-medium flex items-center gap-2">
+          <i class="fab fa-whatsapp text-xl"></i>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- HERO -->
+  <!-- HERO + BUSCADOR -->
   <section class="bg-gradient-to-br from-green-700 to-green-800 text-white py-16">
     <div class="max-w-7xl mx-auto px-6 text-center">
-      <h2 class="text-5xl md:text-6xl font-bold mb-4">Catálogo de Insumos Agrícolas</h2>
-      <p class="text-xl mb-8">Calidad profesional para el campo guatemalteco</p>
-      
-      <div class="max-w-2xl mx-auto">
-        <div class="relative">
-          <input id="buscador" type="text" placeholder="Buscar productos..." 
-                 class="w-full pl-14 pr-6 py-5 rounded-3xl text-lg focus:outline-none text-gray-900"
-                 onkeyup="filtrarProductos()">
-          <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        </div>
+      <h2 class="text-5xl font-bold mb-4">Catálogo de Insumos Agrícolas</h2>
+      <div class="max-w-2xl mx-auto mt-8">
+        <input id="buscador" type="text" placeholder="Buscar productos..." 
+               class="w-full pl-14 pr-6 py-5 rounded-3xl text-lg focus:outline-none text-gray-900"
+               onkeyup="filtrarProductos()">
       </div>
     </div>
   </section>
 
   <!-- FILTROS -->
-  <section class="py-8 bg-white border-b">
-    <div class="max-w-7xl mx-auto px-6">
-      <div class="flex flex-wrap gap-3 justify-center" id="tabs">
-        <button onclick="filtrarCategoria('all')" class="cat-tab active px-8 py-3 rounded-2xl font-semibold border-2 border-green-600 text-green-600">Todos</button>
-        <button onclick="filtrarCategoria('Fertilizantes')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Fertilizantes</button>
-        <button onclick="filtrarCategoria('Foliares')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Foliares</button>
-        <button onclick="filtrarCategoria('Protección')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Protección</button>
-        <button onclick="filtrarCategoria('Herramientas')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Herramientas</button>
-        <button onclick="filtrarCategoria('Accesorios')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Accesorios</button>
-      </div>
+  <section class="py-8 bg-white border-b overflow-x-auto">
+    <div class="px-6 flex gap-3 whitespace-nowrap pb-2">
+      <button onclick="filtrarCategoria('all')" class="cat-tab active px-8 py-3 rounded-2xl font-semibold border-2 border-green-600 text-green-600">Todos</button>
+      <button onclick="filtrarCategoria('Fertilizantes')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Fertilizantes</button>
+      <button onclick="filtrarCategoria('Foliares')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Foliares</button>
+      <button onclick="filtrarCategoria('Protección')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Protección</button>
+      <button onclick="filtrarCategoria('Herramientas')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Herramientas</button>
+      <button onclick="filtrarCategoria('Accesorios')" class="cat-tab px-8 py-3 rounded-2xl font-semibold border-2">Accesorios</button>
     </div>
   </section>
 
   <!-- PRODUCTOS -->
-  <section class="py-12">
-    <div class="max-w-7xl mx-auto px-6">
-      <div id="lista-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
-    </div>
+  <section class="py-12 px-4">
+    <div id="lista-productos" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
   </section>
 
-  <!-- CARRITO MODAL -->
-  <div id="cart-modal" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center">
-    <div class="bg-white w-full max-w-2xl rounded-3xl max-h-[90vh] flex flex-col">
+  <!-- CARRITO -->
+  <div id="cart-modal" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-end md:items-center justify-center">
+    <div class="bg-white w-full max-w-2xl rounded-t-3xl md:rounded-3xl max-h-[90vh] flex flex-col">
       <div class="p-6 border-b flex justify-between items-center">
         <h2 class="text-2xl font-bold">🛒 Tu Carrito</h2>
-        <button onclick="toggleCart()" class="text-4xl text-gray-400 hover:text-black">×</button>
+        <button onclick="toggleCart()" class="text-4xl text-gray-400">×</button>
       </div>
       <div id="cart-items" class="flex-1 overflow-auto p-6 space-y-6"></div>
       <div class="p-6 border-t">
@@ -119,11 +108,8 @@
       const producto = allProductos[index];
       const existente = carrito.find(item => item.nombre === producto.nombre);
       
-      if (existente) {
-        existente.cantidad++;
-      } else {
-        carrito.push({ ...producto, cantidad: 1 });
-      }
+      if (existente) existente.cantidad++;
+      else carrito.push({ ...producto, cantidad: 1 });
 
       localStorage.setItem('carritoAGROMAXGTM', JSON.stringify(carrito));
       actualizarContador();
@@ -131,9 +117,8 @@
     }
 
     function toggleCart() {
-      const modal = document.getElementById('cart-modal');
-      modal.classList.toggle('hidden');
-      if (!modal.classList.contains('hidden')) mostrarCarrito();
+      document.getElementById('cart-modal').classList.toggle('hidden');
+      if (!document.getElementById('cart-modal').classList.contains('hidden')) mostrarCarrito();
     }
 
     function mostrarCarrito() {
@@ -154,15 +139,15 @@
             <div class="text-right">
               <p class="font-bold">Q${subtotal}</p>
               <div class="flex gap-3 mt-4">
-                <button onclick="cambiarCantidad(${index}, -1)" class="px-4 py-1 border rounded-lg">-</button>
-                <span class="px-4">${item.cantidad}</span>
-                <button onclick="cambiarCantidad(${index}, 1)" class="px-4 py-1 border rounded-lg">+</button>
+                <button onclick="cambiarCantidad(${index}, -1)" class="w-8 h-8 border rounded-lg">-</button>
+                <span>${item.cantidad}</span>
+                <button onclick="cambiarCantidad(${index}, 1)" class="w-8 h-8 border rounded-lg">+</button>
               </div>
             </div>
           </div>`;
       });
 
-      container.innerHTML = html || `<p class="text-center py-16 text-gray-400">Tu carrito está vacío</p>`;
+      container.innerHTML = html || `<p class="text-center py-16 text-gray-400">El carrito está vacío</p>`;
       document.getElementById('cart-total').textContent = `Q${total.toFixed(2)}`;
     }
 
@@ -187,19 +172,16 @@
 
       mensaje += `\nTotal: Q${total.toFixed(2)}`;
 
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
-      
-      carrito = [];
-      localStorage.setItem('carritoAGROMAXGTM', JSON.stringify(carrito));
-      actualizarContador();
-      toggleCart();
+      // Mejor manejo para móviles
+      window.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`;
     }
 
     function contactarWhatsApp(nombre = '') {
       const msg = nombre ? `Hola, quiero información sobre: ${nombre}` : 'Hola AGROMAXGTM, quiero más información';
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+      window.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     }
 
+    // Resto de funciones (filtros, render, etc.)
     function filtrarCategoria(cat) {
       document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
       event.currentTarget.classList.add('active');
