@@ -31,6 +31,7 @@
     const storage = firebase.storage();
 
     let productoEditandoId = null;
+    let productosCSV = [];
 
     function mostrarLogin() {
       document.getElementById('app').innerHTML = `
@@ -79,6 +80,7 @@
             <nav class="p-4 space-y-1">
               <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
               <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
+              <a onclick="mostrarSeccion('masiva')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-file-csv"></i> Subida Masiva</a>
               <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
               <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
             </nav>
@@ -95,16 +97,16 @@
         productoEditandoId = null;
         mostrarFormularioAgregar();
       }
+      else if (seccion === 'masiva') mostrarSubidaMasiva();
       else if (seccion === 'productos') mostrarTablaProductos();
     }
 
-    // ==================== DASHBOARD PROFESIONAL ====================
+    // ==================== DASHBOARD ====================
     async function mostrarDashboard() {
       const content = document.getElementById('main-content');
       content.innerHTML = `
         <h1 class="text-4xl font-bold text-green-700 mb-8">Dashboard - AGROMAXGTM</h1>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10" id="stats-cards"></div>
-        
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div class="bg-white rounded-3xl shadow p-6">
             <h3 class="text-xl font-bold mb-4">Últimos Productos</h3>
@@ -120,49 +122,32 @@
       let productos = [];
       snapshot.forEach(doc => productos.push({id: doc.id, ...doc.data()}));
 
-      // Estadísticas
       const total = productos.length;
       const valorTotal = productos.reduce((sum, p) => sum + (p.precio || 0), 0);
       const categorias = [...new Set(productos.map(p => p.categoria))].length;
 
       document.getElementById('stats-cards').innerHTML = `
-        <div class="bg-white p-6 rounded-3xl shadow">
-          <p class="text-gray-500">Total Productos</p>
-          <p class="text-5xl font-bold text-green-600">${total}</p>
-        </div>
-        <div class="bg-white p-6 rounded-3xl shadow">
-          <p class="text-gray-500">Valor Total</p>
-          <p class="text-5xl font-bold text-blue-600">Q${valorTotal.toLocaleString('es-GT')}</p>
-        </div>
-        <div class="bg-white p-6 rounded-3xl shadow">
-          <p class="text-gray-500">Categorías</p>
-          <p class="text-5xl font-bold text-purple-600">${categorias}</p>
-        </div>
-        <div class="bg-white p-6 rounded-3xl shadow">
-          <p class="text-gray-500">Último Agregado</p>
-          <p class="text-xl font-semibold">${productos[0] ? productos[0].nombre : 'Ninguno'}</p>
-        </div>
+        <div class="bg-white p-6 rounded-3xl shadow"><p class="text-gray-500">Total Productos</p><p class="text-5xl font-bold text-green-600">${total}</p></div>
+        <div class="bg-white p-6 rounded-3xl shadow"><p class="text-gray-500">Valor Total</p><p class="text-5xl font-bold text-blue-600">Q${valorTotal.toLocaleString('es-GT')}</p></div>
+        <div class="bg-white p-6 rounded-3xl shadow"><p class="text-gray-500">Categorías</p><p class="text-5xl font-bold text-purple-600">${categorias}</p></div>
+        <div class="bg-white p-6 rounded-3xl shadow"><p class="text-gray-500">Último Agregado</p><p class="text-xl font-semibold">${productos[0] ? productos[0].nombre : 'Ninguno'}</p></div>
       `;
 
-      // Últimos productos
       let ultHTML = '';
       productos.slice(0, 5).forEach(p => {
         ultHTML += `<div class="flex justify-between py-2 border-b"><span>${p.nombre}</span><span class="font-bold">Q${p.precio}</span></div>`;
       });
       document.getElementById('ultimos-productos').innerHTML = ultHTML || '<p class="text-gray-400">No hay productos</p>';
 
-      // Por categoría
-      const porCat = productos.reduce((acc, p) => {
-        acc[p.categoria] = (acc[p.categoria] || 0) + 1;
-        return acc;
-      }, {});
+      const porCat = productos.reduce((acc, p) => { acc[p.categoria] = (acc[p.categoria] || 0) + 1; return acc; }, {});
       let catHTML = '';
       Object.entries(porCat).forEach(([cat, cant]) => {
-        catHTML += `<div class="flex justify-between items-center"><span>${cat}</span><span class="bg-green-100 px-4 py-1 rounded-full text-green-700 font-bold">${cant}</span></div>`;
+        catHTML += `<div class="flex justify-between"><span>${cat}</span><span class="bg-green-100 px-4 py-1 rounded-full text-green-700 font-bold">${cant}</span></div>`;
       });
       document.getElementById('resumen-categorias').innerHTML = catHTML;
     }
 
+    // ==================== FORMULARIO AGREGAR / EDITAR ====================
     function mostrarFormularioAgregar(producto = null) {
       productoEditandoId = producto ? producto.id : null;
       const titulo = producto ? "Editar Producto" : "Agregar Nuevo Producto";
@@ -195,12 +180,15 @@
         let imageUrl = "https://picsum.photos/id/201/600/400";
         const file = document.getElementById('imagen').files[0];
         if (file) {
-          const ref = storage.ref('productos/' + Date.now() + file.name);
+          const ref = storage.ref('productos/' + Date.now() + '_' + file.name);
           await ref.put(file);
           imageUrl = await ref.getDownloadURL();
         }
 
-        const data = { nombre, precio, unidad: document.getElementById('unidad').value, categoria: document.getElementById('categoria').value, imageUrl, fecha: new Date() };
+        const data = {
+          nombre, precio, unidad: document.getElementById('unidad').value,
+          categoria: document.getElementById('categoria').value, imageUrl, fecha: new Date()
+        };
 
         if (productoEditandoId) {
           await db.collection('productos').doc(productoEditandoId).update(data);
@@ -215,6 +203,7 @@
       }
     }
 
+    // ==================== TABLA DE PRODUCTOS ====================
     function mostrarTablaProductos() {
       const content = document.getElementById('main-content');
       content.innerHTML = `<h1 class="text-3xl font-bold mb-6">Productos Registrados</h1><div id="tabla-productos" class="bg-white rounded-3xl shadow overflow-hidden"></div>`;
@@ -249,6 +238,72 @@
     async function eliminarProducto(id) {
       if (confirm("¿Eliminar este producto permanentemente?")) {
         await db.collection('productos').doc(id).delete();
+      }
+    }
+
+    // ==================== SUBIDA MASIVA ====================
+    function mostrarSubidaMasiva() {
+      document.getElementById('main-content').innerHTML = `
+        <h1 class="text-3xl font-bold mb-8">Subida Masiva de Productos (CSV)</h1>
+        <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
+          <div class="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center mb-6">
+            <i class="fas fa-file-csv text-6xl text-green-500 mb-4"></i>
+            <p class="font-medium">Selecciona un archivo CSV</p>
+            <input id="csvFile" type="file" accept=".csv" class="hidden" onchange="previsualizarCSV()">
+            <button onclick="document.getElementById('csvFile').click()" class="mt-4 bg-green-600 text-white px-8 py-3 rounded-2xl">
+              Seleccionar Archivo CSV
+            </button>
+          </div>
+          <div id="preview-csv" class="hidden"></div>
+          <button id="btn-subir-masivo" onclick="subirProductosMasivos()" class="hidden w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Subir Todos los Productos</button>
+        </div>
+        <p class="text-center text-sm text-gray-500 mt-6">Formato recomendado: nombre,precio,unidad,categoria</p>
+      `;
+    }
+
+    function previsualizarCSV() {
+      const file = document.getElementById('csvFile').files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const lines = e.target.result.split('\n');
+        productosCSV = [];
+        let previewHTML = `<h3 class="font-bold mb-3">Vista previa (${lines.length-1} productos)</h3><table class="w-full text-sm"><thead><tr class="bg-gray-100"><th class="p-2">Nombre</th><th>Precio</th><th>Unidad</th><th>Categoría</th></tr></thead><tbody>`;
+
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          const [nombre, precio, unidad, categoria] = lines[i].split(',').map(s => s.trim());
+          if (nombre && precio) {
+            productosCSV.push({nombre, precio: parseFloat(precio), unidad: unidad || '1 unidad', categoria: categoria || 'Sin categoría'});
+            previewHTML += `<tr><td class="p-2">${nombre}</td><td>Q${precio}</td><td>${unidad||''}</td><td>${categoria||''}</td></tr>`;
+          }
+        }
+        previewHTML += `</tbody></table>`;
+        document.getElementById('preview-csv').innerHTML = previewHTML;
+        document.getElementById('preview-csv').classList.remove('hidden');
+        document.getElementById('btn-subir-masivo').classList.remove('hidden');
+      };
+      reader.readAsText(file);
+    }
+
+    async function subirProductosMasivos() {
+      if (confirm(`¿Subir ${productosCSV.length} productos?`)) {
+        let exitosos = 0;
+        for (let p of productosCSV) {
+          try {
+            await db.collection('productos').add({
+              nombre: p.nombre,
+              precio: p.precio,
+              unidad: p.unidad,
+              categoria: p.categoria,
+              imageUrl: 'https://picsum.photos/id/201/600/400',
+              fecha: new Date()
+            });
+            exitosos++;
+          } catch (e) {}
+        }
+        alert(`✅ ${exitosos} productos subidos correctamente`);
+        mostrarSeccion('productos');
       }
     }
 
