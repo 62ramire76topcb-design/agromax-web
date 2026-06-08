@@ -42,12 +42,9 @@
       <p class="text-xl mb-8">Calidad profesional para el campo guatemalteco</p>
       
       <div class="max-w-2xl mx-auto">
-        <div class="relative">
-          <input id="buscador" type="text" placeholder="Buscar productos..." 
-                 class="w-full pl-14 pr-6 py-5 rounded-3xl text-lg focus:outline-none text-gray-900"
-                 onkeyup="filtrarProductos()">
-          <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        </div>
+        <input id="buscador" type="text" placeholder="Buscar productos..." 
+               class="w-full pl-14 pr-6 py-5 rounded-3xl text-lg focus:outline-none text-gray-900"
+               onkeyup="filtrarProductos()">
       </div>
     </div>
   </section>
@@ -73,7 +70,7 @@
     </div>
   </section>
 
-  <!-- CARRITO MODAL -->
+  <!-- CARRITO -->
   <div id="cart-modal" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center">
     <div class="bg-white w-full max-w-2xl rounded-3xl max-h-[90vh] flex flex-col">
       <div class="p-6 border-b flex justify-between items-center">
@@ -170,7 +167,7 @@
     }
 
     async function enviarPedidoWhatsApp() {
-      if (carrito.length === 0) return;
+      if (carrito.length === 0) return alert("El carrito está vacío");
 
       let mensaje = "Hola AGROMAXGTM, este es mi pedido:\n\n";
       let total = 0;
@@ -185,7 +182,7 @@
 
       mensaje += `\nTotal: Q${total.toFixed(2)}`;
 
-      // Guardar pedido en Firebase
+      // Guardar en Firebase antes de abrir WhatsApp
       try {
         await db.collection('pedidos').add({
           cliente: "Cliente WhatsApp",
@@ -198,8 +195,10 @@
         console.error("Error guardando pedido:", e);
       }
 
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`, '_blank');
-      
+      // Abrir WhatsApp (mejor compatibilidad)
+      window.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`;
+
+      // Limpiar carrito
       carrito = [];
       localStorage.setItem('carritoAGROMAXGTM', JSON.stringify(carrito));
       actualizarContador();
@@ -208,7 +207,7 @@
 
     function contactarWhatsApp(nombre = '') {
       const msg = nombre ? `Hola, quiero información sobre: ${nombre}` : 'Hola AGROMAXGTM, quiero más información';
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+      window.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     }
 
     function filtrarCategoria(cat) {
