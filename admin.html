@@ -100,7 +100,7 @@
       else if (seccion === 'productos') mostrarTablaProductos();
     }
 
-    // ==================== DASHBOARD ====================
+    // DASHBOARD
     async function mostrarDashboard() {
       const content = document.getElementById('main-content');
       content.innerHTML = `
@@ -304,7 +304,7 @@
       db.collection('pedidos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
         let html = '';
         if (snapshot.empty) {
-          html = `<p class="text-center py-20 text-gray-400">Aún no hay pedidos registrados</p>`;
+          html = `<p class="text-center py-20 text-gray-400">Aún no hay pedidos</p>`;
         } else {
           snapshot.forEach(doc => {
             const p = doc.data();
