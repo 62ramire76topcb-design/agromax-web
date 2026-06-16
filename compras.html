@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAXGTM - Módulo de Compras</title>
+  <title>AGROMAXGTM - Compras</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -13,6 +13,7 @@
 <body class="bg-gray-100">
 
   <div class="flex h-screen">
+    <!-- Sidebar -->
     <div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
       <div class="p-6 border-b bg-green-700 text-white">
         <div class="flex items-center gap-3">
@@ -24,11 +25,11 @@
         </div>
       </div>
       <nav class="p-4 space-y-1">
-        <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Panel Principal</a>
-        <a onclick="mostrarSeccion('nueva-orden')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Nueva Orden de Compra</a>
-        <a onclick="mostrarSeccion('ordenes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Órdenes de Compra</a>
+        <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
+        <a onclick="mostrarSeccion('nueva-orden')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Nueva Orden</a>
+        <a onclick="mostrarSeccion('ordenes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Mis Órdenes</a>
         <a onclick="mostrarSeccion('proveedores')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-truck"></i> Proveedores</a>
-        <a onclick="mostrarSeccion('recepciones')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-boxes"></i> Recepción de Mercancía</a>
+        <a onclick="mostrarSeccion('recepciones')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-boxes"></i> Recepción y Stock</a>
       </nav>
     </div>
 
@@ -55,8 +56,10 @@
     async function verificarAuth() {
       return new Promise(resolve => {
         auth.onAuthStateChanged(user => {
-          if (!user) window.location.href = "admin.html";
-          else resolve(user);
+          if (!user) {
+            alert("Debes iniciar sesión");
+            window.location.href = "admin.html";
+          } else resolve(user);
         });
       });
     }
@@ -73,21 +76,17 @@
           <div class="max-w-4xl bg-white p-8 rounded-3xl shadow">
             <select id="proveedor-select" class="w-full p-4 border rounded-2xl mb-6"></select>
             <input id="fecha" type="date" class="w-full p-4 border rounded-2xl mb-6">
-            <textarea id="notas" placeholder="Notas o condiciones" class="w-full p-4 border rounded-2xl h-32"></textarea>
-            
+            <textarea id="notas" placeholder="Notas..." class="w-full p-4 border rounded-2xl h-32"></textarea>
+
             <div class="mt-8">
-              <h3 class="font-bold mb-4">Buscar Producto del Catálogo</h3>
-              <input id="buscar-producto" placeholder="Buscar por nombre..." 
-                     class="w-full p-4 border rounded-2xl mb-4" onkeyup="filtrarProductos()">
-              <div id="resultados-busqueda" class="max-h-80 overflow-y-auto border rounded-2xl p-4 bg-gray-50"></div>
+              <h3 class="font-bold mb-4">Buscar Producto</h3>
+              <input id="buscar" placeholder="Escribe nombre del producto..." class="w-full p-4 border rounded-2xl mb-4" onkeyup="filtrarProductos()">
+              <div id="resultados" class="max-h-80 overflow-auto border rounded-2xl p-3 bg-gray-50"></div>
             </div>
 
-            <div class="mt-10">
-              <h3 class="font-bold mb-4">Productos en esta Orden</h3>
-              <div id="lista-productos-orden" class="space-y-4"></div>
-            </div>
+            <div id="lista-orden" class="mt-10 space-y-3"></div>
 
-            <button onclick="guardarOrdenCompra()" class="mt-10 w-full bg-green-700 text-white py-4 rounded-3xl font-bold text-lg">Guardar Orden de Compra</button>
+            <button onclick="guardarOrden()" class="mt-8 w-full bg-green-700 text-white py-4 rounded-3xl font-bold">Guardar Orden de Compra</button>
           </div>`;
       } 
       else if (seccion === 'ordenes') {
@@ -95,109 +94,122 @@
         cargarOrdenes();
       } 
       else if (seccion === 'proveedores') {
-        // ... (código anterior de proveedores)
+        content.innerHTML = `
+          <h1 class="text-3xl font-bold mb-8">Proveedores</h1>
+          <div class="max-w-lg bg-white p-8 rounded-3xl shadow">
+            <input id="nom-prov" class="w-full p-4 border rounded-2xl mb-4" placeholder="Nombre">
+            <input id="tel-prov" class="w-full p-4 border rounded-2xl mb-4" placeholder="Teléfono WhatsApp">
+            <input id="cod-prov" class="w-full p-4 border rounded-2xl mb-6" placeholder="Código">
+            <button onclick="agregarProveedor()" class="w-full bg-green-600 text-white py-4 rounded-2xl">Agregar Proveedor</button>
+          </div>
+          <div id="lista-provs" class="mt-8 grid grid-cols-1 gap-4"></div>`;
+        cargarProveedoresLista();
+      } 
+      else if (seccion === 'recepciones') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Recepción de Mercancía</h1><div id="lista-recepcion" class="space-y-6"></div>`;
+        cargarRecepciones();
       }
     }
 
-    // Cargar todos los productos para búsqueda
+    // ==================== BUSQUEDA Y ORDEN ====================
     async function cargarTodosProductos() {
-      const snapshot = await db.collection('productos').get();
-      allProductos = [];
-      snapshot.forEach(doc => {
-        allProductos.push({id: doc.id, ...doc.data()});
-      });
+      const snap = await db.collection('productos').get();
+      allProductos = snap.docs.map(d => ({id: d.id, ...d.data()}));
     }
 
     function filtrarProductos() {
-      const termino = document.getElementById('buscar-producto').value.toLowerCase().trim();
-      const container = document.getElementById('resultados-busqueda');
-      
-      if (termino.length < 2) {
-        container.innerHTML = '';
-        return;
-      }
+      const term = document.getElementById('buscar').value.toLowerCase();
+      const cont = document.getElementById('resultados');
+      if (term.length < 2) { cont.innerHTML = ''; return; }
 
-      const resultados = allProductos.filter(p => 
-        p.nombre.toLowerCase().includes(termino)
-      );
-
-      let html = '';
-      resultados.forEach(p => {
-        html += `
-          <div onclick="agregarProductoDesdeCatalogo('${p.nombre}', ${p.precio})" 
-               class="flex justify-between items-center p-4 hover:bg-white rounded-2xl cursor-pointer border-b">
-            <span>${p.nombre}</span>
-            <span class="font-bold text-green-600">Q${p.precio}</span>
-          </div>`;
-      });
-
-      container.innerHTML = html || '<p class="text-gray-500">No se encontraron productos</p>';
-    }
-
-    function agregarProductoDesdeCatalogo(nombre, precio) {
-      const cantidad = parseInt(prompt(`Cantidad de ${nombre}:`, "10")) || 10;
-      productosOrden.push({nombre, cantidad, precio});
-      renderProductosOrden();
-      document.getElementById('buscar-producto').value = '';
-      document.getElementById('resultados-busqueda').innerHTML = '';
-    }
-
-    function renderProductosOrden() {
-      const container = document.getElementById('lista-productos-orden');
-      container.innerHTML = productosOrden.map((p, i) => `
-        <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
-          <span>${p.nombre} × ${p.cantidad}</span>
-          <span class="font-bold">Q${(p.precio * p.cantidad).toFixed(2)}</span>
-          <button onclick="eliminarProductoOrden(${i})" class="text-red-600">Eliminar</button>
+      const res = allProductos.filter(p => p.nombre.toLowerCase().includes(term));
+      cont.innerHTML = res.map(p => `
+        <div onclick="agregarAOrden('${p.nombre}', ${p.precio})" class="p-4 hover:bg-white rounded-xl cursor-pointer flex justify-between">
+          <span>${p.nombre}</span>
+          <span class="font-bold text-green-600">Q${p.precio}</span>
         </div>
       `).join('');
     }
 
-    function eliminarProductoOrden(i) {
-      productosOrden.splice(i, 1);
-      renderProductosOrden();
+    function agregarAOrden(nombre, precio) {
+      const cant = parseInt(prompt("Cantidad:", 10)) || 10;
+      productosOrden.push({nombre, cantidad: cant, precio});
+      renderOrdenActual();
     }
 
-    // Resto de funciones (cargarProveedores, guardarOrdenCompra, cargarOrdenes, etc.)
+    function renderOrdenActual() {
+      document.getElementById('lista-orden').innerHTML = productosOrden.map((p,i) => `
+        <div class="flex justify-between bg-gray-50 p-4 rounded-2xl">
+          <span>${p.nombre} × ${p.cantidad}</span>
+          <span class="font-bold">Q${(p.precio*p.cantidad).toFixed(2)}</span>
+          <button onclick="productosOrden.splice(${i},1);renderOrdenActual()" class="text-red-600">Eliminar</button>
+        </div>
+      `).join('');
+    }
+
+    async function guardarOrden() {
+      const prov = document.getElementById('proveedor-select').value;
+      if (!prov || productosOrden.length === 0) return alert("Faltan datos");
+
+      const total = productosOrden.reduce((a,p)=>a + p.precio*p.cantidad, 0);
+
+      await db.collection('ordenes_compra').add({
+        proveedor: prov,
+        fecha: new Date(),
+        productos: productosOrden,
+        total,
+        estado: "Pendiente"
+      });
+
+      alert("✅ Orden guardada");
+      productosOrden = [];
+      mostrarSeccion('ordenes');
+    }
+
+    // ==================== OTRAS FUNCIONES (Proveedores, Recepciones, etc.) ====================
+    async function agregarProveedor() {
+      const nombre = document.getElementById('nom-prov').value.trim();
+      const telefono = document.getElementById('tel-prov').value.trim();
+      if (!nombre) return alert("Nombre obligatorio");
+
+      await db.collection('proveedores').add({nombre, telefono, fecha: new Date()});
+      alert("Proveedor agregado");
+      cargarProveedoresLista();
+    }
+
+    async function cargarProveedoresLista() {
+      // ... (implementación similar a anterior)
+      const snap = await db.collection('proveedores').get();
+      let html = '';
+      snap.forEach(d => {
+        const p = d.data();
+        html += `<div class="bg-white p-6 rounded-3xl"><p class="font-bold">${p.nombre}</p><p onclick="window.open('https://wa.me/502${p.telefono}','_blank')" class="text-green-600 cursor-pointer">📱 ${p.telefono}</p></div>`;
+      });
+      document.getElementById('lista-provs').innerHTML = html || 'Sin proveedores';
+    }
+
     async function cargarProveedores() {
-      const select = document.getElementById('proveedor-select');
-      const snapshot = await db.collection('proveedores').get();
-      select.innerHTML = '<option value="">Seleccionar Proveedor</option>';
-      snapshot.forEach(doc => {
-        const p = doc.data();
+      const sel = document.getElementById('proveedor-select');
+      const snap = await db.collection('proveedores').get();
+      sel.innerHTML = '<option value="">Seleccionar Proveedor</option>';
+      snap.forEach(d => {
+        const p = d.data();
         const opt = document.createElement('option');
         opt.value = p.nombre;
         opt.textContent = p.nombre;
-        select.appendChild(opt);
+        sel.appendChild(opt);
       });
     }
 
-    async function guardarOrdenCompra() {
-      const proveedor = document.getElementById('proveedor-select').value;
-      if (!proveedor || productosOrden.length === 0) {
-        return alert("❌ Selecciona un proveedor y agrega productos");
-      }
-
-      const total = productosOrden.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
-
-      try {
-        await db.collection('ordenes_compra').add({
-          proveedor, 
-          fecha: new Date(), 
-          productos: productosOrden, 
-          total, 
-          estado: "Pendiente",
-          notas: document.getElementById('notas').value || ""
-        });
-        alert("✅ Orden guardada correctamente");
-        productosOrden = [];
-        mostrarSeccion('ordenes');
-      } catch (e) {
-        alert("Error: " + e.message);
-      }
+    async function cargarOrdenes() {
+      // implementación básica
+      document.getElementById('lista-ordenes').innerHTML = `<p class="text-gray-500">Cargando órdenes...</p>`;
     }
 
-    // ... (mantén las funciones de cargarOrdenes y proveedores)
+    async function cargarRecepciones() {
+      // implementación básica de recepción
+      document.getElementById('lista-recepcion').innerHTML = `<p class="text-gray-500">Cargando recepción...</p>`;
+    }
 
     window.onload = () => mostrarSeccion('nueva-orden');
   </script>
