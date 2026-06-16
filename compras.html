@@ -19,16 +19,16 @@
           <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
           <div>
             <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-            <p class="text-xs">Módulo de Compras + Stock</p>
+            <p class="text-xs">Módulo de Compras</p>
           </div>
         </div>
       </div>
       <nav class="p-4 space-y-1">
         <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Panel Principal</a>
-        <a onclick="mostrarSeccion('nueva-orden')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Nueva Orden</a>
-        <a onclick="mostrarSeccion('ordenes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Órdenes</a>
-        <a onclick="mostrarSeccion('recepciones')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-boxes"></i> Recepción + Stock</a>
+        <a onclick="mostrarSeccion('nueva-orden')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Nueva Orden de Compra</a>
+        <a onclick="mostrarSeccion('ordenes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Órdenes de Compra</a>
         <a onclick="mostrarSeccion('proveedores')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-truck"></i> Proveedores</a>
+        <a onclick="mostrarSeccion('recepciones')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-boxes"></i> Recepción de Mercancía</a>
       </nav>
     </div>
 
@@ -50,6 +50,7 @@
     const db = firebase.firestore();
 
     let productosOrden = [];
+    let allProductos = [];
 
     async function verificarAuth() {
       return new Promise(resolve => {
@@ -65,71 +66,140 @@
       const content = document.getElementById('main-content');
 
       if (seccion === 'nueva-orden') {
-        // ... (código anterior de nueva orden)
-      } 
-      else if (seccion === 'recepciones') {
+        await cargarProveedores();
+        await cargarTodosProductos();
         content.innerHTML = `
-          <h1 class="text-3xl font-bold mb-8">Recepción de Mercancía + Actualización de Stock</h1>
-          <div id="lista-ordenes-pendientes" class="space-y-6"></div>`;
-        cargarOrdenesParaRecepcion();
+          <h1 class="text-3xl font-bold mb-8">Nueva Orden de Compra</h1>
+          <div class="max-w-4xl bg-white p-8 rounded-3xl shadow">
+            <select id="proveedor-select" class="w-full p-4 border rounded-2xl mb-6"></select>
+            <input id="fecha" type="date" class="w-full p-4 border rounded-2xl mb-6">
+            <textarea id="notas" placeholder="Notas o condiciones" class="w-full p-4 border rounded-2xl h-32"></textarea>
+            
+            <div class="mt-8">
+              <h3 class="font-bold mb-4">Buscar Producto del Catálogo</h3>
+              <input id="buscar-producto" placeholder="Buscar por nombre..." 
+                     class="w-full p-4 border rounded-2xl mb-4" onkeyup="filtrarProductos()">
+              <div id="resultados-busqueda" class="max-h-80 overflow-y-auto border rounded-2xl p-4 bg-gray-50"></div>
+            </div>
+
+            <div class="mt-10">
+              <h3 class="font-bold mb-4">Productos en esta Orden</h3>
+              <div id="lista-productos-orden" class="space-y-4"></div>
+            </div>
+
+            <button onclick="guardarOrdenCompra()" class="mt-10 w-full bg-green-700 text-white py-4 rounded-3xl font-bold text-lg">Guardar Orden de Compra</button>
+          </div>`;
       } 
-      // ... otras secciones
+      else if (seccion === 'ordenes') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Órdenes de Compra</h1><div id="lista-ordenes" class="space-y-6"></div>`;
+        cargarOrdenes();
+      } 
+      else if (seccion === 'proveedores') {
+        // ... (código anterior de proveedores)
+      }
     }
 
-    // ==================== RECEPCIÓN CON ACTUALIZACIÓN DE STOCK ====================
-    async function cargarOrdenesParaRecepcion() {
-      const container = document.getElementById('lista-ordenes-pendientes');
-      
-      db.collection('ordenes_compra').where('estado', '==', 'Pendiente').onSnapshot(snapshot => {
-        let html = '';
-        snapshot.forEach(doc => {
-          const o = doc.data();
-          html += `
-            <div class="bg-white rounded-3xl shadow p-6">
-              <div class="flex justify-between">
-                <div>
-                  <p class="font-bold">${o.proveedor}</p>
-                  <p class="text-sm text-gray-500">${o.fecha.toDate().toLocaleString('es-GT')}</p>
-                </div>
-                <button onclick="recibirOrden('${doc.id}', ${JSON.stringify(o.productos)})" 
-                        class="bg-green-600 text-white px-6 py-2 rounded-2xl">Recibir Mercancía</button>
-              </div>
-              <div class="mt-4 text-sm">
-                ${o.productos.map(p => `${p.nombre} × ${p.cantidad}`).join(' • ')}
-              </div>
-            </div>`;
-        });
-        container.innerHTML = html || `<p class="text-center py-12 text-gray-400">No hay órdenes pendientes de recepción</p>`;
+    // Cargar todos los productos para búsqueda
+    async function cargarTodosProductos() {
+      const snapshot = await db.collection('productos').get();
+      allProductos = [];
+      snapshot.forEach(doc => {
+        allProductos.push({id: doc.id, ...doc.data()});
       });
     }
 
-    async function recibirOrden(ordenId, productos) {
-      if (!confirm("¿Confirmar recepción de esta orden y actualizar stock?")) return;
+    function filtrarProductos() {
+      const termino = document.getElementById('buscar-producto').value.toLowerCase().trim();
+      const container = document.getElementById('resultados-busqueda');
+      
+      if (termino.length < 2) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const resultados = allProductos.filter(p => 
+        p.nombre.toLowerCase().includes(termino)
+      );
+
+      let html = '';
+      resultados.forEach(p => {
+        html += `
+          <div onclick="agregarProductoDesdeCatalogo('${p.nombre}', ${p.precio})" 
+               class="flex justify-between items-center p-4 hover:bg-white rounded-2xl cursor-pointer border-b">
+            <span>${p.nombre}</span>
+            <span class="font-bold text-green-600">Q${p.precio}</span>
+          </div>`;
+      });
+
+      container.innerHTML = html || '<p class="text-gray-500">No se encontraron productos</p>';
+    }
+
+    function agregarProductoDesdeCatalogo(nombre, precio) {
+      const cantidad = parseInt(prompt(`Cantidad de ${nombre}:`, "10")) || 10;
+      productosOrden.push({nombre, cantidad, precio});
+      renderProductosOrden();
+      document.getElementById('buscar-producto').value = '';
+      document.getElementById('resultados-busqueda').innerHTML = '';
+    }
+
+    function renderProductosOrden() {
+      const container = document.getElementById('lista-productos-orden');
+      container.innerHTML = productosOrden.map((p, i) => `
+        <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
+          <span>${p.nombre} × ${p.cantidad}</span>
+          <span class="font-bold">Q${(p.precio * p.cantidad).toFixed(2)}</span>
+          <button onclick="eliminarProductoOrden(${i})" class="text-red-600">Eliminar</button>
+        </div>
+      `).join('');
+    }
+
+    function eliminarProductoOrden(i) {
+      productosOrden.splice(i, 1);
+      renderProductosOrden();
+    }
+
+    // Resto de funciones (cargarProveedores, guardarOrdenCompra, cargarOrdenes, etc.)
+    async function cargarProveedores() {
+      const select = document.getElementById('proveedor-select');
+      const snapshot = await db.collection('proveedores').get();
+      select.innerHTML = '<option value="">Seleccionar Proveedor</option>';
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        const opt = document.createElement('option');
+        opt.value = p.nombre;
+        opt.textContent = p.nombre;
+        select.appendChild(opt);
+      });
+    }
+
+    async function guardarOrdenCompra() {
+      const proveedor = document.getElementById('proveedor-select').value;
+      if (!proveedor || productosOrden.length === 0) {
+        return alert("❌ Selecciona un proveedor y agrega productos");
+      }
+
+      const total = productosOrden.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
 
       try {
-        for (let item of productos) {
-          // Buscar producto por nombre y actualizar stock
-          const query = await db.collection('productos').where('nombre', '==', item.nombre).get();
-          query.forEach(async (doc) => {
-            const currentStock = doc.data().stock || 0;
-            await db.collection('productos').doc(doc.id).update({
-              stock: currentStock + item.cantidad
-            });
-          });
-        }
-
-        // Cambiar estado de la orden
-        await db.collection('ordenes_compra').doc(ordenId).update({ estado: "Recibida" });
-
-        alert("✅ Mercancía recibida y stock actualizado en tiempo real");
+        await db.collection('ordenes_compra').add({
+          proveedor, 
+          fecha: new Date(), 
+          productos: productosOrden, 
+          total, 
+          estado: "Pendiente",
+          notas: document.getElementById('notas').value || ""
+        });
+        alert("✅ Orden guardada correctamente");
+        productosOrden = [];
+        mostrarSeccion('ordenes');
       } catch (e) {
         alert("Error: " + e.message);
       }
     }
 
-    // Mantén las demás funciones (nueva-orden, proveedores, etc.)
+    // ... (mantén las funciones de cargarOrdenes y proveedores)
 
-    window.onload = () => mostrarSeccion('recepciones');
+    window.onload = () => mostrarSeccion('nueva-orden');
   </script>
 </body>
 </html>
