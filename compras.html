@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGROMAXGTM - Compras</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100">
+
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-72 bg-white border-r shadow-xl">
+      <div class="p-6 border-b bg-green-700 text-white">
+        <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+        <p class="text-xs">Módulo de Compras</p>
+      </div>
+      <nav class="p-4 space-y-1">
+        <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
+        <a onclick="mostrarSeccion('nueva-orden')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-file-invoice"></i> Nueva Orden de Compra</a>
+        <a onclick="mostrarSeccion('proveedores')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-truck"></i> Proveedores</a>
+        <a onclick="mostrarSeccion('recepciones')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-boxes"></i> Recepción de Mercancía</a>
+      </nav>
+    </div>
+
+    <div class="flex-1 overflow-auto p-8" id="main-content">
+      <!-- Contenido dinámico -->
+    </div>
+  </div>
+
+  <script>
+    // Firebase Config (igual que en admin)
+    const firebaseConfig = { /* pega aquí tu configuración de Firebase */ };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function mostrarSeccion(seccion) {
+      const content = document.getElementById('main-content');
+      if (seccion === 'nueva-orden') {
+        content.innerHTML = `<h1 class="text-3xl font-bold">Nueva Orden de Compra</h1><p class="mt-4 text-gray-600">Formulario completo en desarrollo...</p>`;
+      } else if (seccion === 'proveedores') {
+        content.innerHTML = `<h1 class="text-3xl font-bold">Gestión de Proveedores</h1>`;
+      } else if (seccion === 'recepciones') {
+        content.innerHTML = `<h1 class="text-3xl font-bold">Recepción de Mercancía</h1>`;
+      }
+    }
+
+    // Cargar por defecto
+    window.onload = () => mostrarSeccion('nueva-orden');
+  </script>
+</body>
+</html>
