@@ -81,6 +81,11 @@
               <a onclick="mostrarSeccion('dashboard')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home"></i> Dashboard</a>
               <a onclick="mostrarSeccion('agregar')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Agregar Producto</a>
               <a onclick="mostrarSeccion('masiva')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-file-csv"></i> Subida Masiva</a>
+              
+              <!-- NUEVOS ENLACES -->
+              <a href="compras.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-truck"></i> Módulo de Compras</a>
+              <a href="inventario.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-warehouse"></i> Módulo de Inventario</a>
+              
               <a onclick="mostrarSeccion('pedidos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-receipt"></i> Pedidos</a>
               <a onclick="mostrarSeccion('productos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Ver Productos</a>
               <a onclick="logout()" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-50 text-red-600 mt-12"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
@@ -100,7 +105,7 @@
       else if (seccion === 'productos') mostrarTablaProductos();
     }
 
-    // DASHBOARD
+    // ==================== DASHBOARD ====================
     async function mostrarDashboard() {
       const content = document.getElementById('main-content');
       content.innerHTML = `
@@ -140,6 +145,7 @@
       document.getElementById('bajo-stock').innerHTML = bajoHTML || '<p class="text-green-600">No hay productos con stock bajo ✅</p>';
     }
 
+    // ==================== FORMULARIO AGREGAR / EDITAR ====================
     function mostrarFormularioAgregar(producto = null) {
       productoEditandoId = producto ? producto.id : null;
       const titulo = producto ? "Editar Producto" : "Agregar Nuevo Producto";
