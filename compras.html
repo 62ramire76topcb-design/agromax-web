@@ -64,7 +64,7 @@
       const content = document.getElementById('main-content');
 
       if (seccion === 'nueva-orden') {
-        await cargarProveedores();
+        await cargarProveedoresParaSelect();
         content.innerHTML = `
           <h1 class="text-3xl font-bold mb-8">Nueva Orden de Compra</h1>
           <div class="max-w-4xl bg-white p-8 rounded-3xl shadow">
@@ -105,7 +105,7 @@
     // ==================== PROVEEDORES ====================
     async function agregarProveedor() {
       const empresa = document.getElementById('empresa').value.trim();
-      if (!empresa) return alert("❌ El nombre de la empresa es obligatorio");
+      if (!empresa) return alert("❌ Nombre de empresa obligatorio");
 
       try {
         await db.collection('proveedores').add({
@@ -116,7 +116,7 @@
           direccion: document.getElementById('direccion').value.trim(),
           fecha: new Date()
         });
-        alert("✅ Proveedor agregado correctamente");
+        alert("✅ Proveedor agregado");
         cargarListaProveedores();
       } catch (e) {
         alert("Error: " + e.message);
@@ -134,19 +134,18 @@
             <div class="bg-white p-6 rounded-3xl shadow">
               <p class="font-bold text-lg">${p.empresa}</p>
               <p>${p.nombreContacto || ''}</p>
-              <p onclick="window.open('https://wa.me/502${p.telefono}','_blank')" class="text-green-600 cursor-pointer hover:underline">📱 ${p.telefono}</p>
+              <p onclick="window.open('https://wa.me/502${p.telefono}','_blank')" class="text-green-600 cursor-pointer">📱 ${p.telefono}</p>
               <p class="text-sm">${p.correo || ''}</p>
               <p class="text-sm text-gray-500">${p.direccion || ''}</p>
             </div>`;
         });
-        container.innerHTML = html || '<p class="text-gray-500 col-span-2 text-center py-8">No hay proveedores registrados todavía</p>';
+        container.innerHTML = html || '<p class="text-gray-500 text-center py-8">No hay proveedores registrados</p>';
       } catch(e) {
-        container.innerHTML = '<p class="text-red-500">Error al cargar proveedores</p>';
+        container.innerHTML = '<p class="text-red-500">Error al cargar</p>';
       }
     }
 
-    // ==================== NUEVA ORDEN ====================
-    async function cargarProveedores() {
+    async function cargarProveedoresParaSelect() {
       const select = document.getElementById('proveedor-select');
       try {
         const snapshot = await db.collection('proveedores').get();
@@ -161,26 +160,28 @@
       } catch(e) {}
     }
 
-    // Búsqueda de productos (mantengo funcional)
-    let allProductos = [];
+    // ==================== NUEVA ORDEN ====================
     async function filtrarProductos() {
-      if (allProductos.length === 0) {
-        const snap = await db.collection('productos').get();
-        allProductos = snap.docs.map(d => ({id: d.id, ...d.data()}));
-      }
       const term = document.getElementById('buscar').value.toLowerCase().trim();
       const container = document.getElementById('resultados');
       if (term.length < 2) {
         container.innerHTML = '';
         return;
       }
-      const res = allProductos.filter(p => p.nombre.toLowerCase().includes(term));
-      container.innerHTML = res.map(p => `
-        <div onclick="agregarProducto('${p.nombre}', ${p.precio || 0})" class="p-4 hover:bg-white rounded-xl cursor-pointer flex justify-between border-b">
-          <span>${p.nombre}</span>
-          <span class="font-bold text-green-600">Q${p.precio || 0}</span>
-        </div>
-      `).join('');
+
+      const snapshot = await db.collection('productos').get();
+      let html = '';
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        if (p.nombre.toLowerCase().includes(term)) {
+          html += `
+            <div onclick="agregarProducto('${p.nombre}', ${p.precio || 0})" class="p-4 hover:bg-white rounded-xl cursor-pointer flex justify-between border-b">
+              <span>${p.nombre}</span>
+              <span class="font-bold text-green-600">Q${p.precio || 0}</span>
+            </div>`;
+        }
+      });
+      container.innerHTML = html || '<p class="p-4 text-gray-500">No se encontraron productos</p>';
     }
 
     function agregarProducto(nombre, precio) {
@@ -229,7 +230,24 @@
       }
     }
 
-    window.onload = () => mostrarSeccion('nueva-orden');
+    async function cargarOrdenes() {
+      const container = document.getElementById('lista-ordenes');
+      db.collection('ordenes_compra').orderBy('fecha', 'desc').onSnapshot(snapshot => {
+        let html = '';
+        snapshot.forEach(doc => {
+          const o = doc.data();
+          html += `
+            <div class="bg-white rounded-3xl shadow p-6">
+              <p class="font-bold">${o.proveedor}</p>
+              <p class="text-sm text-gray-500">${o.fecha.toDate().toLocaleString('es-GT')}</p>
+              <p class="font-bold mt-2">Total: Q${o.total ? o.total.toFixed(2) : '0.00'}</p>
+            </div>`;
+        });
+        container.innerHTML = html || '<p class="text-gray-400 py-12 text-center">No hay órdenes registradas</p>';
+      });
+    }
+
+    window.onload = () => mostrarSeccion('proveedores');
   </script>
 </body>
 </html>
