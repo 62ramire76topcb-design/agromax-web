@@ -46,11 +46,27 @@
     };
 
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
     let productosOrden = [];
 
-    function mostrarSeccion(seccion) {
+    // Verificar autenticación
+    function verificarAuth() {
+      return new Promise((resolve) => {
+        auth.onAuthStateChanged(user => {
+          if (!user) {
+            alert("Debes iniciar sesión primero");
+            window.location.href = "admin.html";
+          } else {
+            resolve(user);
+          }
+        });
+      });
+    }
+
+    async function mostrarSeccion(seccion) {
+      await verificarAuth();
       const content = document.getElementById('main-content');
       
       if (seccion === 'nueva-orden') {
@@ -76,12 +92,13 @@
         content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Órdenes de Compra</h1><div id="lista-ordenes" class="space-y-6"></div>`;
         cargarOrdenes();
       } else if (seccion === 'proveedores') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Proveedores</h1><p>Base de datos de proveedores (próximamente)</p>`;
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Proveedores</h1><p class="text-gray-600">Gestión avanzada de proveedores próximamente</p>`;
       } else if (seccion === 'recepciones') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Recepción de Mercancía</h1><p>Funcionalidad en desarrollo</p>`;
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Recepción de Mercancía</h1><p class="text-gray-600">Funcionalidad en desarrollo</p>`;
       }
     }
 
+    // Resto de funciones (agregarProductoOrden, guardarOrdenCompra, cargarOrdenes, etc.)
     function agregarProductoOrden() {
       const nombre = prompt("Nombre del producto:");
       if (!nombre) return;
@@ -96,71 +113,65 @@
       const container = document.getElementById('lista-productos-orden');
       container.innerHTML = productosOrden.map((p, i) => `
         <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
-          <span class="font-medium">${p.nombre} × ${p.cantidad}</span>
+          <span>${p.nombre} × ${p.cantidad}</span>
           <span class="font-bold">Q${(p.precio * p.cantidad).toFixed(2)}</span>
-          <button onclick="eliminarProductoOrden(${i})" class="text-red-600 hover:text-red-700">Eliminar</button>
+          <button onclick="eliminarProductoOrden(${i})" class="text-red-600">Eliminar</button>
         </div>
       `).join('');
     }
 
-    function eliminarProductoOrden(index) {
-      productosOrden.splice(index, 1);
+    function eliminarProductoOrden(i) {
+      productosOrden.splice(i, 1);
       renderProductosOrden();
     }
 
     async function guardarOrdenCompra() {
       const proveedor = document.getElementById('proveedor').value.trim();
       if (!proveedor || productosOrden.length === 0) {
-        return alert("❌ Debes agregar un proveedor y al menos un producto");
+        return alert("❌ Debes agregar proveedor y productos");
       }
 
-      const total = productosOrden.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+      const total = productosOrden.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
 
       try {
         await db.collection('ordenes_compra').add({
-          proveedor: proveedor,
+          proveedor,
           fecha: new Date(),
           productos: productosOrden,
-          total: total,
+          total,
           estado: "Pendiente",
           notas: document.getElementById('notas').value || ""
         });
-        
-        alert("✅ Orden de compra guardada correctamente");
+        alert("✅ Orden guardada correctamente");
         productosOrden = [];
         mostrarSeccion('ordenes');
       } catch (e) {
         console.error(e);
-        alert("Error: " + e.message + "\n\nVerifica las reglas de Firebase");
+        alert("Error: " + e.message);
       }
     }
 
     async function cargarOrdenes() {
       const container = document.getElementById('lista-ordenes');
-      
       db.collection('ordenes_compra').orderBy('fecha', 'desc').onSnapshot(snapshot => {
         let html = '';
         snapshot.forEach(doc => {
           const o = doc.data();
           html += `
             <div class="bg-white rounded-3xl shadow p-6">
-              <div class="flex justify-between items-start">
+              <div class="flex justify-between">
                 <div>
-                  <p class="font-bold text-lg">${o.proveedor}</p>
+                  <p class="font-bold">${o.proveedor}</p>
                   <p class="text-sm text-gray-500">${o.fecha.toDate().toLocaleString('es-GT')}</p>
                 </div>
-                <span class="px-4 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm">${o.estado}</span>
+                <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">${o.estado}</span>
               </div>
-              <div class="mt-4 text-sm space-y-1">
-                ${o.productos.map(p => `<div>${p.nombre} × ${p.cantidad} → Q${(p.precio * p.cantidad).toFixed(2)}</div>`).join('')}
-              </div>
-              <div class="mt-6 pt-4 border-t font-bold flex justify-between">
-                <span>Total:</span>
-                <span>Q${o.total.toFixed(2)}</span>
+              <div class="mt-4 text-sm">
+                Total: Q${o.total.toFixed(2)}
               </div>
             </div>`;
         });
-        container.innerHTML = html || `<p class="text-center py-12 text-gray-400">No hay órdenes registradas todavía</p>`;
+        container.innerHTML = html || `<p class="text-center py-12 text-gray-400">No hay órdenes aún</p>`;
       });
     }
 
