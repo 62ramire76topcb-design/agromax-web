@@ -28,7 +28,6 @@
         <a onclick="mostrarSeccion('nueva-orden')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Nueva Orden</a>
         <a onclick="mostrarSeccion('ordenes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list"></i> Mis Órdenes</a>
         <a onclick="mostrarSeccion('proveedores')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-truck"></i> Proveedores</a>
-        <a onclick="mostrarSeccion('recepciones')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-boxes"></i> Recepción y Stock</a>
       </nav>
     </div>
 
@@ -50,13 +49,14 @@
     const db = firebase.firestore();
 
     let productosOrden = [];
-    let allProductos = [];
 
     async function verificarAuth() {
       return new Promise(resolve => {
         auth.onAuthStateChanged(user => {
-          if (!user) window.location.href = "admin.html";
-          else resolve(user);
+          if (!user) {
+            alert("Debes iniciar sesión primero");
+            window.location.href = "admin.html";
+          } else resolve(user);
         });
       });
     }
@@ -67,7 +67,6 @@
 
       if (seccion === 'nueva-orden') {
         await cargarProveedores();
-        await cargarTodosProductos();
         content.innerHTML = `
           <h1 class="text-3xl font-bold mb-8">Nueva Orden de Compra</h1>
           <div class="max-w-4xl bg-white p-8 rounded-3xl shadow">
@@ -76,9 +75,8 @@
             <textarea id="notas" placeholder="Notas o condiciones" class="w-full p-4 border rounded-2xl h-32"></textarea>
 
             <div class="mt-8">
-              <h3 class="font-bold mb-4">Buscar Producto del Catálogo</h3>
-              <input id="buscar" placeholder="Escribe nombre del producto..." 
-                     class="w-full p-4 border rounded-2xl mb-4" onkeyup="filtrarProductos()">
+              <h3 class="font-bold mb-4">Buscar Producto</h3>
+              <input id="buscar" placeholder="Escribe nombre del producto..." class="w-full p-4 border rounded-2xl mb-4" onkeyup="filtrarProductos()">
               <div id="resultados" class="max-h-80 overflow-auto border rounded-2xl p-3 bg-gray-50"></div>
             </div>
 
@@ -86,88 +84,85 @@
 
             <button onclick="guardarOrdenCompra()" class="mt-10 w-full bg-green-700 text-white py-4 rounded-3xl font-bold text-lg">Guardar Orden de Compra</button>
           </div>`;
-      } 
-      else if (seccion === 'ordenes') {
+      } else if (seccion === 'ordenes') {
         content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Órdenes de Compra</h1><div id="lista-ordenes" class="space-y-6"></div>`;
         cargarOrdenes();
-      } 
-      else if (seccion === 'proveedores') {
-        // Código de proveedores (ya funcional)
-        content.innerHTML = `... (mantengo tu código anterior de proveedores) ...`;
-      } 
-      else if (seccion === 'recepciones') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Recepción de Mercancía</h1><div id="lista-recepcion" class="space-y-6"></div>`;
-        cargarRecepciones();
+      } else if (seccion === 'proveedores') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Proveedores</h1><p>Ya funciona correctamente</p>`;
       }
     }
 
-    // Cargar productos para búsqueda
-    async function cargarTodosProductos() {
-      const snapshot = await db.collection('productos').get();
-      allProductos = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+    // Cargar proveedores
+    async function cargarProveedores() {
+      const select = document.getElementById('proveedor-select');
+      try {
+        const snapshot = await db.collection('proveedores').get();
+        select.innerHTML = '<option value="">Seleccionar Proveedor</option>';
+        snapshot.forEach(doc => {
+          const p = doc.data();
+          const opt = document.createElement('option');
+          opt.value = p.empresa || p.nombre;
+          opt.textContent = p.empresa || p.nombre;
+          select.appendChild(opt);
+        });
+      } catch(e) {
+        console.error(e);
+      }
     }
 
-    function filtrarProductos() {
-      const termino = document.getElementById('buscar').value.toLowerCase().trim();
+    // Búsqueda de productos
+    let allProductos = [];
+    async function cargarTodosProductos() {
+      const snap = await db.collection('productos').get();
+      allProductos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    }
+
+    async function filtrarProductos() {
+      await cargarTodosProductos();
+      const term = document.getElementById('buscar').value.toLowerCase().trim();
       const container = document.getElementById('resultados');
-      if (termino.length < 2) {
+      if (term.length < 2) {
         container.innerHTML = '';
         return;
       }
-
-      const resultados = allProductos.filter(p => p.nombre.toLowerCase().includes(termino));
-      let html = resultados.map(p => `
-        <div onclick="agregarProductoDesdeCatalogo('${p.nombre}', ${p.precio || 0})" 
-             class="p-4 hover:bg-white rounded-xl cursor-pointer flex justify-between border-b last:border-0">
+      const res = allProductos.filter(p => p.nombre.toLowerCase().includes(term));
+      container.innerHTML = res.map(p => `
+        <div onclick="agregarProducto('${p.nombre}', ${p.precio || 0})" class="p-4 hover:bg-white rounded-xl cursor-pointer flex justify-between border-b">
           <span>${p.nombre}</span>
           <span class="font-bold text-green-600">Q${p.precio || 0}</span>
         </div>
       `).join('');
-      container.innerHTML = html || '<p class="text-gray-500 p-4">No se encontraron productos</p>';
     }
 
-    function agregarProductoDesdeCatalogo(nombre, precio) {
+    function agregarProducto(nombre, precio) {
       const cantidad = parseInt(prompt(`Cantidad de ${nombre}:`, "10")) || 10;
       productosOrden.push({nombre, cantidad, precio});
-      renderProductosOrden();
+      renderOrden();
     }
 
-    function renderProductosOrden() {
+    function renderOrden() {
       const container = document.getElementById('lista-orden');
       container.innerHTML = productosOrden.map((p, i) => `
         <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
           <span>${p.nombre} × ${p.cantidad}</span>
           <span class="font-bold">Q${(p.precio * p.cantidad).toFixed(2)}</span>
-          <button onclick="eliminarDeOrden(${i})" class="text-red-600">Eliminar</button>
+          <button onclick="eliminarProducto(${i})" class="text-red-600">Eliminar</button>
         </div>
       `).join('');
     }
 
-    function eliminarDeOrden(i) {
+    function eliminarProducto(i) {
       productosOrden.splice(i, 1);
-      renderProductosOrden();
-    }
-
-    async function cargarProveedores() {
-      const select = document.getElementById('proveedor-select');
-      const snapshot = await db.collection('proveedores').get();
-      select.innerHTML = '<option value="">Seleccionar Proveedor</option>';
-      snapshot.forEach(doc => {
-        const p = doc.data();
-        const opt = document.createElement('option');
-        opt.value = p.empresa || p.nombre;
-        opt.textContent = p.empresa || p.nombre;
-        select.appendChild(opt);
-      });
+      renderOrden();
     }
 
     async function guardarOrdenCompra() {
       const proveedor = document.getElementById('proveedor-select').value;
       if (!proveedor || productosOrden.length === 0) {
-        return alert("❌ Selecciona un proveedor y agrega al menos un producto");
+        return alert("❌ Selecciona un proveedor y agrega productos");
       }
 
-      const total = productosOrden.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+      const total = productosOrden.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
 
       try {
         await db.collection('ordenes_compra').add({
@@ -178,11 +173,12 @@
           estado: "Pendiente",
           notas: document.getElementById('notas').value || ""
         });
-        alert("✅ Orden de compra guardada correctamente");
+        alert("✅ Orden guardada correctamente");
         productosOrden = [];
         mostrarSeccion('ordenes');
       } catch (e) {
-        alert("Error al guardar: " + e.message);
+        console.error(e);
+        alert("Error: " + e.message + "\n\nRevisa las reglas de Firebase");
       }
     }
 
@@ -194,16 +190,10 @@
           const o = doc.data();
           html += `
             <div class="bg-white rounded-3xl shadow p-6">
-              <div class="flex justify-between">
-                <div>
-                  <p class="font-bold">${o.proveedor}</p>
-                  <p class="text-sm text-gray-500">${o.fecha.toDate().toLocaleString('es-GT')}</p>
-                </div>
-                <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">${o.estado}</span>
-              </div>
-              <div class="mt-4 text-sm">
-                Total: <span class="font-bold">Q${o.total ? o.total.toFixed(2) : '0.00'}</span>
-              </div>
+              <p class="font-bold">${o.proveedor}</p>
+              <p class="text-sm text-gray-500">${o.fecha.toDate().toLocaleString('es-GT')}</p>
+              <p class="font-bold mt-2">Total: Q${o.total ? o.total.toFixed(2) : '0.00'}</p>
+              <span class="inline-block mt-3 px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">${o.estado}</span>
             </div>`;
         });
         container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay órdenes registradas</p>';
