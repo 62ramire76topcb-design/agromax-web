@@ -13,7 +13,6 @@
 <body class="bg-gray-100">
 
   <div class="flex h-screen">
-    <!-- Sidebar -->
     <div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
       <div class="p-6 border-b bg-green-700 text-white">
         <div class="flex items-center gap-3">
@@ -49,6 +48,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    let productosOrden = [];
+
     function mostrarSeccion(seccion) {
       const content = document.getElementById('main-content');
       
@@ -71,27 +72,21 @@
             
             <button onclick="guardarOrdenCompra()" class="mt-10 w-full bg-green-700 text-white py-4 rounded-3xl font-bold text-lg">Guardar Orden de Compra</button>
           </div>`;
-      } 
-      else if (seccion === 'ordenes') {
+      } else if (seccion === 'ordenes') {
         content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Órdenes de Compra</h1><div id="lista-ordenes" class="space-y-6"></div>`;
         cargarOrdenes();
-      } 
-      else if (seccion === 'proveedores') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Proveedores</h1><p class="text-gray-600">Gestión de proveedores (en desarrollo avanzado)</p>`;
-      } 
-      else if (seccion === 'recepciones') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Recepción de Mercancía</h1><p class="text-gray-600">Recepción contra orden de compra (en desarrollo)</p>`;
+      } else if (seccion === 'proveedores') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Proveedores</h1><p>Base de datos de proveedores (próximamente)</p>`;
+      } else if (seccion === 'recepciones') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Recepción de Mercancía</h1><p>Funcionalidad en desarrollo</p>`;
       }
     }
-
-    // Funciones de Nueva Orden
-    let productosOrden = [];
 
     function agregarProductoOrden() {
       const nombre = prompt("Nombre del producto:");
       if (!nombre) return;
-      const cantidad = parseInt(prompt("Cantidad:", 10)) || 10;
-      const precio = parseFloat(prompt("Precio unitario:", 50)) || 50;
+      const cantidad = parseInt(prompt("Cantidad:", "10")) || 10;
+      const precio = parseFloat(prompt("Precio unitario Q:", "50")) || 50;
 
       productosOrden.push({nombre, cantidad, precio});
       renderProductosOrden();
@@ -101,61 +96,74 @@
       const container = document.getElementById('lista-productos-orden');
       container.innerHTML = productosOrden.map((p, i) => `
         <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
-          <span>${p.nombre} × ${p.cantidad}</span>
+          <span class="font-medium">${p.nombre} × ${p.cantidad}</span>
           <span class="font-bold">Q${(p.precio * p.cantidad).toFixed(2)}</span>
-          <button onclick="productosOrden.splice(${i},1);renderProductosOrden()" class="text-red-600">Eliminar</button>
+          <button onclick="eliminarProductoOrden(${i})" class="text-red-600 hover:text-red-700">Eliminar</button>
         </div>
       `).join('');
     }
 
-    async function guardarOrdenCompra() {
-      const proveedor = document.getElementById('proveedor').value;
-      if (!proveedor || productosOrden.length === 0) return alert("Faltan datos");
+    function eliminarProductoOrden(index) {
+      productosOrden.splice(index, 1);
+      renderProductosOrden();
+    }
 
-      const total = productosOrden.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
+    async function guardarOrdenCompra() {
+      const proveedor = document.getElementById('proveedor').value.trim();
+      if (!proveedor || productosOrden.length === 0) {
+        return alert("❌ Debes agregar un proveedor y al menos un producto");
+      }
+
+      const total = productosOrden.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
 
       try {
         await db.collection('ordenes_compra').add({
-          proveedor,
+          proveedor: proveedor,
           fecha: new Date(),
           productos: productosOrden,
-          total,
+          total: total,
           estado: "Pendiente",
           notas: document.getElementById('notas').value || ""
         });
+        
         alert("✅ Orden de compra guardada correctamente");
         productosOrden = [];
         mostrarSeccion('ordenes');
       } catch (e) {
-        alert("Error: " + e.message);
+        console.error(e);
+        alert("Error: " + e.message + "\n\nVerifica las reglas de Firebase");
       }
     }
 
     async function cargarOrdenes() {
       const container = document.getElementById('lista-ordenes');
+      
       db.collection('ordenes_compra').orderBy('fecha', 'desc').onSnapshot(snapshot => {
         let html = '';
         snapshot.forEach(doc => {
           const o = doc.data();
           html += `
             <div class="bg-white rounded-3xl shadow p-6">
-              <div class="flex justify-between">
+              <div class="flex justify-between items-start">
                 <div>
-                  <p class="font-bold">${o.proveedor}</p>
+                  <p class="font-bold text-lg">${o.proveedor}</p>
                   <p class="text-sm text-gray-500">${o.fecha.toDate().toLocaleString('es-GT')}</p>
                 </div>
-                <span class="px-4 py-1 rounded-full ${o.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}">${o.estado}</span>
+                <span class="px-4 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm">${o.estado}</span>
               </div>
-              <div class="mt-4 text-sm">
-                Total: <span class="font-bold">Q${o.total.toFixed(2)}</span>
+              <div class="mt-4 text-sm space-y-1">
+                ${o.productos.map(p => `<div>${p.nombre} × ${p.cantidad} → Q${(p.precio * p.cantidad).toFixed(2)}</div>`).join('')}
+              </div>
+              <div class="mt-6 pt-4 border-t font-bold flex justify-between">
+                <span>Total:</span>
+                <span>Q${o.total.toFixed(2)}</span>
               </div>
             </div>`;
         });
-        container.innerHTML = html || `<p class="text-center py-12 text-gray-400">No hay órdenes registradas</p>`;
+        container.innerHTML = html || `<p class="text-center py-12 text-gray-400">No hay órdenes registradas todavía</p>`;
       });
     }
 
-    // Cargar sección inicial
     window.onload = () => mostrarSeccion('nueva-orden');
   </script>
 </body>
