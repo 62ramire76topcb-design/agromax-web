@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGROMAXGTM - Inventario</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100">
+
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-72 bg-white border-r shadow-xl">
+      <div class="p-6 border-b bg-green-700 text-white">
+        <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+        <p class="text-xs">Módulo de Inventario</p>
+      </div>
+      <nav class="p-4 space-y-1">
+        <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
+        <a onclick="mostrarSeccion('kardex')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-exchange-alt"></i> Kardex</a>
+        <a onclick="mostrarSeccion('inventario-fisico')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-clipboard-list"></i> Inventario Físico</a>
+        <a onclick="mostrarSeccion('ajustes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-tools"></i> Ajustes y Reconciliación</a>
+      </nav>
+    </div>
+
+    <div class="flex-1 overflow-auto p-8" id="main-content">
+      <!-- Contenido dinámico -->
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = { /* pega aquí tu configuración de Firebase */ };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function mostrarSeccion(seccion) {
+      const content = document.getElementById('main-content');
+      if (seccion === 'kardex') {
+        content.innerHTML = `<h1 class="text-3xl font-bold">Kardex de Inventario</h1><p class="mt-4 text-gray-600">Registro de movimientos en tiempo real...</p>`;
+      } else if (seccion === 'inventario-fisico') {
+        content.innerHTML = `<h1 class="text-3xl font-bold">Inventario Físico</h1><button onclick="generarPDFInventario()" class="mt-4 bg-green-600 text-white px-6 py-3 rounded-2xl">Generar PDF para Conteo</button>`;
+      } else if (seccion === 'ajustes') {
+        content.innerHTML = `<h1 class="text-3xl font-bold">Ajustes y Reconciliación</h1>`;
+      }
+    }
+
+    function generarPDFInventario() {
+      alert("✅ PDF de Inventario Físico generado (funcionalidad en desarrollo)");
+    }
+
+    window.onload = () => mostrarSeccion('kardex');
+  </script>
+</body>
+</html>
