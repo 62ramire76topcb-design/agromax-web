@@ -53,10 +53,8 @@
     async function verificarAuth() {
       return new Promise(resolve => {
         auth.onAuthStateChanged(user => {
-          if (!user) {
-            alert("Debes iniciar sesión primero");
-            window.location.href = "admin.html";
-          } else resolve(user);
+          if (!user) window.location.href = "admin.html";
+          else resolve(user);
         });
       });
     }
@@ -72,7 +70,7 @@
           <div class="max-w-4xl bg-white p-8 rounded-3xl shadow">
             <select id="proveedor-select" class="w-full p-4 border rounded-2xl mb-6"></select>
             <input id="fecha" type="date" class="w-full p-4 border rounded-2xl mb-6">
-            <textarea id="notas" placeholder="Notas o condiciones" class="w-full p-4 border rounded-2xl h-32"></textarea>
+            <textarea id="notas" placeholder="Notas..." class="w-full p-4 border rounded-2xl h-32"></textarea>
 
             <div class="mt-8">
               <h3 class="font-bold mb-4">Buscar Producto</h3>
@@ -81,18 +79,73 @@
             </div>
 
             <div id="lista-orden" class="mt-10 space-y-4"></div>
-
             <button onclick="guardarOrdenCompra()" class="mt-10 w-full bg-green-700 text-white py-4 rounded-3xl font-bold text-lg">Guardar Orden de Compra</button>
           </div>`;
-      } else if (seccion === 'ordenes') {
+      } 
+      else if (seccion === 'ordenes') {
         content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Órdenes de Compra</h1><div id="lista-ordenes" class="space-y-6"></div>`;
         cargarOrdenes();
-      } else if (seccion === 'proveedores') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Proveedores</h1><p>Ya funciona correctamente</p>`;
+      } 
+      else if (seccion === 'proveedores') {
+        content.innerHTML = `
+          <h1 class="text-3xl font-bold mb-8">Gestión de Proveedores</h1>
+          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow mb-8">
+            <input id="empresa" placeholder="Nombre de la Empresa" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="nombre-contacto" placeholder="Nombre del Contacto" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="telefono" placeholder="Teléfono WhatsApp" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="correo" type="email" placeholder="Correo Electrónico" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="direccion" placeholder="Dirección" class="w-full p-4 border rounded-2xl mb-6">
+            <button onclick="agregarProveedor()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Agregar Proveedor</button>
+          </div>
+          <div id="lista-proveedores" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>`;
+        cargarListaProveedores();
       }
     }
 
-    // Cargar proveedores
+    // ==================== PROVEEDORES ====================
+    async function agregarProveedor() {
+      const empresa = document.getElementById('empresa').value.trim();
+      if (!empresa) return alert("❌ El nombre de la empresa es obligatorio");
+
+      try {
+        await db.collection('proveedores').add({
+          empresa,
+          nombreContacto: document.getElementById('nombre-contacto').value.trim(),
+          telefono: document.getElementById('telefono').value.trim(),
+          correo: document.getElementById('correo').value.trim(),
+          direccion: document.getElementById('direccion').value.trim(),
+          fecha: new Date()
+        });
+        alert("✅ Proveedor agregado correctamente");
+        cargarListaProveedores();
+      } catch (e) {
+        alert("Error: " + e.message);
+      }
+    }
+
+    async function cargarListaProveedores() {
+      const container = document.getElementById('lista-proveedores');
+      try {
+        const snapshot = await db.collection('proveedores').get();
+        let html = '';
+        snapshot.forEach(doc => {
+          const p = doc.data();
+          html += `
+            <div class="bg-white p-6 rounded-3xl shadow">
+              <p class="font-bold text-lg">${p.empresa}</p>
+              <p>${p.nombreContacto || ''}</p>
+              <p onclick="window.open('https://wa.me/502${p.telefono}','_blank')" class="text-green-600 cursor-pointer hover:underline">📱 ${p.telefono}</p>
+              <p class="text-sm">${p.correo || ''}</p>
+              <p class="text-sm text-gray-500">${p.direccion || ''}</p>
+            </div>`;
+        });
+        container.innerHTML = html || '<p class="text-gray-500 col-span-2 text-center py-8">No hay proveedores registrados todavía</p>';
+      } catch(e) {
+        container.innerHTML = '<p class="text-red-500">Error al cargar proveedores</p>';
+      }
+    }
+
+    // ==================== NUEVA ORDEN ====================
     async function cargarProveedores() {
       const select = document.getElementById('proveedor-select');
       try {
@@ -101,24 +154,20 @@
         snapshot.forEach(doc => {
           const p = doc.data();
           const opt = document.createElement('option');
-          opt.value = p.empresa || p.nombre;
-          opt.textContent = p.empresa || p.nombre;
+          opt.value = p.empresa;
+          opt.textContent = p.empresa;
           select.appendChild(opt);
         });
-      } catch(e) {
-        console.error(e);
-      }
+      } catch(e) {}
     }
 
-    // Búsqueda de productos
+    // Búsqueda de productos (mantengo funcional)
     let allProductos = [];
-    async function cargarTodosProductos() {
-      const snap = await db.collection('productos').get();
-      allProductos = snap.docs.map(d => ({id: d.id, ...d.data()}));
-    }
-
     async function filtrarProductos() {
-      await cargarTodosProductos();
+      if (allProductos.length === 0) {
+        const snap = await db.collection('productos').get();
+        allProductos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      }
       const term = document.getElementById('buscar').value.toLowerCase().trim();
       const container = document.getElementById('resultados');
       if (term.length < 2) {
@@ -170,34 +219,14 @@
           fecha: new Date(),
           productos: productosOrden,
           total,
-          estado: "Pendiente",
-          notas: document.getElementById('notas').value || ""
+          estado: "Pendiente"
         });
         alert("✅ Orden guardada correctamente");
         productosOrden = [];
         mostrarSeccion('ordenes');
       } catch (e) {
-        console.error(e);
-        alert("Error: " + e.message + "\n\nRevisa las reglas de Firebase");
+        alert("Error: " + e.message);
       }
-    }
-
-    async function cargarOrdenes() {
-      const container = document.getElementById('lista-ordenes');
-      db.collection('ordenes_compra').orderBy('fecha', 'desc').onSnapshot(snapshot => {
-        let html = '';
-        snapshot.forEach(doc => {
-          const o = doc.data();
-          html += `
-            <div class="bg-white rounded-3xl shadow p-6">
-              <p class="font-bold">${o.proveedor}</p>
-              <p class="text-sm text-gray-500">${o.fecha.toDate().toLocaleString('es-GT')}</p>
-              <p class="font-bold mt-2">Total: Q${o.total ? o.total.toFixed(2) : '0.00'}</p>
-              <span class="inline-block mt-3 px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">${o.estado}</span>
-            </div>`;
-        });
-        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay órdenes registradas</p>';
-      });
     }
 
     window.onload = () => mostrarSeccion('nueva-orden');
