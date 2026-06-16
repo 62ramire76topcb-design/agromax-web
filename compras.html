@@ -64,13 +64,12 @@
       const content = document.getElementById('main-content');
 
       if (seccion === 'nueva-orden') {
-        await cargarProveedoresParaSelect();
         content.innerHTML = `
           <h1 class="text-3xl font-bold mb-8">Nueva Orden de Compra</h1>
           <div class="max-w-4xl bg-white p-8 rounded-3xl shadow">
             <select id="proveedor-select" class="w-full p-4 border rounded-2xl mb-6"></select>
             <input id="fecha" type="date" class="w-full p-4 border rounded-2xl mb-6">
-            <textarea id="notas" placeholder="Notas..." class="w-full p-4 border rounded-2xl h-32"></textarea>
+            <textarea id="notas" placeholder="Notas o condiciones" class="w-full p-4 border rounded-2xl h-32"></textarea>
 
             <div class="mt-8">
               <h3 class="font-bold mb-4">Buscar Producto</h3>
@@ -81,6 +80,7 @@
             <div id="lista-orden" class="mt-10 space-y-4"></div>
             <button onclick="guardarOrdenCompra()" class="mt-10 w-full bg-green-700 text-white py-4 rounded-3xl font-bold text-lg">Guardar Orden de Compra</button>
           </div>`;
+        await cargarProveedoresParaSelect();   // ← Carga aquí
       } 
       else if (seccion === 'ordenes') {
         content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Órdenes de Compra</h1><div id="lista-ordenes" class="space-y-6"></div>`;
@@ -107,42 +107,34 @@
       const empresa = document.getElementById('empresa').value.trim();
       if (!empresa) return alert("❌ Nombre de empresa obligatorio");
 
-      try {
-        await db.collection('proveedores').add({
-          empresa,
-          nombreContacto: document.getElementById('nombre-contacto').value.trim(),
-          telefono: document.getElementById('telefono').value.trim(),
-          correo: document.getElementById('correo').value.trim(),
-          direccion: document.getElementById('direccion').value.trim(),
-          fecha: new Date()
-        });
-        alert("✅ Proveedor agregado");
-        cargarListaProveedores();
-      } catch (e) {
-        alert("Error: " + e.message);
-      }
+      await db.collection('proveedores').add({
+        empresa,
+        nombreContacto: document.getElementById('nombre-contacto').value.trim(),
+        telefono: document.getElementById('telefono').value.trim(),
+        correo: document.getElementById('correo').value.trim(),
+        direccion: document.getElementById('direccion').value.trim(),
+        fecha: new Date()
+      });
+      alert("✅ Proveedor agregado");
+      cargarListaProveedores();
     }
 
     async function cargarListaProveedores() {
       const container = document.getElementById('lista-proveedores');
-      try {
-        const snapshot = await db.collection('proveedores').get();
-        let html = '';
-        snapshot.forEach(doc => {
-          const p = doc.data();
-          html += `
-            <div class="bg-white p-6 rounded-3xl shadow">
-              <p class="font-bold text-lg">${p.empresa}</p>
-              <p>${p.nombreContacto || ''}</p>
-              <p onclick="window.open('https://wa.me/502${p.telefono}','_blank')" class="text-green-600 cursor-pointer">📱 ${p.telefono}</p>
-              <p class="text-sm">${p.correo || ''}</p>
-              <p class="text-sm text-gray-500">${p.direccion || ''}</p>
-            </div>`;
-        });
-        container.innerHTML = html || '<p class="text-gray-500 text-center py-8">No hay proveedores registrados</p>';
-      } catch(e) {
-        container.innerHTML = '<p class="text-red-500">Error al cargar</p>';
-      }
+      const snapshot = await db.collection('proveedores').get();
+      let html = '';
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        html += `
+          <div class="bg-white p-6 rounded-3xl shadow">
+            <p class="font-bold text-lg">${p.empresa}</p>
+            <p>${p.nombreContacto || ''}</p>
+            <p onclick="window.open('https://wa.me/502${p.telefono}','_blank')" class="text-green-600 cursor-pointer">📱 ${p.telefono}</p>
+            <p>${p.correo || ''}</p>
+            <p class="text-sm text-gray-500">${p.direccion || ''}</p>
+          </div>`;
+      });
+      container.innerHTML = html || '<p class="text-gray-500 text-center py-8">No hay proveedores registrados</p>';
     }
 
     async function cargarProveedoresParaSelect() {
@@ -150,6 +142,10 @@
       try {
         const snapshot = await db.collection('proveedores').get();
         select.innerHTML = '<option value="">Seleccionar Proveedor</option>';
+        if (snapshot.empty) {
+          select.innerHTML += '<option value="">No hay proveedores</option>';
+          return;
+        }
         snapshot.forEach(doc => {
           const p = doc.data();
           const opt = document.createElement('option');
@@ -157,7 +153,9 @@
           opt.textContent = p.empresa;
           select.appendChild(opt);
         });
-      } catch(e) {}
+      } catch (e) {
+        console.error(e);
+      }
     }
 
     // ==================== NUEVA ORDEN ====================
@@ -173,7 +171,7 @@
       let html = '';
       snapshot.forEach(doc => {
         const p = doc.data();
-        if (p.nombre.toLowerCase().includes(term)) {
+        if (p.nombre && p.nombre.toLowerCase().includes(term)) {
           html += `
             <div onclick="agregarProducto('${p.nombre}', ${p.precio || 0})" class="p-4 hover:bg-white rounded-xl cursor-pointer flex justify-between border-b">
               <span>${p.nombre}</span>
