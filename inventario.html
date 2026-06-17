@@ -5,53 +5,178 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAXGTM - Inventario</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-100">
-
-  <div class="flex h-screen">
-    <!-- Sidebar -->
-    <div class="w-72 bg-white border-r shadow-xl">
-      <div class="p-6 border-b bg-green-700 text-white">
-        <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-        <p class="text-xs">Módulo de Inventario</p>
-      </div>
-      <nav class="p-4 space-y-1">
-        <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
-        <a onclick="mostrarSeccion('kardex')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-exchange-alt"></i> Kardex</a>
-        <a onclick="mostrarSeccion('inventario-fisico')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-clipboard-list"></i> Inventario Físico</a>
-        <a onclick="mostrarSeccion('ajustes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-tools"></i> Ajustes y Reconciliación</a>
-      </nav>
-    </div>
-
-    <div class="flex-1 overflow-auto p-8" id="main-content">
-      <!-- Contenido dinámico -->
-    </div>
+<div class="flex h-screen">
+  <!-- Sidebar -->
+  <div class="w-72 bg-white border-r shadow-xl">
+<div class="p-6 border-b bg-green-700 text-white">
+  <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+  <p class="text-sm opacity-90">
+    Centro de Inventario
+  </p>
+</div>
+<nav class="p-4 space-y-1">
+  <a href="admin.html"
+  class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+    <i class="fas fa-arrow-left"></i>
+    Volver al Admin
+  </a>
+  <a onclick="mostrarSeccion('dashboard')"
+  class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+    <i class="fas fa-boxes-stacked"></i>
+    Centro de Inventario
+  </a>
+  <a onclick="mostrarSeccion('inventario-fisico')"
+  class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+    <i class="fas fa-clipboard-list"></i>
+    Inventario Físico
+  </a>
+  <a onclick="mostrarSeccion('ajustes')"
+  class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+    <i class="fas fa-tools"></i>
+    Ajustes y Reconciliación
+  </a>
+</nav>
   </div>
-
-  <script>
-    const firebaseConfig = { /* pega aquí tu configuración de Firebase */ };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    function mostrarSeccion(seccion) {
-      const content = document.getElementById('main-content');
-      if (seccion === 'kardex') {
-        content.innerHTML = `<h1 class="text-3xl font-bold">Kardex de Inventario</h1><p class="mt-4 text-gray-600">Registro de movimientos en tiempo real...</p>`;
-      } else if (seccion === 'inventario-fisico') {
-        content.innerHTML = `<h1 class="text-3xl font-bold">Inventario Físico</h1><button onclick="generarPDFInventario()" class="mt-4 bg-green-600 text-white px-6 py-3 rounded-2xl">Generar PDF para Conteo</button>`;
-      } else if (seccion === 'ajustes') {
-        content.innerHTML = `<h1 class="text-3xl font-bold">Ajustes y Reconciliación</h1>`;
-      }
-    }
-
-    function generarPDFInventario() {
-      alert("✅ PDF de Inventario Físico generado (funcionalidad en desarrollo)");
-    }
-
-    window.onload = () => mostrarSeccion('kardex');
-  </script>
+  <!-- Contenido -->
+  <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+</div>
+<script>
+const firebaseConfig = {
+  // Pega aquí tu configuración Firebase
+};
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+function mostrarSeccion(seccion) {
+  const content = document.getElementById('main-content');
+  if (seccion === 'dashboard') {
+    content.innerHTML = `
+    <h1 class="text-4xl font-bold text-green-700 mb-6">
+      📦 Centro de Inventario AGROMAX
+    </h1>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">Productos</span>
+          <i class="fas fa-boxes-stacked text-green-600 text-2xl"></i>
+        </div>
+        <h2 class="text-4xl font-bold mt-3">0</h2>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">Stock Bajo</span>
+          <i class="fas fa-triangle-exclamation text-yellow-500 text-2xl"></i>
+        </div>
+        <h2 class="text-4xl font-bold mt-3">0</h2>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">Agotados</span>
+          <i class="fas fa-circle-xmark text-red-500 text-2xl"></i>
+        </div>
+        <h2 class="text-4xl font-bold mt-3">0</h2>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-500">Valor Inventario</span>
+          <i class="fas fa-coins text-blue-600 text-2xl"></i>
+        </div>
+        <h2 class="text-4xl font-bold mt-3">Q0.00</h2>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow p-6 mb-8">
+      <h2 class="text-2xl font-bold mb-4">
+        ⚡ Acciones Rápidas
+      </h2>
+      <div class="flex flex-wrap gap-4">
+        <button class="bg-green-600 text-white px-5 py-3 rounded-xl hover:bg-green-700">
+          <i class="fas fa-plus mr-2"></i>
+          Entrada
+        </button>
+        <button class="bg-red-600 text-white px-5 py-3 rounded-xl hover:bg-red-700">
+          <i class="fas fa-minus mr-2"></i>
+          Salida
+        </button>
+        <button class="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700">
+          <i class="fas fa-barcode mr-2"></i>
+          Escanear
+        </button>
+        <button onclick="mostrarSeccion('inventario-fisico')"
+        class="bg-purple-600 text-white px-5 py-3 rounded-xl hover:bg-purple-700">
+          <i class="fas fa-file-pdf mr-2"></i>
+          Inventario PDF
+        </button>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-2xl font-bold mb-4">
+        📊 Últimos Movimientos
+      </h2>
+      <table class="w-full">
+        <thead>
+          <tr class="border-b">
+            <th class="text-left py-3">Fecha</th>
+            <th class="text-left py-3">Producto</th>
+            <th class="text-left py-3">Movimiento</th>
+            <th class="text-left py-3">Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b">
+            <td class="py-3">--</td>
+            <td>Sin registros</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    `;
+  }
+  else if (seccion === 'inventario-fisico') {
+    content.innerHTML = `
+    <div class="bg-white p-8 rounded-2xl shadow">
+      <h1 class="text-3xl font-bold mb-4">
+        📋 Inventario Físico
+      </h1>
+      <p class="text-gray-600 mb-6">
+        Genera formatos para conteo físico y validación de existencias.
+      </p>
+      <button
+      onclick="generarPDFInventario()"
+      class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700">
+        <i class="fas fa-file-pdf mr-2"></i>
+        Generar PDF
+      </button>
+    </div>
+    `;
+  }
+  else if (seccion === 'ajustes') {
+    content.innerHTML = `
+    <div class="bg-white p-8 rounded-2xl shadow">
+      <h1 class="text-3xl font-bold mb-4">
+        ⚙️ Ajustes y Reconciliación
+      </h1>
+      <p class="text-gray-600">
+        Realiza ajustes de inventario, correcciones y auditorías de stock.
+      </p>
+    </div>
+    `;
+  }
+}
+function generarPDFInventario() {
+  alert("✅ Generación de PDF en desarrollo");
+}
+window.onload = () => {
+  mostrarSeccion('dashboard');
+};
+</script>
 </body>
 </html>
