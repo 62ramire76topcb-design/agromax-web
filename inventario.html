@@ -6,10 +6,9 @@
   <title>AGROMAXGTM - Inventario</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
-  <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
@@ -17,7 +16,7 @@
 <body class="bg-gray-100">
 <div class="flex h-screen">
 
-  <!-- Sidebar -->
+  <!-- SIDEBAR -->
   <div class="w-72 bg-white border-r shadow-xl">
     <div class="p-6 border-b bg-green-700 text-white">
       <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
@@ -25,187 +24,240 @@
     </div>
 
     <nav class="p-4 space-y-1">
-      <a href="admin.html"
-        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50">
-        <i class="fas fa-arrow-left"></i>
-        Volver al Admin
+      <a href="admin.html" class="flex gap-3 px-4 py-3 rounded-2xl hover:bg-green-50">
+        <i class="fas fa-arrow-left"></i> Volver al Admin
       </a>
 
-      <a onclick="mostrarSeccion('dashboard')"
-        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
-        <i class="fas fa-boxes-stacked"></i>
-        Centro de Inventario
+      <a onclick="mostrarSeccion('dashboard')" class="flex gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+        <i class="fas fa-boxes-stacked"></i> Inventario en Tiempo Real
       </a>
 
-      <a onclick="mostrarSeccion('inventario-fisico')"
-        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
-        <i class="fas fa-clipboard-list"></i>
-        Inventario Físico
+      <a onclick="mostrarSeccion('fisico')" class="flex gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+        <i class="fas fa-clipboard-list"></i> Inventario Físico
       </a>
 
-      <a onclick="mostrarSeccion('ajustes')"
-        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
-        <i class="fas fa-tools"></i>
-        Ajustes y Reconciliación
+      <a onclick="mostrarSeccion('ajustes')" class="flex gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+        <i class="fas fa-tools"></i> Ajustes
       </a>
     </nav>
   </div>
 
-  <!-- Contenido -->
+  <!-- CONTENIDO -->
   <div class="flex-1 overflow-auto p-8" id="main-content"></div>
 
 </div>
 
 <script>
+/* =========================
+   FIREBASE CONFIG
+========================= */
 const firebaseConfig = {
-  // 🔥 Pega aquí tu Firebase config real
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_AUTH",
+  projectId: "TU_PROJECT_ID",
+  storageBucket: "TU_BUCKET",
+  messagingSenderId: "TU_SENDER",
+  appId: "TU_APP_ID"
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 /* =========================
-   RENDER PRINCIPAL
+   ESTADO GLOBAL
+========================= */
+let productos = [];
+let unsubscribeProductos = null;
+let unsubscribeMovimientos = null;
+
+/* =========================
+   UI NAV
 ========================= */
 function mostrarSeccion(seccion) {
   const content = document.getElementById('main-content');
 
   if (seccion === 'dashboard') {
-    content.innerHTML = `
-      <h1 class="text-4xl font-bold text-green-700 mb-6">
-        📦 Centro de Inventario AGROMAX
-      </h1>
-
-      <!-- KPIs -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-
-        <div class="bg-white p-6 rounded-2xl shadow">
-          <div class="flex justify-between">
-            <span class="text-gray-500">Productos</span>
-            <i class="fas fa-boxes-stacked text-green-600 text-2xl"></i>
-          </div>
-          <h2 class="text-4xl font-bold mt-3" id="kpi-productos">0</h2>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow">
-          <div class="flex justify-between">
-            <span class="text-gray-500">Stock Bajo</span>
-            <i class="fas fa-triangle-exclamation text-yellow-500 text-2xl"></i>
-          </div>
-          <h2 class="text-4xl font-bold mt-3" id="kpi-bajo">0</h2>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow">
-          <div class="flex justify-between">
-            <span class="text-gray-500">Agotados</span>
-            <i class="fas fa-circle-xmark text-red-500 text-2xl"></i>
-          </div>
-          <h2 class="text-4xl font-bold mt-3" id="kpi-agotados">0</h2>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow">
-          <div class="flex justify-between">
-            <span class="text-gray-500">Valor Inventario</span>
-            <i class="fas fa-coins text-blue-600 text-2xl"></i>
-          </div>
-          <h2 class="text-4xl font-bold mt-3" id="kpi-valor">Q0.00</h2>
-        </div>
-      </div>
-
-      <!-- Acciones -->
-      <div class="bg-white rounded-2xl shadow p-6 mb-8">
-        <h2 class="text-2xl font-bold mb-4">⚡ Acciones Rápidas</h2>
-
-        <div class="flex flex-wrap gap-4">
-          <button class="bg-green-600 text-white px-5 py-3 rounded-xl hover:bg-green-700">
-            <i class="fas fa-plus mr-2"></i> Entrada
-          </button>
-
-          <button class="bg-red-600 text-white px-5 py-3 rounded-xl hover:bg-red-700">
-            <i class="fas fa-minus mr-2"></i> Salida
-          </button>
-
-          <button class="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700">
-            <i class="fas fa-barcode mr-2"></i> Escanear
-          </button>
-
-          <button onclick="mostrarSeccion('inventario-fisico')"
-            class="bg-purple-600 text-white px-5 py-3 rounded-xl hover:bg-purple-700">
-            <i class="fas fa-file-pdf mr-2"></i> Inventario PDF
-          </button>
-        </div>
-      </div>
-
-      <!-- Movimientos -->
-      <div class="bg-white rounded-2xl shadow p-6">
-        <h2 class="text-2xl font-bold mb-4">📊 Últimos Movimientos</h2>
-
-        <table class="w-full">
-          <thead>
-            <tr class="border-b">
-              <th class="text-left py-3">Fecha</th>
-              <th class="text-left py-3">Producto</th>
-              <th class="text-left py-3">Movimiento</th>
-              <th class="text-left py-3">Cantidad</th>
-            </tr>
-          </thead>
-
-          <tbody id="movimientos">
-            <tr class="border-b">
-              <td class="py-3">--</td>
-              <td>Sin registros</td>
-              <td>-</td>
-              <td>-</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
+    content.innerHTML = renderDashboard();
+    iniciarListeners();
   }
 
-  else if (seccion === 'inventario-fisico') {
+  if (seccion === 'fisico') {
     content.innerHTML = `
       <div class="bg-white p-8 rounded-2xl shadow">
         <h1 class="text-3xl font-bold mb-4">📋 Inventario Físico</h1>
-        <p class="text-gray-600 mb-6">
-          Genera formatos para conteo físico y validación de existencias.
-        </p>
-
-        <button onclick="generarPDFInventario()"
-          class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700">
-          <i class="fas fa-file-pdf mr-2"></i>
+        <p class="text-gray-600 mb-4">Exportación y conteo físico.</p>
+        <button onclick="alert('PDF en desarrollo')" class="bg-green-600 text-white px-6 py-3 rounded-xl">
           Generar PDF
         </button>
       </div>
     `;
   }
 
-  else if (seccion === 'ajustes') {
+  if (seccion === 'ajustes') {
     content.innerHTML = `
       <div class="bg-white p-8 rounded-2xl shadow">
-        <h1 class="text-3xl font-bold mb-4">⚙️ Ajustes y Reconciliación</h1>
-        <p class="text-gray-600">
-          Realiza ajustes de inventario, correcciones y auditorías de stock.
-        </p>
+        <h1 class="text-3xl font-bold mb-4">⚙️ Ajustes</h1>
+        <p class="text-gray-600">Reconciliación de inventario.</p>
       </div>
     `;
   }
 }
 
 /* =========================
-   FUNCIONES FUTURAS
+   DASHBOARD UI
 ========================= */
-function generarPDFInventario() {
-  alert("✅ Generación de PDF en desarrollo");
+function renderDashboard() {
+  return `
+    <h1 class="text-4xl font-bold text-green-700 mb-6">
+      📦 Inventario en Tiempo Real
+    </h1>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-gray-500">Productos</p>
+        <h2 class="text-4xl font-bold" id="kpi-total">0</h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-gray-500">Stock Bajo</p>
+        <h2 class="text-4xl font-bold text-yellow-600" id="kpi-low">0</h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-gray-500">Agotados</p>
+        <h2 class="text-4xl font-bold text-red-600" id="kpi-empty">0</h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-gray-500">Valor Total</p>
+        <h2 class="text-4xl font-bold text-blue-600" id="kpi-value">Q0</h2>
+      </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="bg-white rounded-2xl shadow overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-green-700 text-white">
+          <tr>
+            <th class="p-3 text-left">Producto</th>
+            <th class="p-3 text-left">Categoría</th>
+            <th class="p-3 text-left">Stock</th>
+            <th class="p-3 text-left">Precio</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-productos"></tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* =========================
+   FIRESTORE REALTIME
+========================= */
+function iniciarListeners() {
+
+  // evitar duplicados
+  if (unsubscribeProductos) unsubscribeProductos();
+  if (unsubscribeMovimientos) unsubscribeMovimientos();
+
+  /* ---- PRODUCTOS REALTIME ---- */
+  unsubscribeProductos = db.collection("productos")
+    .onSnapshot(snapshot => {
+
+      productos = [];
+
+      snapshot.forEach(doc => {
+        productos.push({ id: doc.id, ...doc.data() });
+      });
+
+      renderProductos();
+      calcularKPIs();
+    });
+
+  /* ---- MOVIMIENTOS REALTIME ---- */
+  unsubscribeMovimientos = db.collection("movimientos")
+    .orderBy("fecha", "desc")
+    .limit(10)
+    .onSnapshot(snapshot => {
+
+      const tbody = document.getElementById("movimientos");
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+
+      snapshot.forEach(doc => {
+        const m = doc.data();
+
+        tbody.innerHTML += `
+          <tr class="border-b">
+            <td class="py-2">${m.fecha || "-"}</td>
+            <td>${m.producto || "-"}</td>
+            <td>${m.tipo || "-"}</td>
+            <td>${m.cantidad || 0}</td>
+          </tr>
+        `;
+      });
+    });
+}
+
+/* =========================
+   RENDER PRODUCTOS
+========================= */
+function renderProductos() {
+  const tbody = document.getElementById("tabla-productos");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  productos.forEach(p => {
+    tbody.innerHTML += `
+      <tr class="border-b hover:bg-gray-50">
+        <td class="p-3">${p.nombre}</td>
+        <td class="p-3">${p.categoria}</td>
+        <td class="p-3">${p.stock}</td>
+        <td class="p-3">Q${p.precio}</td>
+      </tr>
+    `;
+  });
+}
+
+/* =========================
+   KPIs AUTOMÁTICOS
+========================= */
+function calcularKPIs() {
+  let total = productos.length;
+  let low = 0;
+  let empty = 0;
+  let value = 0;
+
+  productos.forEach(p => {
+    const stock = Number(p.stock || 0);
+    const precio = Number(p.precio || 0);
+
+    if (stock <= 5 && stock > 0) low++;
+    if (stock === 0) empty++;
+
+    value += stock * precio;
+  });
+
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  set("kpi-total", total);
+  set("kpi-low", low);
+  set("kpi-empty", empty);
+  set("kpi-value", "Q" + value.toFixed(2));
 }
 
 /* =========================
    INIT
 ========================= */
 window.onload = () => {
-  mostrarSeccion('dashboard');
+  mostrarSeccion("dashboard");
 };
 </script>
 
