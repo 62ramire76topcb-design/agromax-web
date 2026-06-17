@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AGROMAXGTM - Ventas TRI MODE</title>
+<title>AGROMAXGTM - VENTAS TRI MODE</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 
@@ -17,7 +18,7 @@
 <div class="flex h-screen">
 
 <!-- SIDEBAR -->
-<div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
+<div class="w-72 bg-white border-r shadow-xl">
   <div class="p-6 bg-green-700 text-white">
     <h1 class="text-2xl font-bold">AGROMAX TRI</h1>
     <p class="text-xs">Ventas + Inventario + Kardex</p>
@@ -25,7 +26,7 @@
 
   <nav class="p-4 space-y-2">
     <a onclick="view('venta')" class="block p-3 rounded-xl hover:bg-green-50 cursor-pointer">
-      <i class="fas fa-cash-register"></i> Punto de Venta
+      <i class="fas fa-cash-register"></i> Venta
     </a>
 
     <a onclick="view('historial')" class="block p-3 rounded-xl hover:bg-green-50 cursor-pointer">
@@ -33,7 +34,7 @@
     </a>
 
     <a onclick="view('kardex')" class="block p-3 rounded-xl hover:bg-green-50 cursor-pointer">
-      <i class="fas fa-chart-line"></i> Kardex
+      <i class="fas fa-boxes"></i> Kardex
     </a>
   </nav>
 </div>
@@ -46,22 +47,23 @@
 <script>
 /* ================= FIREBASE ================= */
 firebase.initializeApp({
-  apiKey: "TU_KEY",
-  authDomain: "TU_DOMAIN",
+  apiKey: "TU_API",
+  authDomain: "TU_AUTH",
   projectId: "TU_PROJECT"
 });
 
 const db = firebase.firestore();
 
+/* ================= VARIABLES ================= */
 let carrito = [];
 
-/* ================= VIEW ================= */
+/* ================= VISTA ================= */
 function view(v){
   const app = document.getElementById("app");
 
   if(v === "venta"){
     app.innerHTML = `
-      <h1 class="text-3xl font-bold mb-6">💰 Punto de Venta TRI</h1>
+      <h1 class="text-3xl font-bold mb-6">💰 Punto de Venta</h1>
 
       <div class="bg-white p-6 rounded-3xl shadow">
 
@@ -82,16 +84,11 @@ function view(v){
     `;
   }
 
-  if(v === "historial"){
-    cargarVentas();
-  }
-
-  if(v === "kardex"){
-    cargarKardex();
-  }
+  if(v === "historial") cargarVentas();
+  if(v === "kardex") cargarKardex();
 }
 
-/* ================= PRODUCTOS ================= */
+/* ================= BUSCAR PRODUCTO ================= */
 async function buscarProducto(){
 
   const t = document.getElementById("buscar").value.toLowerCase();
@@ -102,7 +99,7 @@ async function buscarProducto(){
     return;
   }
 
-  const snap = await db.collection("productos").limit(30).get();
+  const snap = await db.collection("productos").limit(50).get();
 
   let html = "";
 
@@ -144,7 +141,6 @@ function add(id,nombre,precio,stock){
 }
 
 function render(){
-
   document.getElementById("carrito").innerHTML =
   carrito.map((p,i)=>`
     <div class="flex justify-between bg-gray-100 p-3 rounded-2xl">
@@ -163,74 +159,60 @@ function del(i){
   render();
 }
 
-/* ================= FINALIZAR VENTA ================= */
-async function finalizarVenta() {
+/* ================= FINALIZAR VENTA (TRI SINCRONIZADO) ================= */
+async function finalizarVenta(){
 
-  if (carrito.length === 0) {
+  if(carrito.length === 0){
     alert("Carrito vacío");
     return;
   }
 
   try {
 
-    await db.runTransaction(async (transaction) => {
+    await db.runTransaction(async (tx)=>{
 
       let total = 0;
-
       const ventaRef = db.collection("ventas").doc();
 
-      const productosFinal = [];
+      const productos = [];
 
-      for (const item of carrito) {
+      for(const item of carrito){
 
-        const prodRef = db.collection("productos").doc(item.id);
+        const ref = db.collection("productos").doc(item.id);
+        const snap = await tx.get(ref);
 
-        const prodSnap = await transaction.get(prodRef);
+        if(!snap.exists) throw "Producto no existe: " + item.nombre;
 
-        if (!prodSnap.exists) {
-          throw new Error("Producto no existe: " + item.nombre);
+        const data = snap.data();
+        const stock = data.stock || 0;
+
+        if(stock < item.cantidad){
+          throw "Stock insuficiente en " + item.nombre;
         }
 
-        const data = prodSnap.data();
-        const stockActual = data.stock ?? 0;
+        const nuevoStock = stock - item.cantidad;
 
-        if (stockActual < item.cantidad) {
-          throw new Error("Stock insuficiente: " + item.nombre);
-        }
+        tx.update(ref,{ stock: nuevoStock });
 
-        const nuevoStock = stockActual - item.cantidad;
-
-        total += item.precio * item.cantidad;
-
-        // ✔ ACTUALIZAR INVENTARIO
-        transaction.update(prodRef, {
-          stock: nuevoStock
-        });
-
-        productosFinal.push({
-          id: item.id,
-          nombre: item.nombre,
-          cantidad: item.cantidad,
-          precio: item.precio
-        });
-
-        // ⚠️ KARDEX (NO dentro de transaction en modo seguro)
-        db.collection("kardex").add({
+        tx.set(db.collection("kardex").doc(),{
           productoId: item.id,
           producto: item.nombre,
           tipo: "SALIDA",
           cantidad: item.cantidad,
+          motivo: "VENTA",
           stockFinal: nuevoStock,
-          fecha: new Date(),
-          motivo: "VENTA"
+          fecha: new Date()
         });
+
+        total += item.precio * item.cantidad;
+
+        productos.push(item);
       }
 
-      // ✔ REGISTRAR VENTA
-      transaction.set(ventaRef, {
-        productos: productosFinal,
-        total,
+      tx.set(ventaRef,{
         fecha: new Date(),
+        productos,
+        total,
         tipo: "VENTA"
       });
 
@@ -238,39 +220,20 @@ async function finalizarVenta() {
 
     carrito = [];
 
-    alert("✅ SINCRONIZACIÓN REAL COMPLETADA (INVENTARIO + VENTA)");
+    alert("✅ Venta sincronizada (Inventario + Kardex + Ventas)");
 
     view("historial");
 
-  } catch (e) {
-    alert("❌ Error: " + e.message);
+  } catch(e){
+    alert("❌ Error: " + e);
   }
 }
-      // registrar venta
-      transaction.set(ventaRef, {
-        productos: productosActualizados,
-        total,
-        fecha: new Date(),
-        tipo: "VENTA"
-      });
 
-    });
-
-    carrito = [];
-
-    alert("✅ Venta sincronizada correctamente con inventario + kardex");
-
-    view("historial");
-
-  } catch (e) {
-    alert("❌ Error de sincronización: " + e);
-  }
-}
 /* ================= HISTORIAL ================= */
 function cargarVentas(){
 
   document.getElementById("app").innerHTML = `
-    <h1 class="text-3xl font-bold mb-6">📊 Historial Ventas</h1>
+    <h1 class="text-3xl font-bold mb-6">📊 Ventas</h1>
     <div id="lista"></div>
   `;
 
@@ -284,7 +247,7 @@ function cargarVentas(){
       const v = doc.data();
 
       html += `
-        <div class="bg-white p-6 rounded-3xl shadow mb-4">
+        <div class="bg-white p-5 rounded-2xl shadow mb-3">
           <b>Total: Q${(v.total||0).toFixed(2)}</b>
         </div>
       `;
@@ -298,7 +261,7 @@ function cargarVentas(){
 function cargarKardex(){
 
   document.getElementById("app").innerHTML = `
-    <h1 class="text-3xl font-bold mb-6">📦 Kardex</h1>
+    <h1 class="text-3xl font-bold mb-6">📦 Kardex en Tiempo Real</h1>
     <div id="kardex"></div>
   `;
 
@@ -312,9 +275,11 @@ function cargarKardex(){
       const k = doc.data();
 
       html += `
-        <div class="bg-white p-4 rounded-2xl shadow mb-3">
+        <div class="bg-white p-4 rounded-xl shadow mb-2">
           <b>${k.producto}</b> - ${k.tipo}
-          <p class="text-sm text-gray-500">${k.cantidad} unidades</p>
+          <div class="text-sm text-gray-500">
+            ${k.cantidad} unidades
+          </div>
         </div>
       `;
     });
