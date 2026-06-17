@@ -89,9 +89,9 @@ function view(v){
 }
 
 /* ================= BUSCAR PRODUCTO ================= */
-async function buscarProducto(){
+function buscarProducto(){
 
-  const t = document.getElementById("buscar").value.toLowerCase();
+  const t = document.getElementById("buscar").value.toLowerCase().trim();
   const box = document.getElementById("resultados");
 
   if(t.length < 2){
@@ -99,16 +99,14 @@ async function buscarProducto(){
     return;
   }
 
-  const snap = await db.collection("productos").limit(50).get();
-
   let html = "";
 
-  snap.forEach(doc=>{
-    const p = doc.data();
+  productosCache.forEach(p=>{
 
     if(p.nombre?.toLowerCase().includes(t)){
+
       html += `
-        <div onclick="add('${doc.id}','${p.nombre}',${p.precio||0},${p.stock||0})"
+        <div onclick="add('${p.id}','${p.nombre}',${p.precio||0},${p.stock||0})"
         class="p-3 hover:bg-white cursor-pointer flex justify-between rounded-xl">
 
           <span>${p.nombre}</span>
@@ -116,11 +114,11 @@ async function buscarProducto(){
         </div>
       `;
     }
+
   });
 
   box.innerHTML = html;
-}
-
+}  
 /* ================= CARRITO ================= */
 function add(id,nombre,precio,stock){
 
