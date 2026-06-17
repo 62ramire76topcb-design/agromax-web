@@ -5,103 +5,209 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AGROMAXGTM - Inventario</title>
 
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100">
+<div class="flex h-screen">
 
-  <!-- Header -->
-  <header class="bg-green-700 text-white p-4 shadow">
-    <div class="max-w-6xl mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold">
-        <i class="fa-solid fa-boxes-stacked"></i> Inventario AGROMAXGTM
-      </h1>
-      <button class="bg-white text-green-700 px-4 py-2 rounded hover:bg-gray-200">
-        <i class="fa-solid fa-plus"></i> Nuevo producto
-      </button>
+  <!-- Sidebar -->
+  <div class="w-72 bg-white border-r shadow-xl">
+    <div class="p-6 border-b bg-green-700 text-white">
+      <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+      <p class="text-sm opacity-90">Centro de Inventario</p>
     </div>
-  </header>
+
+    <nav class="p-4 space-y-1">
+      <a href="admin.html"
+        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Admin
+      </a>
+
+      <a onclick="mostrarSeccion('dashboard')"
+        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+        <i class="fas fa-boxes-stacked"></i>
+        Centro de Inventario
+      </a>
+
+      <a onclick="mostrarSeccion('inventario-fisico')"
+        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+        <i class="fas fa-clipboard-list"></i>
+        Inventario Físico
+      </a>
+
+      <a onclick="mostrarSeccion('ajustes')"
+        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+        <i class="fas fa-tools"></i>
+        Ajustes y Reconciliación
+      </a>
+    </nav>
+  </div>
 
   <!-- Contenido -->
-  <main class="max-w-6xl mx-auto p-4">
+  <div class="flex-1 overflow-auto p-8" id="main-content"></div>
 
-    <!-- Filtros -->
-    <div class="bg-white p-4 rounded shadow mb-4 flex flex-col md:flex-row gap-2">
-      <input type="text" placeholder="Buscar producto..."
-        class="w-full md:w-1/3 border p-2 rounded">
+</div>
 
-      <select class="w-full md:w-1/4 border p-2 rounded">
-        <option value="">Categoría</option>
-        <option>Fertilizantes</option>
-        <option>Semillas</option>
-        <option>Herramientas</option>
-      </select>
+<script>
+const firebaseConfig = {
+  // 🔥 Pega aquí tu Firebase config real
+};
 
-      <button class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">
-        <i class="fa-solid fa-filter"></i> Filtrar
-      </button>
-    </div>
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
 
-    <!-- Tabla -->
-    <div class="bg-white shadow rounded overflow-x-auto">
-      <table class="w-full text-left border-collapse">
-        <thead class="bg-green-700 text-white">
-          <tr>
-            <th class="p-3">Código</th>
-            <th class="p-3">Producto</th>
-            <th class="p-3">Categoría</th>
-            <th class="p-3">Stock</th>
-            <th class="p-3">Precio</th>
-            <th class="p-3">Acciones</th>
-          </tr>
-        </thead>
+/* =========================
+   RENDER PRINCIPAL
+========================= */
+function mostrarSeccion(seccion) {
+  const content = document.getElementById('main-content');
 
-        <tbody>
-          <tr class="border-b hover:bg-gray-50">
-            <td class="p-3">A001</td>
-            <td class="p-3">Fertilizante NPK</td>
-            <td class="p-3">Fertilizantes</td>
-            <td class="p-3 text-green-700 font-bold">120</td>
-            <td class="p-3">$25.00</td>
-            <td class="p-3 space-x-2">
-              <button class="text-blue-600 hover:underline"><i class="fa fa-edit"></i></button>
-              <button class="text-red-600 hover:underline"><i class="fa fa-trash"></i></button>
-            </td>
-          </tr>
+  if (seccion === 'dashboard') {
+    content.innerHTML = `
+      <h1 class="text-4xl font-bold text-green-700 mb-6">
+        📦 Centro de Inventario AGROMAX
+      </h1>
 
-          <tr class="border-b hover:bg-gray-50">
-            <td class="p-3">B002</td>
-            <td class="p-3">Semilla de Maíz</td>
-            <td class="p-3">Semillas</td>
-            <td class="p-3 text-yellow-600 font-bold">45</td>
-            <td class="p-3">$12.00</td>
-            <td class="p-3 space-x-2">
-              <button class="text-blue-600 hover:underline"><i class="fa fa-edit"></i></button>
-              <button class="text-red-600 hover:underline"><i class="fa fa-trash"></i></button>
-            </td>
-          </tr>
+      <!-- KPIs -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
 
-          <tr class="border-b hover:bg-gray-50">
-            <td class="p-3">C003</td>
-            <td class="p-3">Pala agrícola</td>
-            <td class="p-3">Herramientas</td>
-            <td class="p-3 text-red-600 font-bold">8</td>
-            <td class="p-3">$18.50</td>
-            <td class="p-3 space-x-2">
-              <button class="text-blue-600 hover:underline"><i class="fa fa-edit"></i></button>
-              <button class="text-red-600 hover:underline"><i class="fa fa-trash"></i></button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Productos</span>
+            <i class="fas fa-boxes-stacked text-green-600 text-2xl"></i>
+          </div>
+          <h2 class="text-4xl font-bold mt-3" id="kpi-productos">0</h2>
+        </div>
 
-  </main>
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Stock Bajo</span>
+            <i class="fas fa-triangle-exclamation text-yellow-500 text-2xl"></i>
+          </div>
+          <h2 class="text-4xl font-bold mt-3" id="kpi-bajo">0</h2>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Agotados</span>
+            <i class="fas fa-circle-xmark text-red-500 text-2xl"></i>
+          </div>
+          <h2 class="text-4xl font-bold mt-3" id="kpi-agotados">0</h2>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Valor Inventario</span>
+            <i class="fas fa-coins text-blue-600 text-2xl"></i>
+          </div>
+          <h2 class="text-4xl font-bold mt-3" id="kpi-valor">Q0.00</h2>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="bg-white rounded-2xl shadow p-6 mb-8">
+        <h2 class="text-2xl font-bold mb-4">⚡ Acciones Rápidas</h2>
+
+        <div class="flex flex-wrap gap-4">
+          <button class="bg-green-600 text-white px-5 py-3 rounded-xl hover:bg-green-700">
+            <i class="fas fa-plus mr-2"></i> Entrada
+          </button>
+
+          <button class="bg-red-600 text-white px-5 py-3 rounded-xl hover:bg-red-700">
+            <i class="fas fa-minus mr-2"></i> Salida
+          </button>
+
+          <button class="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700">
+            <i class="fas fa-barcode mr-2"></i> Escanear
+          </button>
+
+          <button onclick="mostrarSeccion('inventario-fisico')"
+            class="bg-purple-600 text-white px-5 py-3 rounded-xl hover:bg-purple-700">
+            <i class="fas fa-file-pdf mr-2"></i> Inventario PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Movimientos -->
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h2 class="text-2xl font-bold mb-4">📊 Últimos Movimientos</h2>
+
+        <table class="w-full">
+          <thead>
+            <tr class="border-b">
+              <th class="text-left py-3">Fecha</th>
+              <th class="text-left py-3">Producto</th>
+              <th class="text-left py-3">Movimiento</th>
+              <th class="text-left py-3">Cantidad</th>
+            </tr>
+          </thead>
+
+          <tbody id="movimientos">
+            <tr class="border-b">
+              <td class="py-3">--</td>
+              <td>Sin registros</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  else if (seccion === 'inventario-fisico') {
+    content.innerHTML = `
+      <div class="bg-white p-8 rounded-2xl shadow">
+        <h1 class="text-3xl font-bold mb-4">📋 Inventario Físico</h1>
+        <p class="text-gray-600 mb-6">
+          Genera formatos para conteo físico y validación de existencias.
+        </p>
+
+        <button onclick="generarPDFInventario()"
+          class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700">
+          <i class="fas fa-file-pdf mr-2"></i>
+          Generar PDF
+        </button>
+      </div>
+    `;
+  }
+
+  else if (seccion === 'ajustes') {
+    content.innerHTML = `
+      <div class="bg-white p-8 rounded-2xl shadow">
+        <h1 class="text-3xl font-bold mb-4">⚙️ Ajustes y Reconciliación</h1>
+        <p class="text-gray-600">
+          Realiza ajustes de inventario, correcciones y auditorías de stock.
+        </p>
+      </div>
+    `;
+  }
+}
+
+/* =========================
+   FUNCIONES FUTURAS
+========================= */
+function generarPDFInventario() {
+  alert("✅ Generación de PDF en desarrollo");
+}
+
+/* =========================
+   INIT
+========================= */
+window.onload = () => {
+  mostrarSeccion('dashboard');
+};
+</script>
 
 </body>
 </html>
