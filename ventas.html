@@ -214,7 +214,70 @@
         container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay ventas registradas</p>';
       });
     }
+    async function finalizar(){
 
+  if(carrito.length === 0){
+    alert("Carrito vacío");
+    return;
+  }
+
+  try {
+
+    await db.runTransaction(async (tx)=>{
+
+      let total = 0;
+      const ventaRef = db.collection("ventas").doc();
+      const cajaRef = db.collection("caja").doc(); // 🆕 CAJA
+
+      for(const item of carrito){
+
+        const ref = db.collection("productos").doc(item.id);
+        const snap = await tx.get(ref);
+
+        const stock = snap.data().stock || 0;
+
+        if(stock < item.cantidad){
+          throw "Stock insuficiente en " + item.nombre;
+        }
+
+        tx.update(ref,{
+          stock: stock - item.cantidad
+        });
+
+        total += item.precio * item.cantidad;
+      }
+
+      const ventaData = {
+        fecha: new Date(),
+        cliente: document.getElementById("cliente").value || "General",
+        productos: carrito,
+        total,
+        origen: "VENTA"
+      };
+
+      // 1️⃣ guardar venta
+      tx.set(ventaRef, ventaData);
+
+      // 2️⃣ enviar a caja automáticamente
+      tx.set(cajaRef, {
+        ...ventaData,
+        tipo: "VENTA",
+        estado: "PENDIENTE",
+        fechaCaja: new Date()
+      });
+
+    });
+
+    carrito = [];
+
+    alert("✅ Venta registrada y enviada a CAJA");
+
+    mostrar("historial");
+
+  } catch(e){
+    alert("Error: " + e);
+  }
+}
     window.onload = () => mostrarSeccion('nueva-venta');
   </script>
 </body>
