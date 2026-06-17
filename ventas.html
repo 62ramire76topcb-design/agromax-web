@@ -34,84 +34,188 @@
   </div>
 
   <script>
-    const firebaseConfig = { /* tu configuración */ };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+      authDomain: "agromaxgt-app.firebaseapp.com",
+      projectId: "agromaxgt-app",
+      storageBucket: "agromaxgt-app.firebasestorage.app",
+      messagingSenderId: "648144313047",
+      appId: "1:648144313047:web:118a67464d99f2d0462e92"
+    };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     let productosVenta = [];
 
+    async function verificarAuth() {
+      return new Promise(resolve => {
+        auth.onAuthStateChanged(user => {
+          if (!user) window.location.href = "admin.html";
+          else resolve(user);
+        });
+      });
+    }
+
     async function mostrarSeccion(seccion) {
+      await verificarAuth();
       const content = document.getElementById('main-content');
+
       if (seccion === 'nueva-venta') {
         content.innerHTML = `
-          <h1 class="text-3xl font-bold mb-8">Nueva Venta en Tienda</h1>
-          <div class="max-w-4xl bg-white p-8 rounded-3xl shadow">
-            <input id="cliente" placeholder="Nombre del Cliente (opcional)" class="w-full p-4 border rounded-2xl mb-6">
-            <input id="buscar" placeholder="Buscar producto..." class="w-full p-4 border rounded-2xl mb-4" onkeyup="filtrarProductos()">
-            <div id="resultados" class="max-h-80 overflow-auto border rounded-2xl p-3 bg-gray-50"></div>
-            <div id="lista-venta" class="mt-10 space-y-4"></div>
-            <button onclick="guardarVenta()" class="mt-10 w-full bg-green-700 text-white py-4 rounded-3xl font-bold">Guardar Venta y Actualizar Stock</button>
+          <h1 class="text-4xl font-bold mb-8">🛒 Nueva Venta en Tienda</h1>
+          <div class="grid grid-cols-12 gap-8">
+            <!-- Búsqueda -->
+            <div class="col-span-7 bg-white p-8 rounded-3xl shadow">
+              <input id="buscar" placeholder="Buscar producto o escanear código..." 
+                     class="w-full p-6 text-xl border-2 border-green-400 rounded-3xl focus:border-green-600" 
+                     autofocus onkeyup="if(event.key==='Enter') buscarProducto()">
+              <div id="resultados" class="mt-6 max-h-96 overflow-auto border rounded-2xl"></div>
+            </div>
+
+            <!-- Carrito -->
+            <div class="col-span-5 bg-white p-8 rounded-3xl shadow">
+              <h2 class="text-2xl font-bold mb-6">Carrito</h2>
+              <div id="lista-venta" class="space-y-4 min-h-96"></div>
+              
+              <div class="mt-8 pt-6 border-t">
+                <div class="flex justify-between text-3xl font-bold mb-6">
+                  <span>Total:</span>
+                  <span id="total-venta" class="text-green-600">Q0.00</span>
+                </div>
+                <button onclick="guardarVenta()" 
+                        class="w-full bg-green-700 hover:bg-green-800 text-white py-6 rounded-3xl text-2xl font-bold">
+                  💰 Finalizar Venta
+                </button>
+              </div>
+            </div>
           </div>`;
-      } else if (seccion === 'historial') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial de Ventas</h1><div id="lista-ventas" class="space-y-6"></div>`;
-        cargarHistorialVentas();
+      } 
+      else if (seccion === 'historial') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial de Ventas</h1><div id="lista-historial" class="space-y-6"></div>`;
+        cargarHistorial();
       }
     }
 
-    // Funciones de búsqueda y venta (similar a compras)
-    async function filtrarProductos() {
+    // Buscar producto
+    async function buscarProducto() {
       const term = document.getElementById('buscar').value.toLowerCase().trim();
       const container = document.getElementById('resultados');
       if (term.length < 2) return container.innerHTML = '';
-      const snap = await db.collection('productos').get();
+
+      const snapshot = await db.collection('productos').get();
       let html = '';
-      snap.forEach(doc => {
+      snapshot.forEach(doc => {
         const p = doc.data();
         if (p.nombre.toLowerCase().includes(term)) {
-          html += `<div onclick="agregarProductoVenta('${p.nombre}', ${p.precio || 0})" class="p-4 hover:bg-white rounded-xl cursor-pointer flex justify-between">
-            <span>${p.nombre}</span><span class="font-bold">Q${p.precio}</span>
-          </div>`;
+          html += `
+            <div onclick="agregarProductoVenta('${p.nombre}', ${p.precio || 0})" 
+                 class="p-5 hover:bg-green-50 rounded-2xl cursor-pointer flex justify-between border-b">
+              <span class="font-medium">${p.nombre}</span>
+              <span class="font-bold text-green-600">Q${p.precio || 0}</span>
+            </div>`;
         }
       });
-      container.innerHTML = html;
+      container.innerHTML = html || '<p class="p-8 text-gray-500">No se encontraron productos</p>';
     }
 
     function agregarProductoVenta(nombre, precio) {
-      const cantidad = parseInt(prompt("Cantidad:", "1")) || 1;
+      const cantidad = parseInt(prompt(`Cantidad de ${nombre}:`, "1")) || 1;
       productosVenta.push({nombre, cantidad, precio});
-      renderVenta();
+      renderCarrito();
     }
 
-    function renderVenta() {
+    function renderCarrito() {
       const container = document.getElementById('lista-venta');
-      container.innerHTML = productosVenta.map((p,i) => `
-        <div class="flex justify-between bg-gray-50 p-4 rounded-2xl">
-          <span>${p.nombre} × ${p.cantidad}</span>
-          <span class="font-bold">Q${(p.precio*p.cantidad).toFixed(2)}</span>
-          <button onclick="eliminarDeVenta(${i})" class="text-red-600">Eliminar</button>
-        </div>
-      `).join('');
+      let total = 0;
+      let html = '';
+
+      productosVenta.forEach((p, i) => {
+        const subtotal = p.precio * p.cantidad;
+        total += subtotal;
+        html += `
+          <div class="flex justify-between items-center bg-gray-50 p-5 rounded-2xl">
+            <div>
+              <p>${p.nombre}</p>
+              <p class="text-sm text-gray-500">${p.cantidad} × Q${p.precio}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-bold">Q${subtotal.toFixed(2)}</p>
+              <button onclick="eliminarDeVenta(${i})" class="text-red-600 text-sm mt-1">Eliminar</button>
+            </div>
+          </div>`;
+      });
+
+      container.innerHTML = html || '<p class="text-gray-400 py-12 text-center">El carrito está vacío</p>';
+      document.getElementById('total-venta').textContent = `Q${total.toFixed(2)}`;
+    }
+
+    function eliminarDeVenta(i) {
+      productosVenta.splice(i, 1);
+      renderCarrito();
     }
 
     async function guardarVenta() {
-      if (productosVenta.length === 0) return alert("Agrega productos");
+      if (productosVenta.length === 0) return alert("Agrega al menos un producto");
+
       const total = productosVenta.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
+      const cliente = document.getElementById('cliente') ? document.getElementById('cliente').value : "Cliente General";
+
       try {
+        // Registrar venta
         await db.collection('ventas').add({
           fecha: new Date(),
-          cliente: document.getElementById('cliente').value || "Cliente General",
+          cliente: cliente || "Cliente General",
           productos: productosVenta,
           total,
           tipo: "Tienda Física"
         });
-        alert("✅ Venta registrada");
+
+        // Actualizar stock
+        for (let item of productosVenta) {
+          const query = await db.collection('productos').where('nombre', '==', item.nombre).get();
+          query.forEach(async (doc) => {
+            const stockActual = doc.data().stock || 0;
+            await db.collection('productos').doc(doc.id).update({
+              stock: Math.max(0, stockActual - item.cantidad)
+            });
+          });
+        }
+
+        alert("✅ Venta registrada correctamente\nStock actualizado");
         productosVenta = [];
         mostrarSeccion('historial');
-      } catch(e) { alert("Error: " + e.message); }
+      } catch (e) {
+        alert("Error: " + e.message);
+      }
+    }
+
+    async function cargarHistorial() {
+      const container = document.getElementById('lista-historial');
+      db.collection('ventas').orderBy('fecha', 'desc').onSnapshot(snapshot => {
+        let html = '';
+        snapshot.forEach(doc => {
+          const v = doc.data();
+          html += `
+            <div class="bg-white rounded-3xl shadow p-6">
+              <div class="flex justify-between">
+                <div>
+                  <p class="font-bold">${v.cliente}</p>
+                  <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
+                </div>
+                <span class="font-bold text-green-600 text-xl">Q${v.total.toFixed(2)}</span>
+              </div>
+              <div class="mt-4 text-sm">
+                ${v.productos.map(p => `${p.nombre} × ${p.cantidad}`).join(' • ')}
+              </div>
+            </div>`;
+        });
+        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay ventas registradas</p>';
+      });
     }
 
     window.onload = () => mostrarSeccion('nueva-venta');
   </script>
 </body>
-</html>	
+</html>
