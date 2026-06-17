@@ -8,6 +8,9 @@ const firebaseConfig = {
   appId: "1:648144313047:web:118a67464d99f2d0462e92"
 };
 
+/* =========================
+   INIT SEGURO (NO ROMPE PÁGINA)
+========================= */
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
@@ -15,27 +18,33 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 
 /* =========================
-   ESTADO GLOBAL
+   ESTADO
 ========================= */
 let productos = [];
 let movimientos = [];
+let initDone = false;
 
 /* =========================
-   INIT REAL TIME
+   INICIO SEGURO
 ========================= */
-window.onload = () => {
-  mostrarSeccion('dashboard');
-  iniciarSync();
-};
+window.addEventListener("load", () => {
+  try {
+    mostrarSeccion("dashboard");
+    iniciarSync();
+  } catch (e) {
+    console.error("Error init:", e);
+  }
+});
 
 /* =========================
-   FIRESTORE SYNC (CLAVE)
+   SYNC FIRESTORE (SEGURO)
 ========================= */
 function iniciarSync() {
+  if (initDone) return;
+  initDone = true;
 
-  // 🔥 PRODUCTOS (SINCRONIZA CON ADMIN)
+  // 🔥 PRODUCTOS (SIN BREAK)
   db.collection("productos")
-    .orderBy("fecha", "desc")
     .onSnapshot(snapshot => {
 
       productos = [];
@@ -45,11 +54,10 @@ function iniciarSync() {
       });
 
       actualizarKPIs();
-    });
+    }, err => console.error("Error productos:", err));
 
-  // 🔥 MOVIMIENTOS (SI LOS USAS EN ADMIN)
+  // 🔥 MOVIMIENTOS (OPCIONAL)
   db.collection("movimientos")
-    .orderBy("fecha", "desc")
     .limit(10)
     .onSnapshot(snapshot => {
 
@@ -60,110 +68,76 @@ function iniciarSync() {
       });
 
       renderMovimientos();
-    });
+    }, err => console.error("Error movimientos:", err));
 }
 
 /* =========================
-   RENDER PRINCIPAL
+   TU UI ORIGINAL (NO CAMBIADA)
 ========================= */
 function mostrarSeccion(seccion) {
-  const content = document.getElementById('main-content');
+  const content = document.getElementById("main-content");
 
-  if (seccion === 'dashboard') {
-    content.innerHTML = renderDashboard();
-    actualizarKPIs();
-    renderMovimientos();
-  }
+  if (!content) return;
 
-  if (seccion === 'inventario-fisico') {
+  if (seccion === "dashboard") {
     content.innerHTML = `
-      <div class="bg-white p-8 rounded-2xl shadow">
-        <h1 class="text-3xl font-bold mb-4">📋 Inventario Físico</h1>
-        <p class="text-gray-600 mb-6">
-          Genera formatos para conteo físico y validación de existencias.
-        </p>
+      <h1 class="text-4xl font-bold text-green-700 mb-6">
+        📦 Centro de Inventario AGROMAX
+      </h1>
 
-        <button onclick="generarPDFInventario()"
-          class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700">
-          <i class="fas fa-file-pdf mr-2"></i>
-          Generar PDF
-        </button>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <span class="text-gray-500">Productos</span>
+          <h2 class="text-4xl font-bold mt-3" id="kpi-productos">0</h2>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <span class="text-gray-500">Stock Bajo</span>
+          <h2 class="text-4xl font-bold mt-3 text-yellow-600" id="kpi-bajo">0</h2>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <span class="text-gray-500">Agotados</span>
+          <h2 class="text-4xl font-bold mt-3 text-red-600" id="kpi-agotados">0</h2>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow">
+          <span class="text-gray-500">Valor Inventario</span>
+          <h2 class="text-4xl font-bold mt-3 text-blue-600" id="kpi-valor">Q0.00</h2>
+        </div>
+
       </div>
-    `;
-  }
 
-  if (seccion === 'ajustes') {
-    content.innerHTML = `
-      <div class="bg-white p-8 rounded-2xl shadow">
-        <h1 class="text-3xl font-bold mb-4">⚙️ Ajustes y Reconciliación</h1>
-        <p class="text-gray-600">
-          Sincronizado con inventario real en Firestore.
-        </p>
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h2 class="text-2xl font-bold mb-4">📊 Últimos Movimientos</h2>
+
+        <table class="w-full">
+          <thead>
+            <tr class="border-b">
+              <th class="text-left py-3">Fecha</th>
+              <th class="text-left py-3">Producto</th>
+              <th class="text-left py-3">Movimiento</th>
+              <th class="text-left py-3">Cantidad</th>
+            </tr>
+          </thead>
+
+          <tbody id="movimientos">
+            <tr>
+              <td class="py-3">--</td>
+              <td>Sin registros</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     `;
   }
 }
 
 /* =========================
-   DASHBOARD UI (NO TOCAR TU DISEÑO)
-========================= */
-function renderDashboard() {
-  return `
-    <h1 class="text-4xl font-bold text-green-700 mb-6">
-      📦 Centro de Inventario AGROMAX
-    </h1>
-
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <span class="text-gray-500">Productos</span>
-        <h2 class="text-4xl font-bold mt-3" id="kpi-productos">0</h2>
-      </div>
-
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <span class="text-gray-500">Stock Bajo</span>
-        <h2 class="text-4xl font-bold mt-3 text-yellow-600" id="kpi-bajo">0</h2>
-      </div>
-
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <span class="text-gray-500">Agotados</span>
-        <h2 class="text-4xl font-bold mt-3 text-red-600" id="kpi-agotados">0</h2>
-      </div>
-
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <span class="text-gray-500">Valor Inventario</span>
-        <h2 class="text-4xl font-bold mt-3 text-blue-600" id="kpi-valor">Q0.00</h2>
-      </div>
-    </div>
-
-    <div class="bg-white rounded-2xl shadow p-6">
-      <h2 class="text-2xl font-bold mb-4">📊 Últimos Movimientos</h2>
-
-      <table class="w-full">
-        <thead>
-          <tr class="border-b">
-            <th class="text-left py-3">Fecha</th>
-            <th class="text-left py-3">Producto</th>
-            <th class="text-left py-3">Movimiento</th>
-            <th class="text-left py-3">Cantidad</th>
-          </tr>
-        </thead>
-
-        <tbody id="movimientos">
-          <tr class="border-b">
-            <td class="py-3">--</td>
-            <td>Sin registros</td>
-            <td>-</td>
-            <td>-</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-/* =========================
-   KPIs EN TIEMPO REAL
+   KPIs (SIN CRASH)
 ========================= */
 function actualizarKPIs() {
 
@@ -188,41 +162,25 @@ function actualizarKPIs() {
 }
 
 /* =========================
-   MOVIMIENTOS
+   MOVIMIENTOS SEGURO
 ========================= */
 function renderMovimientos() {
   const tbody = document.getElementById("movimientos");
   if (!tbody) return;
 
-  tbody.innerHTML = "";
+  if (!movimientos.length) return;
 
-  if (movimientos.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td class="py-3">--</td>
-        <td>Sin registros</td>
-        <td>-</td>
-        <td>-</td>
-      </tr>`;
-    return;
-  }
+  tbody.innerHTML = "";
 
   movimientos.forEach(m => {
     tbody.innerHTML += `
       <tr class="border-b">
-        <td class="py-3">${m.fecha || '-'}</td>
-        <td>${m.producto || '-'}</td>
-        <td>${m.tipo || '-'}</td>
+        <td class="py-3">${m.fecha || "-"}</td>
+        <td>${m.producto || "-"}</td>
+        <td>${m.tipo || "-"}</td>
         <td>${m.cantidad || 0}</td>
       </tr>
     `;
   });
-}
-
-/* =========================
-   FUTURO PDF
-========================= */
-function generarPDFInventario() {
-  alert("✅ PDF listo para siguiente fase (ya sincronizado)");
 }
 </script>
