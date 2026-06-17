@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGROMAXGTM - Ventas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100">
+
+  <div class="flex h-screen">
+    <div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
+      <div class="p-6 border-b bg-green-700 text-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
+          <div>
+            <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+            <p class="text-xs">Módulo de Ventas</p>
+          </div>
+        </div>
+      </div>
+      <nav class="p-4 space-y-1">
+        <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
+        <a onclick="mostrarSeccion('nueva-venta')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Nueva Venta</a>
+        <a onclick="mostrarSeccion('historial')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-history"></i> Historial de Ventas</a>
+      </nav>
+    </div>
+
+    <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = { /* tu configuración */ };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let productosVenta = [];
+
+    async function mostrarSeccion(seccion) {
+      const content = document.getElementById('main-content');
+      if (seccion === 'nueva-venta') {
+        content.innerHTML = `
+          <h1 class="text-3xl font-bold mb-8">Nueva Venta en Tienda</h1>
+          <div class="max-w-4xl bg-white p-8 rounded-3xl shadow">
+            <input id="cliente" placeholder="Nombre del Cliente (opcional)" class="w-full p-4 border rounded-2xl mb-6">
+            <input id="buscar" placeholder="Buscar producto..." class="w-full p-4 border rounded-2xl mb-4" onkeyup="filtrarProductos()">
+            <div id="resultados" class="max-h-80 overflow-auto border rounded-2xl p-3 bg-gray-50"></div>
+            <div id="lista-venta" class="mt-10 space-y-4"></div>
+            <button onclick="guardarVenta()" class="mt-10 w-full bg-green-700 text-white py-4 rounded-3xl font-bold">Guardar Venta y Actualizar Stock</button>
+          </div>`;
+      } else if (seccion === 'historial') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial de Ventas</h1><div id="lista-ventas" class="space-y-6"></div>`;
+        cargarHistorialVentas();
+      }
+    }
+
+    // Funciones de búsqueda y venta (similar a compras)
+    async function filtrarProductos() {
+      const term = document.getElementById('buscar').value.toLowerCase().trim();
+      const container = document.getElementById('resultados');
+      if (term.length < 2) return container.innerHTML = '';
+      const snap = await db.collection('productos').get();
+      let html = '';
+      snap.forEach(doc => {
+        const p = doc.data();
+        if (p.nombre.toLowerCase().includes(term)) {
+          html += `<div onclick="agregarProductoVenta('${p.nombre}', ${p.precio || 0})" class="p-4 hover:bg-white rounded-xl cursor-pointer flex justify-between">
+            <span>${p.nombre}</span><span class="font-bold">Q${p.precio}</span>
+          </div>`;
+        }
+      });
+      container.innerHTML = html;
+    }
+
+    function agregarProductoVenta(nombre, precio) {
+      const cantidad = parseInt(prompt("Cantidad:", "1")) || 1;
+      productosVenta.push({nombre, cantidad, precio});
+      renderVenta();
+    }
+
+    function renderVenta() {
+      const container = document.getElementById('lista-venta');
+      container.innerHTML = productosVenta.map((p,i) => `
+        <div class="flex justify-between bg-gray-50 p-4 rounded-2xl">
+          <span>${p.nombre} × ${p.cantidad}</span>
+          <span class="font-bold">Q${(p.precio*p.cantidad).toFixed(2)}</span>
+          <button onclick="eliminarDeVenta(${i})" class="text-red-600">Eliminar</button>
+        </div>
+      `).join('');
+    }
+
+    async function guardarVenta() {
+      if (productosVenta.length === 0) return alert("Agrega productos");
+      const total = productosVenta.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
+      try {
+        await db.collection('ventas').add({
+          fecha: new Date(),
+          cliente: document.getElementById('cliente').value || "Cliente General",
+          productos: productosVenta,
+          total,
+          tipo: "Tienda Física"
+        });
+        alert("✅ Venta registrada");
+        productosVenta = [];
+        mostrarSeccion('historial');
+      } catch(e) { alert("Error: " + e.message); }
+    }
+
+    window.onload = () => mostrarSeccion('nueva-venta');
+  </script>
+</body>
+</html>
