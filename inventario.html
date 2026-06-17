@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AGROMAXGTM - Inventario Oficial</title>
+<title>AGROMAXGTM - Inventario PRO MAX</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -13,11 +13,21 @@
 
 <style>
 @media print {
-  body * { visibility: hidden; }
-  #printArea, #printArea * { visibility: visible; }
-  #printArea { position:absolute; left:0; top:0; width:100%; }
+  body * {
+    visibility: hidden;
+  }
+  #printArea, #printArea * {
+    visibility: visible;
+  }
+  #printArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
 }
 </style>
+
 </head>
 
 <body class="bg-gray-100">
@@ -27,21 +37,13 @@
 <div class="w-72 bg-white border-r shadow-xl">
   <div class="p-6 bg-green-700 text-white">
     <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-    <p class="text-sm">Inventario Oficial</p>
+    <p class="text-sm">Inventario PRO MAX</p>
   </div>
 
   <nav class="p-4 space-y-2">
-    <a onclick="view('dashboard')" class="block p-3 hover:bg-green-50 rounded cursor-pointer">
-      📦 Inventario
-    </a>
-
-    <a onclick="view('kardex')" class="block p-3 hover:bg-green-50 rounded cursor-pointer">
-      📒 Kardex
-    </a>
-
-    <a onclick="view('report')" class="block p-3 hover:bg-green-50 rounded cursor-pointer">
-      🧾 Reporte
-    </a>
+    <a onclick="view('dashboard')" class="cursor-pointer block p-3 hover:bg-green-50 rounded">📦 Dashboard</a>
+    <a onclick="view('report')" class="cursor-pointer block p-3 hover:bg-green-50 rounded">🧾 Reportes</a>
+    <a onclick="view('mov')" class="cursor-pointer block p-3 hover:bg-green-50 rounded">🔄 Movimientos</a>
   </nav>
 </div>
 
@@ -65,9 +67,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/* ================= ESTADO ================= */
+/* ================= STATE ================= */
 let productos = [];
-let kardex = [];
 
 /* ================= INIT ================= */
 window.onload = () => {
@@ -77,13 +78,6 @@ window.onload = () => {
     productos = snap.docs.map(d => ({id:d.id,...d.data()}));
     render();
   });
-
-  db.collection("movimientos")
-    .orderBy("fecha","desc")
-    .onSnapshot(snap => {
-      kardex = snap.docs.map(d => d.data());
-      renderKardex();
-    });
 };
 
 /* ================= NAV ================= */
@@ -91,68 +85,52 @@ function view(v){
   const main = document.getElementById("main");
 
   if(v==="dashboard") main.innerHTML = dashboardUI();
-  if(v==="kardex") main.innerHTML = kardexUI();
   if(v==="report") main.innerHTML = reportUI();
+  if(v==="mov") main.innerHTML = `<h2 class="text-2xl font-bold">Movimientos</h2>`;
 }
 
 /* ================= DASHBOARD ================= */
 function dashboardUI(){
 return `
-<h1 class="text-3xl font-bold mb-4">📦 Inventario Oficial</h1>
+<h1 class="text-3xl font-bold mb-4">📦 Inventario PRO MAX</h1>
 
-<div class="grid grid-cols-3 gap-3 mb-4">
-
-<button onclick="movimiento('entrada')" class="bg-green-600 text-white p-3 rounded">
-➕ Entrada
+<div class="flex gap-2 mb-4">
+<button onclick="printInventory()" class="bg-green-600 text-white px-4 py-2 rounded">
+🧾 Imprimir Inventario
 </button>
 
-<button onclick="movimiento('salida')" class="bg-red-600 text-white p-3 rounded">
-➖ Salida
+<button onclick="exportCSV()" class="bg-blue-600 text-white px-4 py-2 rounded">
+⬇ Exportar CSV
 </button>
-
-<button onclick="movimiento('ajuste')" class="bg-blue-600 text-white p-3 rounded">
-⚙ Ajuste
-</button>
-
 </div>
 
-<input id="search" oninput="render()"
-class="w-full p-2 border rounded mb-4"
-placeholder="Buscar producto...">
+<input id="search" oninput="render()" placeholder="Buscar producto..."
+class="w-full p-2 border rounded mb-4">
 
 <div id="list"></div>
-`;
-}
-
-/* ================= KARDEX ================= */
-function kardexUI(){
-return `
-<h1 class="text-2xl font-bold mb-4">📒 Kardex (Movimientos)</h1>
-
-<div class="bg-white p-4 rounded shadow">
-<table class="w-full">
-<thead>
-<tr>
-<th>Fecha</th>
-<th>Producto</th>
-<th>Tipo</th>
-<th>Cantidad</th>
-<th>Stock Final</th>
-</tr>
-</thead>
-<tbody id="kardexTable"></tbody>
-</table>
-</div>
 `;
 }
 
 /* ================= REPORT ================= */
 function reportUI(){
 return `
-<div id="printArea" class="bg-white p-6">
-<h1 class="text-2xl font-bold">Reporte Oficial Inventario</h1>
+<div id="printArea" class="bg-white p-8">
+
+<h1 class="text-2xl font-bold mb-4">📊 Reporte de Inventario AGROMAXGTM</h1>
+
+<p>Fecha: ${new Date().toLocaleString()}</p>
 
 <table class="w-full mt-4 border">
+<thead>
+<tr>
+<th>Producto</th>
+<th>Stock</th>
+<th>Precio</th>
+<th>Total</th>
+</tr>
+</thead>
+
+<tbody>
 ${productos.map(p=>`
 <tr>
 <td>${p.nombre}</td>
@@ -161,83 +139,63 @@ ${productos.map(p=>`
 <td>Q${(p.stock||0)*(p.precio||0)}</td>
 </tr>
 `).join("")}
+</tbody>
 </table>
 
-<h3 class="mt-4 font-bold">
-Total: Q${total()}
-</h3>
+<br>
+
+<h3>Total inventario: Q${total()}</h3>
+
 </div>
 `;
 }
 
-/* ================= MOVIMIENTOS ================= */
-async function movimiento(tipo){
-
-const nombre = prompt("Producto:");
-const cantidad = parseInt(prompt("Cantidad:"));
-
-const p = productos.find(x=>x.nombre===nombre);
-
-if(!p) return alert("Producto no existe");
-
-let stock = p.stock || 0;
-
-if(tipo==="entrada") stock += cantidad;
-if(tipo==="salida") stock -= cantidad;
-if(tipo==="ajuste") stock = cantidad;
-
-await db.collection("productos").doc(p.id).update({
-stock
-});
-
-await db.collection("movimientos").add({
-producto:nombre,
-tipo,
-cantidad,
-stockFinal:stock,
-fecha:new Date()
-});
-
-alert("Movimiento registrado");
-}
-
-/* ================= RENDER ================= */
+/* ================= RENDER LIST ================= */
 function render(){
 
 const q = document.getElementById("search")?.value?.toLowerCase() || "";
 
-const list = productos.filter(p=>
+const filtered = productos.filter(p =>
 p.nombre?.toLowerCase().includes(q)
 );
 
-document.getElementById("list").innerHTML =
-list.map(p=>`
+const el = document.getElementById("list");
+if(!el) return;
+
+el.innerHTML = filtered.map(p=>`
 <div class="bg-white p-3 mb-2 rounded shadow flex justify-between">
 <div>
 <b>${p.nombre}</b><br>
 Stock: ${p.stock}
 </div>
-<div>
+
+<div class="text-right">
 Q${p.precio}
 </div>
 </div>
 `).join("");
 }
 
-/* ================= KARDEX RENDER ================= */
-function renderKardex(){
-const el = document.getElementById("kardexTable");
-if(!el) return;
+/* ================= PRINT ================= */
+function printInventory(){
+window.print();
+}
 
-el.innerHTML = kardex.map(k=>`
-<tr>
-<td>${new Date(k.fecha?.seconds? k.fecha.seconds*1000 : k.fecha).toLocaleString()}</td>
-<td>${k.producto}</td>
-<td>${k.tipo}</td>
-<td>${k.cantidad}</td>
-<td>${k.stockFinal}</td>
-</tr>
-`).join("");
+/* ================= CSV ================= */
+function exportCSV(){
+let csv = "Producto,Stock,Precio\n";
+
+productos.forEach(p=>{
+csv += `${p.nombre},${p.stock},${p.precio}\n`;
+});
+
+const blob = new Blob([csv], {type:"text/csv"});
+const url = URL.createObjectURL(blob);
+
+const a = document.createElement("a");
+a.href = url;
+a.download = "inventario.csv";
+a.click();
 }
 
 /* ================= TOTAL ================= */
