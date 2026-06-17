@@ -1,4 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGROMAXGTM - Inventario</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body class="bg-gray-100">
+<div class="flex h-screen">
+
+  <!-- SIDEBAR -->
+  <div class="w-72 bg-white border-r shadow-xl">
+    <div class="p-6 border-b bg-green-700 text-white">
+      <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+      <p class="text-sm opacity-90">Centro de Inventario</p>
+    </div>
+
+    <nav class="p-4 space-y-1">
+      <a href="admin.html"
+        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Admin
+      </a>
+
+      <a onclick="mostrarSeccion('dashboard')"
+        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+        <i class="fas fa-boxes-stacked"></i>
+        Centro de Inventario
+      </a>
+
+      <a onclick="mostrarSeccion('inventario-fisico')"
+        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+        <i class="fas fa-clipboard-list"></i>
+        Inventario Físico
+      </a>
+
+      <a onclick="mostrarSeccion('ajustes')"
+        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
+        <i class="fas fa-tools"></i>
+        Ajustes y Reconciliación
+      </a>
+    </nav>
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+
+</div>
+
 <script>
+
+/* =========================
+   FIREBASE CONFIG (MISMO ADMIN)
+========================= */
 const firebaseConfig = {
   apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
   authDomain: "agromaxgt-app.firebaseapp.com",
@@ -8,9 +69,6 @@ const firebaseConfig = {
   appId: "1:648144313047:web:118a67464d99f2d0462e92"
 };
 
-/* =========================
-   INIT SEGURO (NO ROMPE PÁGINA)
-========================= */
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
@@ -18,32 +76,28 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 
 /* =========================
-   ESTADO
+   ESTADO GLOBAL
 ========================= */
 let productos = [];
 let movimientos = [];
-let initDone = false;
+let iniciado = false;
 
 /* =========================
-   INICIO SEGURO
+   INIT SEGURO
 ========================= */
 window.addEventListener("load", () => {
-  try {
-    mostrarSeccion("dashboard");
-    iniciarSync();
-  } catch (e) {
-    console.error("Error init:", e);
-  }
+  mostrarSeccion("dashboard");
+  iniciarSync();
 });
 
 /* =========================
-   SYNC FIRESTORE (SEGURO)
+   SYNC FIRESTORE (REALTIME)
 ========================= */
 function iniciarSync() {
-  if (initDone) return;
-  initDone = true;
+  if (iniciado) return;
+  iniciado = true;
 
-  // 🔥 PRODUCTOS (SIN BREAK)
+  // 🔥 PRODUCTOS (SYNC CON ADMIN)
   db.collection("productos")
     .onSnapshot(snapshot => {
 
@@ -54,7 +108,7 @@ function iniciarSync() {
       });
 
       actualizarKPIs();
-    }, err => console.error("Error productos:", err));
+    });
 
   // 🔥 MOVIMIENTOS (OPCIONAL)
   db.collection("movimientos")
@@ -68,76 +122,110 @@ function iniciarSync() {
       });
 
       renderMovimientos();
-    }, err => console.error("Error movimientos:", err));
+    });
 }
 
 /* =========================
-   TU UI ORIGINAL (NO CAMBIADA)
+   RENDER PRINCIPAL
 ========================= */
 function mostrarSeccion(seccion) {
   const content = document.getElementById("main-content");
-
   if (!content) return;
 
   if (seccion === "dashboard") {
+    content.innerHTML = renderDashboard();
+  }
+
+  if (seccion === "inventario-fisico") {
     content.innerHTML = `
-      <h1 class="text-4xl font-bold text-green-700 mb-6">
-        📦 Centro de Inventario AGROMAX
-      </h1>
+      <div class="bg-white p-8 rounded-2xl shadow">
+        <h1 class="text-3xl font-bold mb-4">📋 Inventario Físico</h1>
+        <p class="text-gray-600 mb-6">
+          Genera formatos para conteo físico y validación de existencias.
+        </p>
 
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-
-        <div class="bg-white p-6 rounded-2xl shadow">
-          <span class="text-gray-500">Productos</span>
-          <h2 class="text-4xl font-bold mt-3" id="kpi-productos">0</h2>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow">
-          <span class="text-gray-500">Stock Bajo</span>
-          <h2 class="text-4xl font-bold mt-3 text-yellow-600" id="kpi-bajo">0</h2>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow">
-          <span class="text-gray-500">Agotados</span>
-          <h2 class="text-4xl font-bold mt-3 text-red-600" id="kpi-agotados">0</h2>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow">
-          <span class="text-gray-500">Valor Inventario</span>
-          <h2 class="text-4xl font-bold mt-3 text-blue-600" id="kpi-valor">Q0.00</h2>
-        </div>
-
+        <button onclick="generarPDFInventario()"
+          class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700">
+          <i class="fas fa-file-pdf mr-2"></i>
+          Generar PDF
+        </button>
       </div>
+    `;
+  }
 
-      <div class="bg-white rounded-2xl shadow p-6">
-        <h2 class="text-2xl font-bold mb-4">📊 Últimos Movimientos</h2>
-
-        <table class="w-full">
-          <thead>
-            <tr class="border-b">
-              <th class="text-left py-3">Fecha</th>
-              <th class="text-left py-3">Producto</th>
-              <th class="text-left py-3">Movimiento</th>
-              <th class="text-left py-3">Cantidad</th>
-            </tr>
-          </thead>
-
-          <tbody id="movimientos">
-            <tr>
-              <td class="py-3">--</td>
-              <td>Sin registros</td>
-              <td>-</td>
-              <td>-</td>
-            </tr>
-          </tbody>
-        </table>
+  if (seccion === "ajustes") {
+    content.innerHTML = `
+      <div class="bg-white p-8 rounded-2xl shadow">
+        <h1 class="text-3xl font-bold mb-4">⚙️ Ajustes y Reconciliación</h1>
+        <p class="text-gray-600">
+          Sistema sincronizado con Firestore (solo lectura aquí).
+        </p>
       </div>
     `;
   }
 }
 
 /* =========================
-   KPIs (SIN CRASH)
+   DASHBOARD UI (SIN CAMBIOS VISUALES)
+========================= */
+function renderDashboard() {
+  return `
+    <h1 class="text-4xl font-bold text-green-700 mb-6">
+      📦 Centro de Inventario AGROMAX
+    </h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <span class="text-gray-500">Productos</span>
+        <h2 class="text-4xl font-bold mt-3" id="kpi-productos">0</h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <span class="text-gray-500">Stock Bajo</span>
+        <h2 class="text-4xl font-bold mt-3 text-yellow-600" id="kpi-bajo">0</h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <span class="text-gray-500">Agotados</span>
+        <h2 class="text-4xl font-bold mt-3 text-red-600" id="kpi-agotados">0</h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <span class="text-gray-500">Valor Inventario</span>
+        <h2 class="text-4xl font-bold mt-3 text-blue-600" id="kpi-valor">Q0.00</h2>
+      </div>
+
+    </div>
+
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-2xl font-bold mb-4">📊 Últimos Movimientos</h2>
+
+      <table class="w-full">
+        <thead>
+          <tr class="border-b">
+            <th class="text-left py-3">Fecha</th>
+            <th class="text-left py-3">Producto</th>
+            <th class="text-left py-3">Movimiento</th>
+            <th class="text-left py-3">Cantidad</th>
+          </tr>
+        </thead>
+
+        <tbody id="movimientos">
+          <tr>
+            <td class="py-3">--</td>
+            <td>Sin registros</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* =========================
+   KPIs EN TIEMPO REAL
 ========================= */
 function actualizarKPIs() {
 
@@ -162,15 +250,24 @@ function actualizarKPIs() {
 }
 
 /* =========================
-   MOVIMIENTOS SEGURO
+   MOVIMIENTOS REALTIME
 ========================= */
 function renderMovimientos() {
   const tbody = document.getElementById("movimientos");
   if (!tbody) return;
 
-  if (!movimientos.length) return;
-
   tbody.innerHTML = "";
+
+  if (!movimientos.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td class="py-3">--</td>
+        <td>Sin registros</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>`;
+    return;
+  }
 
   movimientos.forEach(m => {
     tbody.innerHTML += `
@@ -183,4 +280,14 @@ function renderMovimientos() {
     `;
   });
 }
+
+/* =========================
+   FUTURO PDF
+========================= */
+function generarPDFInventario() {
+  alert("✅ Inventario sincronizado listo para exportación PDF");
+}
 </script>
+
+</body>
+</html>
