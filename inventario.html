@@ -1,63 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAXGTM - Inventario</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-</head>
-
-<body class="bg-gray-100">
-<div class="flex h-screen">
-
-  <!-- SIDEBAR -->
-  <div class="w-72 bg-white border-r shadow-xl">
-    <div class="p-6 border-b bg-green-700 text-white">
-      <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-      <p class="text-sm opacity-90">Centro de Inventario</p>
-    </div>
-
-    <nav class="p-4 space-y-1">
-      <a href="admin.html" class="flex gap-3 px-4 py-3 rounded-2xl hover:bg-green-50">
-        <i class="fas fa-arrow-left"></i> Volver al Admin
-      </a>
-
-      <a onclick="mostrarSeccion('dashboard')" class="flex gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
-        <i class="fas fa-boxes-stacked"></i> Inventario en Tiempo Real
-      </a>
-
-      <a onclick="mostrarSeccion('fisico')" class="flex gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
-        <i class="fas fa-clipboard-list"></i> Inventario Físico
-      </a>
-
-      <a onclick="mostrarSeccion('ajustes')" class="flex gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
-        <i class="fas fa-tools"></i> Ajustes
-      </a>
-    </nav>
-  </div>
-
-  <!-- CONTENIDO -->
-  <div class="flex-1 overflow-auto p-8" id="main-content"></div>
-
-</div>
-
 <script>
-/* =========================
-   FIREBASE CONFIG
-========================= */
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_BUCKET",
-  messagingSenderId: "TU_SENDER",
-  appId: "TU_APP_ID"
+  apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+  authDomain: "agromaxgt-app.firebaseapp.com",
+  projectId: "agromaxgt-app",
+  storageBucket: "agromaxgt-app.firebasestorage.app",
+  messagingSenderId: "648144313047",
+  appId: "1:648144313047:web:118a67464d99f2d0462e92"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -67,103 +15,21 @@ const db = firebase.firestore();
    ESTADO GLOBAL
 ========================= */
 let productos = [];
-let unsubscribeProductos = null;
-let unsubscribeMovimientos = null;
 
 /* =========================
-   UI NAV
+   INICIO
 ========================= */
-function mostrarSeccion(seccion) {
-  const content = document.getElementById('main-content');
-
-  if (seccion === 'dashboard') {
-    content.innerHTML = renderDashboard();
-    iniciarListeners();
-  }
-
-  if (seccion === 'fisico') {
-    content.innerHTML = `
-      <div class="bg-white p-8 rounded-2xl shadow">
-        <h1 class="text-3xl font-bold mb-4">📋 Inventario Físico</h1>
-        <p class="text-gray-600 mb-4">Exportación y conteo físico.</p>
-        <button onclick="alert('PDF en desarrollo')" class="bg-green-600 text-white px-6 py-3 rounded-xl">
-          Generar PDF
-        </button>
-      </div>
-    `;
-  }
-
-  if (seccion === 'ajustes') {
-    content.innerHTML = `
-      <div class="bg-white p-8 rounded-2xl shadow">
-        <h1 class="text-3xl font-bold mb-4">⚙️ Ajustes</h1>
-        <p class="text-gray-600">Reconciliación de inventario.</p>
-      </div>
-    `;
-  }
-}
+window.onload = () => {
+  mostrarSeccion('dashboard');
+  escucharProductos();
+};
 
 /* =========================
-   DASHBOARD UI
+   FIRESTORE REALTIME SYNC
 ========================= */
-function renderDashboard() {
-  return `
-    <h1 class="text-4xl font-bold text-green-700 mb-6">
-      📦 Inventario en Tiempo Real
-    </h1>
-
-    <!-- KPIs -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <p class="text-gray-500">Productos</p>
-        <h2 class="text-4xl font-bold" id="kpi-total">0</h2>
-      </div>
-
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <p class="text-gray-500">Stock Bajo</p>
-        <h2 class="text-4xl font-bold text-yellow-600" id="kpi-low">0</h2>
-      </div>
-
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <p class="text-gray-500">Agotados</p>
-        <h2 class="text-4xl font-bold text-red-600" id="kpi-empty">0</h2>
-      </div>
-
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <p class="text-gray-500">Valor Total</p>
-        <h2 class="text-4xl font-bold text-blue-600" id="kpi-value">Q0</h2>
-      </div>
-    </div>
-
-    <!-- TABLA -->
-    <div class="bg-white rounded-2xl shadow overflow-x-auto">
-      <table class="w-full">
-        <thead class="bg-green-700 text-white">
-          <tr>
-            <th class="p-3 text-left">Producto</th>
-            <th class="p-3 text-left">Categoría</th>
-            <th class="p-3 text-left">Stock</th>
-            <th class="p-3 text-left">Precio</th>
-          </tr>
-        </thead>
-        <tbody id="tabla-productos"></tbody>
-      </table>
-    </div>
-  `;
-}
-
-/* =========================
-   FIRESTORE REALTIME
-========================= */
-function iniciarListeners() {
-
-  // evitar duplicados
-  if (unsubscribeProductos) unsubscribeProductos();
-  if (unsubscribeMovimientos) unsubscribeMovimientos();
-
-  /* ---- PRODUCTOS REALTIME ---- */
-  unsubscribeProductos = db.collection("productos")
+function escucharProductos() {
+  db.collection("productos")
+    .orderBy("fecha", "desc")
     .onSnapshot(snapshot => {
 
       productos = [];
@@ -172,94 +38,102 @@ function iniciarListeners() {
         productos.push({ id: doc.id, ...doc.data() });
       });
 
-      renderProductos();
-      calcularKPIs();
-    });
-
-  /* ---- MOVIMIENTOS REALTIME ---- */
-  unsubscribeMovimientos = db.collection("movimientos")
-    .orderBy("fecha", "desc")
-    .limit(10)
-    .onSnapshot(snapshot => {
-
-      const tbody = document.getElementById("movimientos");
-      if (!tbody) return;
-
-      tbody.innerHTML = "";
-
-      snapshot.forEach(doc => {
-        const m = doc.data();
-
-        tbody.innerHTML += `
-          <tr class="border-b">
-            <td class="py-2">${m.fecha || "-"}</td>
-            <td>${m.producto || "-"}</td>
-            <td>${m.tipo || "-"}</td>
-            <td>${m.cantidad || 0}</td>
-          </tr>
-        `;
-      });
+      actualizarVista();
     });
 }
 
 /* =========================
-   RENDER PRODUCTOS
+   UI ROUTER
 ========================= */
-function renderProductos() {
-  const tbody = document.getElementById("tabla-productos");
+function mostrarSeccion(seccion) {
+  const content = document.getElementById('main-content');
+
+  if (seccion === 'dashboard') {
+    content.innerHTML = renderDashboard();
+  }
+
+  if (seccion === 'fisico') {
+    content.innerHTML = `
+      <div class="bg-white p-8 rounded-2xl shadow">
+        <h1 class="text-3xl font-bold">📋 Inventario Físico</h1>
+      </div>
+    `;
+  }
+}
+
+/* =========================
+   DASHBOARD
+========================= */
+function renderDashboard() {
+  return `
+    <h1 class="text-4xl font-bold text-green-700 mb-6">
+      📦 Inventario en Tiempo Real
+    </h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-gray-500">Total Productos</p>
+        <h2 class="text-4xl font-bold" id="total">0</h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-gray-500">Stock Bajo</p>
+        <h2 class="text-4xl font-bold text-yellow-600" id="bajo">0</h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-gray-500">Agotados</p>
+        <h2 class="text-4xl font-bold text-red-600" id="agotados">0</h2>
+      </div>
+
+    </div>
+
+    <div class="bg-white rounded-2xl shadow overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-green-700 text-white">
+          <tr>
+            <th class="p-3 text-left">Producto</th>
+            <th class="p-3 text-left">Categoría</th>
+            <th class="p-3">Stock</th>
+            <th class="p-3">Precio</th>
+          </tr>
+        </thead>
+        <tbody id="tabla"></tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* =========================
+   ACTUALIZAR VISTA
+========================= */
+function actualizarVista() {
+
+  const total = productos.length;
+  const bajo = productos.filter(p => (p.stock || 0) > 0 && (p.stock || 0) < 10).length;
+  const agotados = productos.filter(p => (p.stock || 0) === 0).length;
+
+  if (document.getElementById("total")) {
+    document.getElementById("total").innerText = total;
+    document.getElementById("bajo").innerText = bajo;
+    document.getElementById("agotados").innerText = agotados;
+  }
+
+  const tbody = document.getElementById("tabla");
   if (!tbody) return;
 
   tbody.innerHTML = "";
 
   productos.forEach(p => {
     tbody.innerHTML += `
-      <tr class="border-b hover:bg-gray-50">
+      <tr class="border-b">
         <td class="p-3">${p.nombre}</td>
-        <td class="p-3">${p.categoria}</td>
-        <td class="p-3">${p.stock}</td>
+        <td class="p-3">${p.categoria || ''}</td>
+        <td class="p-3 text-center">${p.stock}</td>
         <td class="p-3">Q${p.precio}</td>
       </tr>
     `;
   });
 }
-
-/* =========================
-   KPIs AUTOMÁTICOS
-========================= */
-function calcularKPIs() {
-  let total = productos.length;
-  let low = 0;
-  let empty = 0;
-  let value = 0;
-
-  productos.forEach(p => {
-    const stock = Number(p.stock || 0);
-    const precio = Number(p.precio || 0);
-
-    if (stock <= 5 && stock > 0) low++;
-    if (stock === 0) empty++;
-
-    value += stock * precio;
-  });
-
-  const set = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.innerText = val;
-  };
-
-  set("kpi-total", total);
-  set("kpi-low", low);
-  set("kpi-empty", empty);
-  set("kpi-value", "Q" + value.toFixed(2));
-}
-
-/* =========================
-   INIT
-========================= */
-window.onload = () => {
-  mostrarSeccion("dashboard");
-};
 </script>
-
-</body>
-</html>
