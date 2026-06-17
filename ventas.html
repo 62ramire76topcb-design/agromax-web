@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 
@@ -24,8 +25,17 @@
   </div>
 
   <nav class="p-4 space-y-2">
-    <a onclick="mostrar('venta')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">🛒 Venta</a>
-    <a onclick="mostrar('historial')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">📊 Historial</a>
+    <a href="admin.html" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+      <i class="fas fa-arrow-left"></i> Volver al Admin
+    </a>
+
+    <a onclick="mostrar('venta')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+      🛒 Nueva Venta
+    </a>
+
+    <a onclick="mostrar('historial')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+      📊 Historial
+    </a>
   </nav>
 </div>
 
@@ -35,18 +45,34 @@
 </div>
 
 <script>
+/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
   authDomain: "agromaxgt-app.firebaseapp.com",
   projectId: "agromaxgt-app"
 });
 
+const auth = firebase.auth();
 const db = firebase.firestore();
 
 let carrito = [];
+let userReady = false;
+
+/* ================= ESPERAR AUTH (CLAVE DEL ARREGLO) ================= */
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = "admin.html";
+    return;
+  }
+  userReady = true;
+  mostrar("venta");
+});
 
 /* ================= VISTA ================= */
 function mostrar(v){
+
+  if(!userReady) return;
+
   const app = document.getElementById("app");
 
   if(v === "venta"){
@@ -80,6 +106,7 @@ function mostrar(v){
 
 /* ================= BUSCAR ================= */
 async function buscar(){
+
   const t = document.getElementById("buscar").value.toLowerCase();
   const box = document.getElementById("resultados");
 
@@ -97,11 +124,11 @@ async function buscar(){
 
     if(p.nombre?.toLowerCase().includes(t)){
       html += `
-        <div onclick="add('${doc.id}','${p.nombre}',${p.precio||0},${p.stock||0})"
+        <div onclick="add('${doc.id}','${p.nombre}',${p.precio||0})"
         class="p-3 bg-white mb-2 rounded-xl cursor-pointer flex justify-between">
 
           <span>${p.nombre}</span>
-          <b>Stock: ${p.stock||0}</b>
+          <b>Q${p.precio||0}</b>
         </div>
       `;
     }
@@ -111,7 +138,7 @@ async function buscar(){
 }
 
 /* ================= CARRITO ================= */
-function add(id,nombre,precio,stock){
+function add(id,nombre,precio){
 
   let item = carrito.find(p=>p.id===id);
 
@@ -140,7 +167,7 @@ function del(i){
   render();
 }
 
-/* ================= FINALIZAR (VENTA + INVENTARIO + CAJA) ================= */
+/* ================= FINALIZAR ================= */
 async function finalizar(){
 
   if(carrito.length === 0){
@@ -155,61 +182,47 @@ async function finalizar(){
       let total = 0;
 
       const ventaRef = db.collection("ventas").doc();
-      const cajaRef  = db.collection("caja").doc(); // 💰 CAJA
-
-      const productosFinal = [];
+      const cajaRef = db.collection("caja").doc();
 
       for(const item of carrito){
 
-        const prodRef = db.collection("productos").doc(item.id);
-        const prodSnap = await tx.get(prodRef);
+        const ref = db.collection("productos").doc(item.id);
+        const snap = await tx.get(ref);
 
-        if(!prodSnap.exists){
-          throw "Producto no existe";
-        }
+        const stock = snap.data().stock || 0;
 
-        const stockActual = prodSnap.data().stock || 0;
-
-        if(stockActual < item.cantidad){
+        if(stock < item.cantidad){
           throw "Stock insuficiente en " + item.nombre;
         }
 
-        const nuevoStock = stockActual - item.cantidad;
-
-        tx.update(prodRef,{
-          stock: nuevoStock
+        tx.update(ref,{
+          stock: stock - item.cantidad
         });
 
         total += item.precio * item.cantidad;
-
-        productosFinal.push(item);
       }
 
-      const ventaData = {
+      const data = {
         fecha: new Date(),
         cliente: document.getElementById("cliente").value || "General",
-        productos: productosFinal,
+        productos: carrito,
         total,
-        tipo: "VENTA"
+        usuario: auth.currentUser.uid
       };
 
-      // 🧾 ventas
-      tx.set(ventaRef, ventaData);
+      tx.set(ventaRef, data);
 
-      // 💰 caja automática
       tx.set(cajaRef, {
-        ...ventaData,
-        tipoMovimiento: "INGRESO",
-        origen: "VENTA",
-        estado: "PENDIENTE",
-        fechaCaja: new Date()
+        ...data,
+        tipo: "VENTA",
+        estado: "PENDIENTE"
       });
 
     });
 
     carrito = [];
 
-    alert("✅ Venta enviada a VENTAS + INVENTARIO + CAJA");
+    alert("✅ Venta registrada + Caja sincronizada");
 
     mostrar("historial");
 
@@ -245,9 +258,6 @@ function cargarHistorial(){
     document.getElementById("lista").innerHTML = html;
   });
 }
-
-/* INIT */
-mostrar("venta");
 </script>
 
 </body>
