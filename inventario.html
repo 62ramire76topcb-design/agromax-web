@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AGROMAXGTM - Inventario PRO MAX KARDEX</title>
+<title>AGROMAXGTM - Inventario Oficial</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -27,13 +27,21 @@
 <div class="w-72 bg-white border-r shadow-xl">
   <div class="p-6 bg-green-700 text-white">
     <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-    <p class="text-sm">Inventario + Kardex</p>
+    <p class="text-sm">Inventario Oficial</p>
   </div>
 
   <nav class="p-4 space-y-2">
-    <a onclick="view('dashboard')" class="block p-3 hover:bg-green-50 rounded cursor-pointer">📦 Inventario</a>
-    <a onclick="view('kardex')" class="block p-3 hover:bg-green-50 rounded cursor-pointer">📒 Kardex</a>
-    <a onclick="view('report')" class="block p-3 hover:bg-green-50 rounded cursor-pointer">🧾 Reporte</a>
+    <a onclick="view('dashboard')" class="block p-3 hover:bg-green-50 rounded cursor-pointer">
+      📦 Inventario
+    </a>
+
+    <a onclick="view('kardex')" class="block p-3 hover:bg-green-50 rounded cursor-pointer">
+      📒 Kardex
+    </a>
+
+    <a onclick="view('report')" class="block p-3 hover:bg-green-50 rounded cursor-pointer">
+      🧾 Reporte
+    </a>
   </nav>
 </div>
 
@@ -57,7 +65,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/* ================= STATE ================= */
+/* ================= ESTADO ================= */
 let productos = [];
 let kardex = [];
 
@@ -65,18 +73,17 @@ let kardex = [];
 window.onload = () => {
   view("dashboard");
 
-  // PRODUCTOS EN TIEMPO REAL
   db.collection("productos").onSnapshot(snap => {
     productos = snap.docs.map(d => ({id:d.id,...d.data()}));
     render();
   });
 
-  // KARDEX EN TIEMPO REAL
-  db.collection("movimientos").orderBy("fecha","desc")
-  .onSnapshot(snap => {
-    kardex = snap.docs.map(d => d.data());
-    renderKardex();
-  });
+  db.collection("movimientos")
+    .orderBy("fecha","desc")
+    .onSnapshot(snap => {
+      kardex = snap.docs.map(d => d.data());
+      renderKardex();
+    });
 };
 
 /* ================= NAV ================= */
@@ -91,29 +98,38 @@ function view(v){
 /* ================= DASHBOARD ================= */
 function dashboardUI(){
 return `
-<h1 class="text-3xl font-bold mb-4">📦 Inventario en Tiempo Real</h1>
+<h1 class="text-3xl font-bold mb-4">📦 Inventario Oficial</h1>
 
-<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-3 gap-3 mb-4">
 
-<button onclick="movimiento('entrada')" class="bg-green-600 text-white p-3 rounded">➕ Entrada</button>
-<button onclick="movimiento('salida')" class="bg-red-600 text-white p-3 rounded">➖ Salida</button>
-<button onclick="movimiento('ajuste')" class="bg-blue-600 text-white p-3 rounded">⚙ Ajuste</button>
+<button onclick="movimiento('entrada')" class="bg-green-600 text-white p-3 rounded">
+➕ Entrada
+</button>
+
+<button onclick="movimiento('salida')" class="bg-red-600 text-white p-3 rounded">
+➖ Salida
+</button>
+
+<button onclick="movimiento('ajuste')" class="bg-blue-600 text-white p-3 rounded">
+⚙ Ajuste
+</button>
 
 </div>
 
-<input id="search" oninput="render()" placeholder="Buscar producto..."
-class="w-full p-2 border rounded mb-4">
+<input id="search" oninput="render()"
+class="w-full p-2 border rounded mb-4"
+placeholder="Buscar producto...">
 
 <div id="list"></div>
 `;
 }
 
-/* ================= KARDEX UI ================= */
+/* ================= KARDEX ================= */
 function kardexUI(){
 return `
-<h1 class="text-2xl font-bold mb-4">📒 Kardex de Movimientos</h1>
+<h1 class="text-2xl font-bold mb-4">📒 Kardex (Movimientos)</h1>
 
-<div class="bg-white rounded shadow p-4">
+<div class="bg-white p-4 rounded shadow">
 <table class="w-full">
 <thead>
 <tr>
@@ -121,9 +137,9 @@ return `
 <th>Producto</th>
 <th>Tipo</th>
 <th>Cantidad</th>
+<th>Stock Final</th>
 </tr>
 </thead>
-
 <tbody id="kardexTable"></tbody>
 </table>
 </div>
@@ -134,74 +150,73 @@ return `
 function reportUI(){
 return `
 <div id="printArea" class="bg-white p-6">
-<h1 class="text-2xl font-bold">Reporte Inventario + Kardex</h1>
+<h1 class="text-2xl font-bold">Reporte Oficial Inventario</h1>
 
-<h3 class="mt-4">Productos:</h3>
-<table class="w-full border">
+<table class="w-full mt-4 border">
 ${productos.map(p=>`
 <tr>
 <td>${p.nombre}</td>
 <td>${p.stock}</td>
 <td>Q${p.precio}</td>
+<td>Q${(p.stock||0)*(p.precio||0)}</td>
 </tr>
 `).join("")}
 </table>
 
-<h3 class="mt-6">Total: Q${total()}</h3>
+<h3 class="mt-4 font-bold">
+Total: Q${total()}
+</h3>
 </div>
 `;
 }
 
-/* ================= MOVIMIENTO ================= */
+/* ================= MOVIMIENTOS ================= */
 async function movimiento(tipo){
 
-const nombre = prompt("Nombre del producto:");
+const nombre = prompt("Producto:");
 const cantidad = parseInt(prompt("Cantidad:"));
 
-const producto = productos.find(p=>p.nombre===nombre);
+const p = productos.find(x=>x.nombre===nombre);
 
-if(!producto) return alert("No existe el producto");
+if(!p) return alert("Producto no existe");
 
-let nuevoStock = producto.stock || 0;
+let stock = p.stock || 0;
 
-if(tipo==="entrada") nuevoStock += cantidad;
-if(tipo==="salida") nuevoStock -= cantidad;
-if(tipo==="ajuste") nuevoStock = cantidad;
+if(tipo==="entrada") stock += cantidad;
+if(tipo==="salida") stock -= cantidad;
+if(tipo==="ajuste") stock = cantidad;
 
-await db.collection("productos").doc(producto.id).update({
-stock: nuevoStock
+await db.collection("productos").doc(p.id).update({
+stock
 });
 
 await db.collection("movimientos").add({
-producto: nombre,
+producto:nombre,
 tipo,
 cantidad,
-stockFinal: nuevoStock,
-fecha: new Date()
+stockFinal:stock,
+fecha:new Date()
 });
 
 alert("Movimiento registrado");
 }
 
-/* ================= RENDER INVENTARIO ================= */
+/* ================= RENDER ================= */
 function render(){
 
 const q = document.getElementById("search")?.value?.toLowerCase() || "";
 
-const filtered = productos.filter(p =>
+const list = productos.filter(p=>
 p.nombre?.toLowerCase().includes(q)
 );
 
-const el = document.getElementById("list");
-if(!el) return;
-
-el.innerHTML = filtered.map(p=>`
+document.getElementById("list").innerHTML =
+list.map(p=>`
 <div class="bg-white p-3 mb-2 rounded shadow flex justify-between">
 <div>
 <b>${p.nombre}</b><br>
 Stock: ${p.stock}
 </div>
-
 <div>
 Q${p.precio}
 </div>
@@ -216,19 +231,22 @@ if(!el) return;
 
 el.innerHTML = kardex.map(k=>`
 <tr>
-<td>${new Date(k.fecha.seconds ? k.fecha.seconds*1000 : k.fecha).toLocaleString()}</td>
+<td>${new Date(k.fecha?.seconds? k.fecha.seconds*1000 : k.fecha).toLocaleString()}</td>
 <td>${k.producto}</td>
 <td>${k.tipo}</td>
 <td>${k.cantidad}</td>
+<td>${k.stockFinal}</td>
 </tr>
 `).join("");
 }
 
 /* ================= TOTAL ================= */
 function total(){
-return productos.reduce((a,p)=>a+(p.stock||0)*(p.precio||0),0).toFixed(2);
+return productos.reduce((a,p)=>
+a + (p.stock||0)*(p.precio||0),0).toFixed(2);
 }
 
 </script>
+
 </body>
 </html>
