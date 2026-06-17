@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGROMAXGTM - Scan de Productos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100">
+
+  <div class="flex h-screen">
+    <div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
+      <div class="p-6 border-b bg-green-700 text-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
+          <div>
+            <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+            <p class="text-xs">Scan de Productos</p>
+          </div>
+        </div>
+      </div>
+      <nav class="p-4 space-y-1">
+        <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
+        <a onclick="mostrarSeccion('scanner')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-barcode"></i> Escáner</a>
+        <a onclick="mostrarSeccion('historial')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-history"></i> Historial de Scans</a>
+      </nav>
+    </div>
+
+    <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+      authDomain: "agromaxgt-app.firebaseapp.com",
+      projectId: "agromaxgt-app",
+      storageBucket: "agromaxgt-app.firebasestorage.app",
+      messagingSenderId: "648144313047",
+      appId: "1:648144313047:web:118a67464d99f2d0462e92"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let scannedProducts = [];
+
+    async function verificarAuth() {
+      return new Promise(resolve => {
+        auth.onAuthStateChanged(user => {
+          if (!user) window.location.href = "admin.html";
+          else resolve(user);
+        });
+      });
+    }
+
+    async function mostrarSeccion(seccion) {
+      await verificarAuth();
+      const content = document.getElementById('main-content');
+
+      if (seccion === 'scanner') {
+        content.innerHTML = `
+          <h1 class="text-4xl font-bold mb-8">📟 Escáner de Productos</h1>
+          <div class="max-w-2xl mx-auto bg-white p-10 rounded-3xl shadow-xl">
+            <input id="barcode-input" 
+                   placeholder="Escanea código de barras o nombre del producto..." 
+                   class="w-full p-8 text-2xl border-4 border-green-500 rounded-3xl focus:border-green-600 outline-none" 
+                   autofocus onkeypress="if(event.key === 'Enter') procesarScan()">
+            <p class="text-center text-gray-500 mt-4">Presiona ENTER después de escanear</p>
+          </div>
+
+          <div class="max-w-4xl mx-auto mt-10">
+            <h2 class="text-2xl font-bold mb-6">Productos Escaneados</h2>
+            <div id="lista-scanned" class="space-y-4"></div>
+            
+            <button onclick="confirmarIngresoStock()" 
+                    class="mt-10 w-full bg-green-700 hover:bg-green-800 text-white py-6 rounded-3xl text-2xl font-bold">
+              ✅ Confirmar Ingreso al Stock
+            </button>
+          </div>`;
+      } 
+      else if (seccion === 'historial') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial de Scans</h1><div id="historial-scans" class="space-y-6"></div>`;
+        cargarHistorialScans();
+      }
+    }
+
+    async function procesarScan() {
+      const input = document.getElementById('barcode-input').value.trim();
+      if (!input) return;
+
+      const snapshot = await db.collection('productos').get();
+      let encontrado = false;
+
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        if (p.nombre.toLowerCase().includes(input.toLowerCase())) {
+          const existe = scannedProducts.find(item => item.nombre === p.nombre);
+          if (existe) existe.cantidad++;
+          else scannedProducts.push({nombre: p.nombre, cantidad: 1, precio: p.precio || 0});
+          encontrado = true;
+          renderScannedList();
+        }
+      });
+
+      if (!encontrado) alert("Producto no encontrado en el catálogo");
+      document.getElementById('barcode-input').value = '';
+    }
+
+    function renderScannedList() {
+      const container = document.getElementById('lista-scanned');
+      container.innerHTML = scannedProducts.map((item, i) => `
+        <div class="bg-white p-6 rounded-3xl shadow flex justify-between items-center">
+          <div>
+            <p class="font-bold">${item.nombre}</p>
+            <p class="text-green-600">Cantidad: ${item.cantidad}</p>
+          </div>
+          <button onclick="eliminarScan(${i})" class="text-red-600">Eliminar</button>
+        </div>
+      `).join('');
+    }
+
+    function eliminarScan(i) {
+      scannedProducts.splice(i, 1);
+      renderScannedList();
+    }
+
+    async function confirmarIngresoStock() {
+      if (scannedProducts.length === 0) return alert("No hay productos escaneados");
+
+      if (confirm("¿Confirmar ingreso de estos productos al stock?")) {
+        try {
+          for (let item of scannedProducts) {
+            const query = await db.collection('productos').where('nombre', '==', item.nombre).get();
+            query.forEach(async (doc) => {
+              const stockActual = doc.data().stock || 0;
+              await db.collection('productos').doc(doc.id).update({
+                stock: stockActual + item.cantidad
+              });
+            });
+          }
+
+          alert("✅ Stock actualizado correctamente");
+          scannedProducts = [];
+          renderScannedList();
+        } catch (e) {
+          alert("Error: " + e.message);
+        }
+      }
+    }
+
+    async function cargarHistorialScans() {
+      const container = document.getElementById('historial-scans');
+      // Aquí puedes guardar un historial de scans si deseas
+      container.innerHTML = `<p class="text-gray-500 text-center py-12">Historial de escaneos en desarrollo</p>`;
+    }
+
+    window.onload = () => mostrarSeccion('scanner');
+  </script>
+</body>
+</html>
