@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGROMAXGTM - Alquileres</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100">
+
+  <div class="flex h-screen">
+    <div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
+      <div class="p-6 border-b bg-green-700 text-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
+          <div>
+            <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+            <p class="text-xs">Módulo de Alquileres</p>
+          </div>
+        </div>
+      </div>
+      <nav class="p-4 space-y-1">
+        <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
+        <a onclick="mostrarSeccion('nuevo-alquiler')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Nuevo Alquiler</a>
+        <a onclick="mostrarSeccion('activos')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-key"></i> Alquileres Activos</a>
+        <a onclick="mostrarSeccion('historial')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-history"></i> Historial</a>
+      </nav>
+    </div>
+
+    <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+      authDomain: "agromaxgt-app.firebaseapp.com",
+      projectId: "agromaxgt-app",
+      storageBucket: "agromaxgt-app.firebasestorage.app",
+      messagingSenderId: "648144313047",
+      appId: "1:648144313047:web:118a67464d99f2d0462e92"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    async function verificarAuth() {
+      return new Promise(resolve => {
+        auth.onAuthStateChanged(user => {
+          if (!user) window.location.href = "admin.html";
+          else resolve(user);
+        });
+      });
+    }
+
+    async function mostrarSeccion(seccion) {
+      await verificarAuth();
+      const content = document.getElementById('main-content');
+
+      if (seccion === 'nuevo-alquiler') {
+        content.innerHTML = `
+          <h1 class="text-3xl font-bold mb-8">Nuevo Contrato de Alquiler</h1>
+          <div class="max-w-3xl bg-white p-8 rounded-3xl shadow">
+            <input id="cliente" placeholder="Nombre del Cliente" class="w-full p-4 border rounded-2xl mb-4">
+            <input id="equipo" placeholder="Equipo / Maquinaria a alquilar" class="w-full p-4 border rounded-2xl mb-4">
+            <div class="grid grid-cols-2 gap-4">
+              <input id="fecha-inicio" type="date" class="w-full p-4 border rounded-2xl">
+              <input id="fecha-fin" type="date" class="w-full p-4 border rounded-2xl">
+            </div>
+            <input id="monto" type="number" placeholder="Monto mensual (Q)" class="w-full p-4 border rounded-2xl my-4">
+            <textarea id="notas" placeholder="Notas o condiciones del alquiler" class="w-full p-4 border rounded-2xl h-32"></textarea>
+            <button onclick="guardarAlquiler()" class="mt-8 w-full bg-green-700 text-white py-4 rounded-3xl font-bold">Registrar Alquiler</button>
+          </div>`;
+      } 
+      else if (seccion === 'activos') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Alquileres Activos</h1><div id="lista-activos" class="space-y-6"></div>`;
+        cargarAlquileresActivos();
+      } 
+      else if (seccion === 'historial') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial de Alquileres</h1><div id="lista-historial" class="space-y-6"></div>`;
+        cargarHistorialAlquileres();
+      }
+    }
+
+    async function guardarAlquiler() {
+      const cliente = document.getElementById('cliente').value.trim();
+      if (!cliente) return alert("Nombre del cliente es obligatorio");
+
+      try {
+        await db.collection('alquileres').add({
+          cliente,
+          equipo: document.getElementById('equipo').value,
+          fechaInicio: document.getElementById('fecha-inicio').value,
+          fechaFin: document.getElementById('fecha-fin').value,
+          monto: parseFloat(document.getElementById('monto').value),
+          notas: document.getElementById('notas').value || "",
+          estado: "Activo",
+          fechaRegistro: new Date()
+        });
+        alert("✅ Alquiler registrado correctamente");
+        mostrarSeccion('activos');
+      } catch (e) {
+        alert("Error: " + e.message);
+      }
+    }
+
+    async function cargarAlquileresActivos() {
+      const container = document.getElementById('lista-activos');
+      db.collection('alquileres').where('estado', '==', 'Activo').orderBy('fechaRegistro', 'desc').onSnapshot(snapshot => {
+        let html = '';
+        snapshot.forEach(doc => {
+          const a = doc.data();
+          html += `
+            <div class="bg-white rounded-3xl shadow p-6">
+              <div class="flex justify-between">
+                <div>
+                  <p class="font-bold">${a.cliente}</p>
+                  <p class="text-lg">${a.equipo}</p>
+                </div>
+                <span class="px-4 py-1 bg-green-100 text-green-700 rounded-full">Activo</span>
+              </div>
+              <p class="mt-4">Vence: <span class="font-medium">${a.fechaFin}</span></p>
+              <p class="font-bold text-green-600">Q${a.monto} mensuales</p>
+            </div>`;
+        });
+        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay alquileres activos</p>';
+      });
+    }
+
+    async function cargarHistorialAlquileres() {
+      const container = document.getElementById('lista-historial');
+      db.collection('alquileres').orderBy('fechaRegistro', 'desc').onSnapshot(snapshot => {
+        let html = '';
+        snapshot.forEach(doc => {
+          const a = doc.data();
+          html += `
+            <div class="bg-white rounded-3xl shadow p-6">
+              <p class="font-bold">${a.cliente} - ${a.equipo}</p>
+              <p class="text-sm text-gray-500">${a.fechaInicio} → ${a.fechaFin}</p>
+              <p class="font-bold">Q${a.monto} | Estado: ${a.estado}</p>
+            </div>`;
+        });
+        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay historial</p>';
+      });
+    }
+
+    window.onload = () => mostrarSeccion('nuevo-alquiler');
+  </script>
+</body>
+</html>
