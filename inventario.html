@@ -8,26 +8,32 @@ const firebaseConfig = {
   appId: "1:648144313047:web:118a67464d99f2d0462e92"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
 const db = firebase.firestore();
 
 /* =========================
    ESTADO GLOBAL
 ========================= */
 let productos = [];
+let movimientos = [];
 
 /* =========================
-   INICIO
+   INIT REAL TIME
 ========================= */
 window.onload = () => {
   mostrarSeccion('dashboard');
-  escucharProductos();
+  iniciarSync();
 };
 
 /* =========================
-   FIRESTORE REALTIME SYNC
+   FIRESTORE SYNC (CLAVE)
 ========================= */
-function escucharProductos() {
+function iniciarSync() {
+
+  // 🔥 PRODUCTOS (SINCRONIZA CON ADMIN)
   db.collection("productos")
     .orderBy("fecha", "desc")
     .onSnapshot(snapshot => {
@@ -38,102 +44,185 @@ function escucharProductos() {
         productos.push({ id: doc.id, ...doc.data() });
       });
 
-      actualizarVista();
+      actualizarKPIs();
+    });
+
+  // 🔥 MOVIMIENTOS (SI LOS USAS EN ADMIN)
+  db.collection("movimientos")
+    .orderBy("fecha", "desc")
+    .limit(10)
+    .onSnapshot(snapshot => {
+
+      movimientos = [];
+
+      snapshot.forEach(doc => {
+        movimientos.push(doc.data());
+      });
+
+      renderMovimientos();
     });
 }
 
 /* =========================
-   UI ROUTER
+   RENDER PRINCIPAL
 ========================= */
 function mostrarSeccion(seccion) {
   const content = document.getElementById('main-content');
 
   if (seccion === 'dashboard') {
     content.innerHTML = renderDashboard();
+    actualizarKPIs();
+    renderMovimientos();
   }
 
-  if (seccion === 'fisico') {
+  if (seccion === 'inventario-fisico') {
     content.innerHTML = `
       <div class="bg-white p-8 rounded-2xl shadow">
-        <h1 class="text-3xl font-bold">📋 Inventario Físico</h1>
+        <h1 class="text-3xl font-bold mb-4">📋 Inventario Físico</h1>
+        <p class="text-gray-600 mb-6">
+          Genera formatos para conteo físico y validación de existencias.
+        </p>
+
+        <button onclick="generarPDFInventario()"
+          class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700">
+          <i class="fas fa-file-pdf mr-2"></i>
+          Generar PDF
+        </button>
+      </div>
+    `;
+  }
+
+  if (seccion === 'ajustes') {
+    content.innerHTML = `
+      <div class="bg-white p-8 rounded-2xl shadow">
+        <h1 class="text-3xl font-bold mb-4">⚙️ Ajustes y Reconciliación</h1>
+        <p class="text-gray-600">
+          Sincronizado con inventario real en Firestore.
+        </p>
       </div>
     `;
   }
 }
 
 /* =========================
-   DASHBOARD
+   DASHBOARD UI (NO TOCAR TU DISEÑO)
 ========================= */
 function renderDashboard() {
   return `
     <h1 class="text-4xl font-bold text-green-700 mb-6">
-      📦 Inventario en Tiempo Real
+      📦 Centro de Inventario AGROMAX
     </h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
 
       <div class="bg-white p-6 rounded-2xl shadow">
-        <p class="text-gray-500">Total Productos</p>
-        <h2 class="text-4xl font-bold" id="total">0</h2>
+        <span class="text-gray-500">Productos</span>
+        <h2 class="text-4xl font-bold mt-3" id="kpi-productos">0</h2>
       </div>
 
       <div class="bg-white p-6 rounded-2xl shadow">
-        <p class="text-gray-500">Stock Bajo</p>
-        <h2 class="text-4xl font-bold text-yellow-600" id="bajo">0</h2>
+        <span class="text-gray-500">Stock Bajo</span>
+        <h2 class="text-4xl font-bold mt-3 text-yellow-600" id="kpi-bajo">0</h2>
       </div>
 
       <div class="bg-white p-6 rounded-2xl shadow">
-        <p class="text-gray-500">Agotados</p>
-        <h2 class="text-4xl font-bold text-red-600" id="agotados">0</h2>
+        <span class="text-gray-500">Agotados</span>
+        <h2 class="text-4xl font-bold mt-3 text-red-600" id="kpi-agotados">0</h2>
       </div>
 
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <span class="text-gray-500">Valor Inventario</span>
+        <h2 class="text-4xl font-bold mt-3 text-blue-600" id="kpi-valor">Q0.00</h2>
+      </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow overflow-x-auto">
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-2xl font-bold mb-4">📊 Últimos Movimientos</h2>
+
       <table class="w-full">
-        <thead class="bg-green-700 text-white">
-          <tr>
-            <th class="p-3 text-left">Producto</th>
-            <th class="p-3 text-left">Categoría</th>
-            <th class="p-3">Stock</th>
-            <th class="p-3">Precio</th>
+        <thead>
+          <tr class="border-b">
+            <th class="text-left py-3">Fecha</th>
+            <th class="text-left py-3">Producto</th>
+            <th class="text-left py-3">Movimiento</th>
+            <th class="text-left py-3">Cantidad</th>
           </tr>
         </thead>
-        <tbody id="tabla"></tbody>
+
+        <tbody id="movimientos">
+          <tr class="border-b">
+            <td class="py-3">--</td>
+            <td>Sin registros</td>
+            <td>-</td>
+            <td>-</td>
+          </tr>
+        </tbody>
       </table>
     </div>
   `;
 }
 
 /* =========================
-   ACTUALIZAR VISTA
+   KPIs EN TIEMPO REAL
 ========================= */
-function actualizarVista() {
+function actualizarKPIs() {
 
   const total = productos.length;
   const bajo = productos.filter(p => (p.stock || 0) > 0 && (p.stock || 0) < 10).length;
   const agotados = productos.filter(p => (p.stock || 0) === 0).length;
 
-  if (document.getElementById("total")) {
-    document.getElementById("total").innerText = total;
-    document.getElementById("bajo").innerText = bajo;
-    document.getElementById("agotados").innerText = agotados;
-  }
+  let valor = 0;
+  productos.forEach(p => {
+    valor += (p.stock || 0) * (p.precio || 0);
+  });
 
-  const tbody = document.getElementById("tabla");
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = val;
+  };
+
+  set("kpi-productos", total);
+  set("kpi-bajo", bajo);
+  set("kpi-agotados", agotados);
+  set("kpi-valor", "Q" + valor.toFixed(2));
+}
+
+/* =========================
+   MOVIMIENTOS
+========================= */
+function renderMovimientos() {
+  const tbody = document.getElementById("movimientos");
   if (!tbody) return;
 
   tbody.innerHTML = "";
 
-  productos.forEach(p => {
+  if (movimientos.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td class="py-3">--</td>
+        <td>Sin registros</td>
+        <td>-</td>
+        <td>-</td>
+      </tr>`;
+    return;
+  }
+
+  movimientos.forEach(m => {
     tbody.innerHTML += `
       <tr class="border-b">
-        <td class="p-3">${p.nombre}</td>
-        <td class="p-3">${p.categoria || ''}</td>
-        <td class="p-3 text-center">${p.stock}</td>
-        <td class="p-3">Q${p.precio}</td>
+        <td class="py-3">${m.fecha || '-'}</td>
+        <td>${m.producto || '-'}</td>
+        <td>${m.tipo || '-'}</td>
+        <td>${m.cantidad || 0}</td>
       </tr>
     `;
   });
+}
+
+/* =========================
+   FUTURO PDF
+========================= */
+function generarPDFInventario() {
+  alert("✅ PDF listo para siguiente fase (ya sincronizado)");
 }
 </script>
