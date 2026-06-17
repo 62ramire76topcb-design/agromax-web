@@ -10,6 +10,24 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+<style>
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printArea, #printArea * {
+    visibility: visible;
+  }
+  #printArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+</style>
+
 </head>
 
 <body class="bg-gray-100">
@@ -23,9 +41,9 @@
   </div>
 
   <nav class="p-4 space-y-2">
-    <a onclick="view('dashboard')" class="cursor-pointer block p-3 rounded hover:bg-green-50">📊 Dashboard</a>
-    <a onclick="view('movimientos')" class="cursor-pointer block p-3 rounded hover:bg-green-50">🔄 Movimientos</a>
-    <a onclick="view('alertas')" class="cursor-pointer block p-3 rounded hover:bg-green-50">🚨 Alertas</a>
+    <a onclick="view('dashboard')" class="cursor-pointer block p-3 hover:bg-green-50 rounded">📦 Dashboard</a>
+    <a onclick="view('report')" class="cursor-pointer block p-3 hover:bg-green-50 rounded">🧾 Reportes</a>
+    <a onclick="view('mov')" class="cursor-pointer block p-3 hover:bg-green-50 rounded">🔄 Movimientos</a>
   </nav>
 </div>
 
@@ -49,22 +67,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/* ================= CACHE ================= */
+/* ================= STATE ================= */
 let productos = [];
-let lastUpdate = 0;
 
 /* ================= INIT ================= */
 window.onload = () => {
   view("dashboard");
 
   db.collection("productos").onSnapshot(snap => {
-    productos = snap.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }));
-
-    lastUpdate = Date.now();
-    renderDashboard();
+    productos = snap.docs.map(d => ({id:d.id,...d.data()}));
+    render();
   });
 };
 
@@ -73,134 +85,123 @@ function view(v){
   const main = document.getElementById("main");
 
   if(v==="dashboard") main.innerHTML = dashboardUI();
-  if(v==="movimientos") main.innerHTML = movimientosUI();
-  if(v==="alertas") main.innerHTML = alertasUI();
+  if(v==="report") main.innerHTML = reportUI();
+  if(v==="mov") main.innerHTML = `<h2 class="text-2xl font-bold">Movimientos</h2>`;
 }
 
 /* ================= DASHBOARD ================= */
 function dashboardUI(){
 return `
-<h1 class="text-3xl font-bold mb-6">📦 Inventario PRO MAX</h1>
+<h1 class="text-3xl font-bold mb-4">📦 Inventario PRO MAX</h1>
 
-<div class="grid grid-cols-4 gap-4 mb-6">
+<div class="flex gap-2 mb-4">
+<button onclick="printInventory()" class="bg-green-600 text-white px-4 py-2 rounded">
+🧾 Imprimir Inventario
+</button>
 
-<div class="bg-white p-4 rounded shadow">
-Total
-<h2 class="text-2xl font-bold">${productos.length}</h2>
+<button onclick="exportCSV()" class="bg-blue-600 text-white px-4 py-2 rounded">
+⬇ Exportar CSV
+</button>
 </div>
 
-<div class="bg-white p-4 rounded shadow">
-Bajo Stock
-<h2 class="text-2xl font-bold text-yellow-600">${countLow()}</h2>
-</div>
+<input id="search" oninput="render()" placeholder="Buscar producto..."
+class="w-full p-2 border rounded mb-4">
 
-<div class="bg-white p-4 rounded shadow">
-Agotados
-<h2 class="text-2xl font-bold text-red-600">${countEmpty()}</h2>
-</div>
-
-<div class="bg-white p-4 rounded shadow">
-Valor
-<h2 class="text-2xl font-bold text-blue-600">Q${totalValue()}</h2>
-</div>
-
-</div>
-
-<div class="bg-white p-4 rounded shadow">
-<h2 class="font-bold mb-3">⚡ Control rápido</h2>
-
-<select id="prod" class="w-full border p-2 mb-2">
-<option>Seleccionar producto</option>
-${productos.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join("")}
-</select>
-
-<input id="qty" type="number" class="w-full border p-2 mb-2" placeholder="Cantidad">
-
-<div class="flex gap-2">
-<button onclick="move('in')" class="bg-green-600 text-white px-4 py-2 rounded">Entrada</button>
-<button onclick="move('out')" class="bg-red-600 text-white px-4 py-2 rounded">Salida</button>
-<button onclick="move('set')" class="bg-blue-600 text-white px-4 py-2 rounded">Ajuste</button>
-</div>
-
-</div>
+<div id="list"></div>
 `;
 }
 
-/* ================= MOVIMIENTOS ================= */
-function movimientosUI(){
-return `<h2 class="text-2xl font-bold">Movimientos (optimizado)</h2>`;
-}
-
-/* ================= ALERTAS ================= */
-function alertasUI(){
+/* ================= REPORT ================= */
+function reportUI(){
 return `
-<h2 class="text-2xl font-bold mb-4">🚨 Alertas de Stock</h2>
+<div id="printArea" class="bg-white p-8">
 
-<div class="space-y-2">
-${productos.filter(p=>p.stock<=5).map(p=>`
-<div class="bg-red-100 p-3 rounded">
-<b>${p.nombre}</b> - Stock crítico: ${p.stock}
-</div>
+<h1 class="text-2xl font-bold mb-4">📊 Reporte de Inventario AGROMAXGTM</h1>
+
+<p>Fecha: ${new Date().toLocaleString()}</p>
+
+<table class="w-full mt-4 border">
+<thead>
+<tr>
+<th>Producto</th>
+<th>Stock</th>
+<th>Precio</th>
+<th>Total</th>
+</tr>
+</thead>
+
+<tbody>
+${productos.map(p=>`
+<tr>
+<td>${p.nombre}</td>
+<td>${p.stock}</td>
+<td>Q${p.precio}</td>
+<td>Q${(p.stock||0)*(p.precio||0)}</td>
+</tr>
 `).join("")}
+</tbody>
+</table>
+
+<br>
+
+<h3>Total inventario: Q${total()}</h3>
+
 </div>
 `;
 }
 
-/* ================= LOGIC OPTIMIZADA ================= */
-async function move(type){
+/* ================= RENDER LIST ================= */
+function render(){
 
-const id = document.getElementById("prod").value;
-const qty = parseInt(document.getElementById("qty").value||0);
+const q = document.getElementById("search")?.value?.toLowerCase() || "";
 
-if(!id || qty<=0) return alert("Datos inválidos");
+const filtered = productos.filter(p =>
+p.nombre?.toLowerCase().includes(q)
+);
 
-const ref = db.collection("productos").doc(id);
-const doc = await ref.get();
+const el = document.getElementById("list");
+if(!el) return;
 
-if(!doc.exists) return;
+el.innerHTML = filtered.map(p=>`
+<div class="bg-white p-3 mb-2 rounded shadow flex justify-between">
+<div>
+<b>${p.nombre}</b><br>
+Stock: ${p.stock}
+</div>
 
-let stock = doc.data().stock || 0;
+<div class="text-right">
+Q${p.precio}
+</div>
+</div>
+`).join("");
+}
 
-let newStock = stock;
+/* ================= PRINT ================= */
+function printInventory(){
+window.print();
+}
 
-if(type==="in") newStock += qty;
-if(type==="out") newStock -= qty;
-if(type==="set") newStock = qty;
+/* ================= CSV ================= */
+function exportCSV(){
+let csv = "Producto,Stock,Precio\n";
 
-if(newStock < 0) return alert("❌ Stock negativo no permitido");
-
-await ref.update({
-stock: newStock,
-updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+productos.forEach(p=>{
+csv += `${p.nombre},${p.stock},${p.precio}\n`;
 });
 
-await db.collection("movimientos").add({
-producto: doc.data().nombre,
-tipo: type,
-cantidad: qty,
-fecha: firebase.firestore.FieldValue.serverTimestamp()
-});
+const blob = new Blob([csv], {type:"text/csv"});
+const url = URL.createObjectURL(blob);
 
-document.getElementById("qty").value="";
+const a = document.createElement("a");
+a.href = url;
+a.download = "inventario.csv";
+a.click();
 }
 
-/* ================= STATS ================= */
-function countLow(){
-return productos.filter(p=>p.stock>0 && p.stock<10).length;
-}
-
-function countEmpty(){
-return productos.filter(p=>p.stock===0).length;
-}
-
-function totalValue(){
-return productos.reduce((a,p)=>a+(p.stock||0)*(p.precio||0),0).toFixed(2);
-}
-
-/* ================= RENDER ================= */
-function renderDashboard(){
-const el = document.getElementById("main");
-if(el) el.innerHTML = dashboardUI();
+/* ================= TOTAL ================= */
+function total(){
+return productos.reduce((a,p)=>
+a + (p.stock||0)*(p.precio||0),0).toFixed(2);
 }
 
 </script>
