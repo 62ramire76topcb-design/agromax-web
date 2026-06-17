@@ -93,6 +93,42 @@
         </div>
       `).join('');
     }
+    function eliminarDeVenta(index) {
+      productosVenta.splice(index, 1);
+      renderVenta();
+    }
+    async function cargarHistorialVentas() {
+    const contenedor = document.getElementById('lista-ventas');
+
+      db.collection('ventas')
+      .orderBy('fecha', 'desc')
+      .onSnapshot(snapshot => {
+
+      let html = '';
+
+      snapshot.forEach(doc => {
+        const venta = doc.data();
+
+        html += `
+          <div class="bg-white rounded-3xl shadow p-6">
+            <div class="flex justify-between">
+              <div>
+                <h3 class="font-bold">${venta.cliente}</h3>
+                <p class="text-sm text-gray-500">
+                  ${venta.fecha?.toDate().toLocaleString('es-GT')}
+                </p>
+              </div>
+              <div class="text-green-700 font-bold">
+                Q${venta.total.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      contenedor.innerHTML = html || '<p>No existen ventas registradas.</p>';
+    });
+}
 
     async function guardarVenta() {
       if (productosVenta.length === 0) return alert("Agrega productos");
