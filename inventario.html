@@ -1,52 +1,42 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAXGTM - Inventario</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGROMAXGTM - Inventario PRO</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 
 <body class="bg-gray-100">
 <div class="flex h-screen">
 
-  <!-- SIDEBAR -->
-  <div class="w-72 bg-white border-r shadow-xl">
-    <div class="p-6 border-b bg-green-700 text-white">
-      <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-      <p class="text-sm opacity-90">Centro de Inventario</p>
-    </div>
-
-    <nav class="p-4 space-y-1">
-      <a href="admin.html"
-        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50">
-        <i class="fas fa-arrow-left"></i> Volver al Admin
-      </a>
-
-      <a onclick="mostrarSeccion('dashboard')"
-        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
-        <i class="fas fa-boxes-stacked"></i> Centro de Inventario
-      </a>
-
-      <a onclick="mostrarSeccion('inventario-fisico')"
-        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
-        <i class="fas fa-clipboard-list"></i> Inventario Físico
-      </a>
-
-      <a onclick="mostrarSeccion('ajustes')"
-        class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer">
-        <i class="fas fa-tools"></i> Ajustes
-      </a>
-    </nav>
+<!-- SIDEBAR -->
+<div class="w-72 bg-white border-r shadow-xl">
+  <div class="p-6 bg-green-700 text-white">
+    <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+    <p class="text-sm">Inventario PRO</p>
   </div>
 
-  <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+  <nav class="p-4 space-y-2">
+    <a onclick="view('dashboard')" class="cursor-pointer block p-3 rounded-xl hover:bg-green-50">
+      📊 Dashboard
+    </a>
+    <a onclick="view('movimientos')" class="cursor-pointer block p-3 rounded-xl hover:bg-green-50">
+      🔄 Movimientos
+    </a>
+    <a onclick="view('ajustes')" class="cursor-pointer block p-3 rounded-xl hover:bg-green-50">
+      ⚙️ Ajustes
+    </a>
+  </nav>
+</div>
+
+<!-- MAIN -->
+<div class="flex-1 p-6 overflow-auto" id="main"></div>
 
 </div>
 
@@ -62,181 +52,187 @@ const firebaseConfig = {
   appId: "1:648144313047:web:118a67464d99f2d0462e92"
 };
 
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/* ================= STATE OPTIMIZADO ================= */
-let productosCache = new Map();
-let movimientosCache = [];
-let listenersStarted = false;
+/* ================= STATE ================= */
+let productos = [];
+let selectedProduct = null;
 
 /* ================= INIT ================= */
 window.onload = () => {
-  mostrarSeccion("dashboard");
-  iniciarListeners();
+  view("dashboard");
+
+  db.collection("productos").onSnapshot(snap => {
+    productos = snap.docs.map(d => ({id:d.id,...d.data()}));
+    renderDashboard();
+  });
 };
 
-/* ================= LISTENERS OPTIMIZADOS ================= */
-function iniciarListeners() {
-  if (listenersStarted) return;
-  listenersStarted = true;
+/* ================= NAV ================= */
+function view(v){
+  const main = document.getElementById("main");
 
-  db.collection("productos").onSnapshot(snapshot => {
-    let changed = false;
-
-    snapshot.docChanges().forEach(change => {
-      const data = { id: change.doc.id, ...change.doc.data() };
-
-      if (change.type === "added" || change.type === "modified") {
-        productosCache.set(change.doc.id, data);
-        changed = true;
-      }
-
-      if (change.type === "removed") {
-        productosCache.delete(change.doc.id);
-        changed = true;
-      }
-    });
-
-    if (changed) actualizarKPIs();
-  });
-
-  db.collection("movimientos")
-    .limit(10)
-    .onSnapshot(snapshot => {
-      movimientosCache = snapshot.docs.map(d => d.data());
-      renderMovimientos();
-    });
-}
-
-/* ================= UI ================= */
-function mostrarSeccion(seccion) {
-  const content = document.getElementById("main-content");
-
-  if (seccion === "dashboard") {
-    content.innerHTML = renderDashboard();
-    actualizarKPIs();
-    renderMovimientos();
+  if(v==="dashboard"){
+    main.innerHTML = dashboardHTML();
+    renderDashboard();
   }
 
-  if (seccion === "inventario-fisico") {
-    content.innerHTML = `
-      <div class="bg-white p-8 rounded-2xl shadow">
-        <h1 class="text-3xl font-bold mb-4">📋 Inventario Físico</h1>
-        <p class="text-gray-600 mb-6">Exportación lista para PDF.</p>
-        <button onclick="generarPDFInventario()"
-          class="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700">
-          Generar PDF
-        </button>
-      </div>
-    `;
+  if(v==="movimientos"){
+    main.innerHTML = movimientosHTML();
+    loadMovimientos();
   }
 
-  if (seccion === "ajustes") {
-    content.innerHTML = `
-      <div class="bg-white p-8 rounded-2xl shadow">
-        <h1 class="text-3xl font-bold mb-4">⚙️ Ajustes</h1>
-        <p class="text-gray-600">Sistema sincronizado en tiempo real.</p>
-      </div>
-    `;
+  if(v==="ajustes"){
+    main.innerHTML = `<h2 class="text-2xl font-bold">Ajustes</h2>`;
   }
 }
 
 /* ================= DASHBOARD ================= */
-function renderDashboard() {
-  return `
-    <h1 class="text-4xl font-bold text-green-700 mb-6">
-      📦 Centro de Inventario AGROMAX
-    </h1>
+function dashboardHTML(){
+return `
+<h1 class="text-3xl font-bold mb-6">📦 Inventario PRO</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-4 gap-4 mb-6">
+  <div class="bg-white p-4 rounded-xl shadow">Productos <h2 id="t1">0</h2></div>
+  <div class="bg-white p-4 rounded-xl shadow">Bajo Stock <h2 id="t2">0</h2></div>
+  <div class="bg-white p-4 rounded-xl shadow">Agotados <h2 id="t3">0</h2></div>
+  <div class="bg-white p-4 rounded-xl shadow">Valor <h2 id="t4">Q0</h2></div>
+</div>
 
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <span class="text-gray-500">Productos</span>
-        <h2 id="kpi-productos" class="text-4xl font-bold mt-3">0</h2>
-      </div>
+<div class="bg-white p-4 rounded-xl shadow">
+<h2 class="font-bold mb-4">⚡ Control de Stock</h2>
 
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <span class="text-gray-500">Stock Bajo</span>
-        <h2 id="kpi-bajo" class="text-4xl font-bold mt-3 text-yellow-600">0</h2>
-      </div>
+<select id="productSelect" onchange="selectProduct()" class="w-full p-2 border rounded mb-3">
+<option>Seleccionar producto</option>
+</select>
 
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <span class="text-gray-500">Agotados</span>
-        <h2 id="kpi-agotados" class="text-4xl font-bold mt-3 text-red-600">0</h2>
-      </div>
+<input id="qty" type="number" placeholder="Cantidad" class="w-full p-2 border rounded mb-3">
 
-      <div class="bg-white p-6 rounded-2xl shadow">
-        <span class="text-gray-500">Valor</span>
-        <h2 id="kpi-valor" class="text-4xl font-bold mt-3 text-blue-600">Q0.00</h2>
-      </div>
-
-    </div>
-
-    <div class="bg-white rounded-2xl shadow p-6">
-      <h2 class="text-2xl font-bold mb-4">📊 Movimientos</h2>
-      <table class="w-full">
-        <tbody id="movimientos"></tbody>
-      </table>
-    </div>
-  `;
-}
-
-/* ================= KPIs OPTIMIZADOS ================= */
-function actualizarKPIs() {
-  const productos = Array.from(productosCache.values());
-
-  let total = productos.length;
-  let bajo = 0;
-  let agotados = 0;
-  let valor = 0;
-
-  for (let p of productos) {
-    const stock = p.stock || 0;
-    const precio = p.precio || 0;
-
-    if (stock === 0) agotados++;
-    else if (stock < 10) bajo++;
-
-    valor += stock * precio;
-  }
-
-  setText("kpi-productos", total);
-  setText("kpi-bajo", bajo);
-  setText("kpi-agotados", agotados);
-  setText("kpi-valor", "Q" + valor.toFixed(2));
+<div class="flex gap-2">
+<button onclick="entrada()" class="bg-green-600 text-white px-4 py-2 rounded">Entrada</button>
+<button onclick="salida()" class="bg-red-600 text-white px-4 py-2 rounded">Salida</button>
+<button onclick="ajuste()" class="bg-blue-600 text-white px-4 py-2 rounded">Ajuste</button>
+</div>
+</div>
+`;
 }
 
 /* ================= MOVIMIENTOS ================= */
-function renderMovimientos() {
-  const el = document.getElementById("movimientos");
-  if (!el) return;
-
-  if (!movimientosCache.length) {
-    el.innerHTML = `<tr><td>Sin movimientos</td></tr>`;
-    return;
-  }
-
-  el.innerHTML = movimientosCache.map(m => `
-    <tr class="border-b">
-      <td>${m.fecha || "-"}</td>
-      <td>${m.producto || "-"}</td>
-      <td>${m.tipo || "-"}</td>
-      <td>${m.cantidad || 0}</td>
-    </tr>
-  `).join("");
+function movimientosHTML(){
+return `
+<h2 class="text-2xl font-bold mb-4">Movimientos</h2>
+<div id="movs"></div>
+`;
 }
 
-/* ================= HELPERS ================= */
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.innerText = value;
+/* ================= RENDER DASHBOARD ================= */
+function renderDashboard(){
+
+const select = document.getElementById("productSelect");
+if(select){
+select.innerHTML = productos.map(p =>
+`<option value="${p.id}">${p.nombre}</option>`).join("");
 }
 
-/* ================= PDF ================= */
-function generarPDFInventario() {
-  alert("📦 Listo para exportación PDF optimizada");
+let total = productos.length;
+let bajo = 0;
+let agot = 0;
+let valor = 0;
+
+productos.forEach(p=>{
+  let s = p.stock||0;
+  let pr = p.precio||0;
+
+  if(s===0) agot++;
+  else if(s<10) bajo++;
+
+  valor += s*pr;
+});
+
+set("t1",total);
+set("t2",bajo);
+set("t3",agot);
+set("t4","Q"+valor.toFixed(2));
 }
+
+/* ================= SELECCIÓN ================= */
+function selectProduct(){
+selectedProduct = document.getElementById("productSelect").value;
+}
+
+/* ================= MOVIMIENTOS ================= */
+async function entrada(){
+await movimiento("entrada", +1);
+}
+
+async function salida(){
+await movimiento("salida", -1);
+}
+
+async function ajuste(){
+await movimiento("ajuste", 0);
+}
+
+/* ================= CORE LOGIC ================= */
+async function movimiento(tipo, factor){
+
+if(!selectedProduct) return alert("Selecciona producto");
+
+let qty = parseInt(document.getElementById("qty").value || 0);
+if(qty<=0) return alert("Cantidad inválida");
+
+let ref = db.collection("productos").doc(selectedProduct);
+let doc = await ref.get();
+
+if(!doc.exists) return;
+
+let stock = doc.data().stock || 0;
+
+let nuevo = stock;
+
+if(tipo==="entrada") nuevo += qty;
+if(tipo==="salida") nuevo -= qty;
+if(tipo==="ajuste") nuevo = qty;
+
+if(nuevo < 0) return alert("❌ Stock no puede ser negativo");
+
+await ref.update({stock:nuevo});
+
+await db.collection("movimientos").add({
+producto: doc.data().nombre,
+tipo,
+cantidad: qty,
+fecha: new Date().toLocaleString()
+});
+
+document.getElementById("qty").value = "";
+}
+
+/* ================= LOAD MOVIMIENTOS ================= */
+function loadMovimientos(){
+db.collection("movimientos")
+.orderBy("fecha","desc")
+.limit(20)
+.onSnapshot(snap=>{
+let html="";
+snap.forEach(d=>{
+let m=d.data();
+html+=`
+<div class="bg-white p-3 mb-2 rounded shadow">
+<b>${m.producto}</b> - ${m.tipo} - ${m.cantidad}
+</div>`;
+});
+document.getElementById("movs").innerHTML=html;
+});
+}
+
+/* ================= HELP ================= */
+function set(id,val){
+let el=document.getElementById(id);
+if(el) el.innerText=val;
+}
+
 </script>
 
 </body>
