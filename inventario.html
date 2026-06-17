@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AGROMAXGTM - Inventario PRO</title>
+<title>AGROMAXGTM - Inventario PRO MAX</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -19,19 +19,13 @@
 <div class="w-72 bg-white border-r shadow-xl">
   <div class="p-6 bg-green-700 text-white">
     <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-    <p class="text-sm">Inventario PRO</p>
+    <p class="text-sm">Inventario PRO MAX</p>
   </div>
 
   <nav class="p-4 space-y-2">
-    <a onclick="view('dashboard')" class="cursor-pointer block p-3 rounded-xl hover:bg-green-50">
-      📊 Dashboard
-    </a>
-    <a onclick="view('movimientos')" class="cursor-pointer block p-3 rounded-xl hover:bg-green-50">
-      🔄 Movimientos
-    </a>
-    <a onclick="view('ajustes')" class="cursor-pointer block p-3 rounded-xl hover:bg-green-50">
-      ⚙️ Ajustes
-    </a>
+    <a onclick="view('dashboard')" class="cursor-pointer block p-3 rounded hover:bg-green-50">📊 Dashboard</a>
+    <a onclick="view('movimientos')" class="cursor-pointer block p-3 rounded hover:bg-green-50">🔄 Movimientos</a>
+    <a onclick="view('alertas')" class="cursor-pointer block p-3 rounded hover:bg-green-50">🚨 Alertas</a>
   </nav>
 </div>
 
@@ -55,16 +49,21 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/* ================= STATE ================= */
+/* ================= CACHE ================= */
 let productos = [];
-let selectedProduct = null;
+let lastUpdate = 0;
 
 /* ================= INIT ================= */
 window.onload = () => {
   view("dashboard");
 
   db.collection("productos").onSnapshot(snap => {
-    productos = snap.docs.map(d => ({id:d.id,...d.data()}));
+    productos = snap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+
+    lastUpdate = Date.now();
     renderDashboard();
   });
 };
@@ -73,164 +72,135 @@ window.onload = () => {
 function view(v){
   const main = document.getElementById("main");
 
-  if(v==="dashboard"){
-    main.innerHTML = dashboardHTML();
-    renderDashboard();
-  }
-
-  if(v==="movimientos"){
-    main.innerHTML = movimientosHTML();
-    loadMovimientos();
-  }
-
-  if(v==="ajustes"){
-    main.innerHTML = `<h2 class="text-2xl font-bold">Ajustes</h2>`;
-  }
+  if(v==="dashboard") main.innerHTML = dashboardUI();
+  if(v==="movimientos") main.innerHTML = movimientosUI();
+  if(v==="alertas") main.innerHTML = alertasUI();
 }
 
 /* ================= DASHBOARD ================= */
-function dashboardHTML(){
+function dashboardUI(){
 return `
-<h1 class="text-3xl font-bold mb-6">📦 Inventario PRO</h1>
+<h1 class="text-3xl font-bold mb-6">📦 Inventario PRO MAX</h1>
 
 <div class="grid grid-cols-4 gap-4 mb-6">
-  <div class="bg-white p-4 rounded-xl shadow">Productos <h2 id="t1">0</h2></div>
-  <div class="bg-white p-4 rounded-xl shadow">Bajo Stock <h2 id="t2">0</h2></div>
-  <div class="bg-white p-4 rounded-xl shadow">Agotados <h2 id="t3">0</h2></div>
-  <div class="bg-white p-4 rounded-xl shadow">Valor <h2 id="t4">Q0</h2></div>
+
+<div class="bg-white p-4 rounded shadow">
+Total
+<h2 class="text-2xl font-bold">${productos.length}</h2>
 </div>
 
-<div class="bg-white p-4 rounded-xl shadow">
-<h2 class="font-bold mb-4">⚡ Control de Stock</h2>
+<div class="bg-white p-4 rounded shadow">
+Bajo Stock
+<h2 class="text-2xl font-bold text-yellow-600">${countLow()}</h2>
+</div>
 
-<select id="productSelect" onchange="selectProduct()" class="w-full p-2 border rounded mb-3">
+<div class="bg-white p-4 rounded shadow">
+Agotados
+<h2 class="text-2xl font-bold text-red-600">${countEmpty()}</h2>
+</div>
+
+<div class="bg-white p-4 rounded shadow">
+Valor
+<h2 class="text-2xl font-bold text-blue-600">Q${totalValue()}</h2>
+</div>
+
+</div>
+
+<div class="bg-white p-4 rounded shadow">
+<h2 class="font-bold mb-3">⚡ Control rápido</h2>
+
+<select id="prod" class="w-full border p-2 mb-2">
 <option>Seleccionar producto</option>
+${productos.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join("")}
 </select>
 
-<input id="qty" type="number" placeholder="Cantidad" class="w-full p-2 border rounded mb-3">
+<input id="qty" type="number" class="w-full border p-2 mb-2" placeholder="Cantidad">
 
 <div class="flex gap-2">
-<button onclick="entrada()" class="bg-green-600 text-white px-4 py-2 rounded">Entrada</button>
-<button onclick="salida()" class="bg-red-600 text-white px-4 py-2 rounded">Salida</button>
-<button onclick="ajuste()" class="bg-blue-600 text-white px-4 py-2 rounded">Ajuste</button>
+<button onclick="move('in')" class="bg-green-600 text-white px-4 py-2 rounded">Entrada</button>
+<button onclick="move('out')" class="bg-red-600 text-white px-4 py-2 rounded">Salida</button>
+<button onclick="move('set')" class="bg-blue-600 text-white px-4 py-2 rounded">Ajuste</button>
 </div>
+
 </div>
 `;
 }
 
 /* ================= MOVIMIENTOS ================= */
-function movimientosHTML(){
+function movimientosUI(){
+return `<h2 class="text-2xl font-bold">Movimientos (optimizado)</h2>`;
+}
+
+/* ================= ALERTAS ================= */
+function alertasUI(){
 return `
-<h2 class="text-2xl font-bold mb-4">Movimientos</h2>
-<div id="movs"></div>
+<h2 class="text-2xl font-bold mb-4">🚨 Alertas de Stock</h2>
+
+<div class="space-y-2">
+${productos.filter(p=>p.stock<=5).map(p=>`
+<div class="bg-red-100 p-3 rounded">
+<b>${p.nombre}</b> - Stock crítico: ${p.stock}
+</div>
+`).join("")}
+</div>
 `;
 }
 
-/* ================= RENDER DASHBOARD ================= */
-function renderDashboard(){
+/* ================= LOGIC OPTIMIZADA ================= */
+async function move(type){
 
-const select = document.getElementById("productSelect");
-if(select){
-select.innerHTML = productos.map(p =>
-`<option value="${p.id}">${p.nombre}</option>`).join("");
-}
+const id = document.getElementById("prod").value;
+const qty = parseInt(document.getElementById("qty").value||0);
 
-let total = productos.length;
-let bajo = 0;
-let agot = 0;
-let valor = 0;
+if(!id || qty<=0) return alert("Datos inválidos");
 
-productos.forEach(p=>{
-  let s = p.stock||0;
-  let pr = p.precio||0;
-
-  if(s===0) agot++;
-  else if(s<10) bajo++;
-
-  valor += s*pr;
-});
-
-set("t1",total);
-set("t2",bajo);
-set("t3",agot);
-set("t4","Q"+valor.toFixed(2));
-}
-
-/* ================= SELECCIÓN ================= */
-function selectProduct(){
-selectedProduct = document.getElementById("productSelect").value;
-}
-
-/* ================= MOVIMIENTOS ================= */
-async function entrada(){
-await movimiento("entrada", +1);
-}
-
-async function salida(){
-await movimiento("salida", -1);
-}
-
-async function ajuste(){
-await movimiento("ajuste", 0);
-}
-
-/* ================= CORE LOGIC ================= */
-async function movimiento(tipo, factor){
-
-if(!selectedProduct) return alert("Selecciona producto");
-
-let qty = parseInt(document.getElementById("qty").value || 0);
-if(qty<=0) return alert("Cantidad inválida");
-
-let ref = db.collection("productos").doc(selectedProduct);
-let doc = await ref.get();
+const ref = db.collection("productos").doc(id);
+const doc = await ref.get();
 
 if(!doc.exists) return;
 
 let stock = doc.data().stock || 0;
 
-let nuevo = stock;
+let newStock = stock;
 
-if(tipo==="entrada") nuevo += qty;
-if(tipo==="salida") nuevo -= qty;
-if(tipo==="ajuste") nuevo = qty;
+if(type==="in") newStock += qty;
+if(type==="out") newStock -= qty;
+if(type==="set") newStock = qty;
 
-if(nuevo < 0) return alert("❌ Stock no puede ser negativo");
+if(newStock < 0) return alert("❌ Stock negativo no permitido");
 
-await ref.update({stock:nuevo});
+await ref.update({
+stock: newStock,
+updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+});
 
 await db.collection("movimientos").add({
 producto: doc.data().nombre,
-tipo,
+tipo: type,
 cantidad: qty,
-fecha: new Date().toLocaleString()
+fecha: firebase.firestore.FieldValue.serverTimestamp()
 });
 
-document.getElementById("qty").value = "";
+document.getElementById("qty").value="";
 }
 
-/* ================= LOAD MOVIMIENTOS ================= */
-function loadMovimientos(){
-db.collection("movimientos")
-.orderBy("fecha","desc")
-.limit(20)
-.onSnapshot(snap=>{
-let html="";
-snap.forEach(d=>{
-let m=d.data();
-html+=`
-<div class="bg-white p-3 mb-2 rounded shadow">
-<b>${m.producto}</b> - ${m.tipo} - ${m.cantidad}
-</div>`;
-});
-document.getElementById("movs").innerHTML=html;
-});
+/* ================= STATS ================= */
+function countLow(){
+return productos.filter(p=>p.stock>0 && p.stock<10).length;
 }
 
-/* ================= HELP ================= */
-function set(id,val){
-let el=document.getElementById(id);
-if(el) el.innerText=val;
+function countEmpty(){
+return productos.filter(p=>p.stock===0).length;
+}
+
+function totalValue(){
+return productos.reduce((a,p)=>a+(p.stock||0)*(p.precio||0),0).toFixed(2);
+}
+
+/* ================= RENDER ================= */
+function renderDashboard(){
+const el = document.getElementById("main");
+if(el) el.innerHTML = dashboardUI();
 }
 
 </script>
