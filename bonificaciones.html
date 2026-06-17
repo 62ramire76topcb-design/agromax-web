@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGROMAXGTM - Bonificaciones</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100">
+
+  <div class="flex h-screen">
+    <div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
+      <div class="p-6 border-b bg-green-700 text-white">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
+          <div>
+            <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+            <p class="text-xs">Módulo de Bonificaciones</p>
+          </div>
+        </div>
+      </div>
+      <nav class="p-4 space-y-1">
+        <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
+        <a onclick="mostrarSeccion('nueva-bonif')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-gift"></i> Nueva Bonificación</a>
+        <a onclick="mostrarSeccion('historial')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-history"></i> Historial de Bonificaciones</a>
+      </nav>
+    </div>
+
+    <div class="flex-1 overflow-auto p-8" id="main-content"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+      authDomain: "agromaxgt-app.firebaseapp.com",
+      projectId: "agromaxgt-app",
+      storageBucket: "agromaxgt-app.firebasestorage.app",
+      messagingSenderId: "648144313047",
+      appId: "1:648144313047:web:118a67464d99f2d0462e92"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    async function verificarAuth() {
+      return new Promise(resolve => {
+        auth.onAuthStateChanged(user => {
+          if (!user) window.location.href = "admin.html";
+          else resolve(user);
+        });
+      });
+    }
+
+    async function mostrarSeccion(seccion) {
+      await verificarAuth();
+      const content = document.getElementById('main-content');
+
+      if (seccion === 'nueva-bonif') {
+        content.innerHTML = `
+          <h1 class="text-3xl font-bold mb-8">Nueva Bonificación</h1>
+          <div class="max-w-2xl bg-white p-8 rounded-3xl shadow">
+            <select id="producto-bonif" class="w-full p-4 border rounded-2xl mb-6"></select>
+            <input id="porcentaje" type="number" placeholder="Porcentaje de Bonificación (%)" class="w-full p-4 border rounded-2xl mb-6">
+            <input id="motivo" placeholder="Motivo de la bonificación" class="w-full p-4 border rounded-2xl mb-6">
+            <button onclick="guardarBonificacion()" class="w-full bg-green-700 text-white py-4 rounded-3xl font-bold">Registrar Bonificación</button>
+          </div>`;
+        cargarProductosParaBonif();
+      } else if (seccion === 'historial') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial de Bonificaciones</h1><div id="lista-bonif" class="space-y-6"></div>`;
+        cargarHistorialBonif();
+      }
+    }
+
+    async function cargarProductosParaBonif() {
+      const select = document.getElementById('producto-bonif');
+      const snap = await db.collection('productos').get();
+      select.innerHTML = '<option value="">Seleccionar Producto</option>';
+      snap.forEach(doc => {
+        const p = doc.data();
+        const opt = document.createElement('option');
+        opt.value = p.nombre;
+        opt.textContent = p.nombre;
+        select.appendChild(opt);
+      });
+    }
+
+    async function guardarBonificacion() {
+      const producto = document.getElementById('producto-bonif').value;
+      const porcentaje = parseFloat(document.getElementById('porcentaje').value);
+      if (!producto || !porcentaje) return alert("Completa todos los campos");
+
+      await db.collection('bonificaciones').add({
+        producto,
+        porcentaje,
+        motivo: document.getElementById('motivo').value || "Sin motivo",
+        fecha: new Date()
+      });
+      alert("✅ Bonificación registrada");
+      mostrarSeccion('historial');
+    }
+
+    async function cargarHistorialBonif() {
+      const container = document.getElementById('lista-bonif');
+      db.collection('bonificaciones').orderBy('fecha', 'desc').onSnapshot(snapshot => {
+        let html = '';
+        snapshot.forEach(doc => {
+          const b = doc.data();
+          html += `
+            <div class="bg-white rounded-3xl shadow p-6">
+              <p class="font-bold">${b.producto}</p>
+              <p class="text-green-600 font-bold">${b.porcentaje}% de bonificación</p>
+              <p class="text-sm text-gray-500">${b.motivo}</p>
+              <p class="text-xs text-gray-400">${b.fecha.toDate().toLocaleString('es-GT')}</p>
+            </div>`;
+        });
+        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay bonificaciones registradas</p>';
+      });
+    }
+
+    window.onload = () => mostrarSeccion('nueva-bonif');
+  </script>
+</body>
+</html>
