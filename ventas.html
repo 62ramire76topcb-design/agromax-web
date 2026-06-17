@@ -165,64 +165,87 @@ function del(i){
 
 /* ================= FINALIZAR VENTA ================= */
 async function finalizarVenta() {
+
   if (carrito.length === 0) {
     alert("Carrito vacío");
     return;
   }
 
   try {
+
     await db.runTransaction(async (transaction) => {
 
       let total = 0;
+
       const ventaRef = db.collection("ventas").doc();
 
-      const productosActualizados = [];
+      const productosFinal = [];
 
       for (const item of carrito) {
 
         const prodRef = db.collection("productos").doc(item.id);
+
         const prodSnap = await transaction.get(prodRef);
 
         if (!prodSnap.exists) {
-          throw "Producto no existe: " + item.nombre;
+          throw new Error("Producto no existe: " + item.nombre);
         }
 
         const data = prodSnap.data();
-        const stockActual = data.stock || 0;
+        const stockActual = data.stock ?? 0;
 
         if (stockActual < item.cantidad) {
-          throw "Stock insuficiente en: " + item.nombre;
+          throw new Error("Stock insuficiente: " + item.nombre);
         }
 
         const nuevoStock = stockActual - item.cantidad;
 
         total += item.precio * item.cantidad;
 
-        // actualizar stock
+        // ✔ ACTUALIZAR INVENTARIO
         transaction.update(prodRef, {
           stock: nuevoStock
         });
 
-        // kardex
-        const kardexRef = db.collection("kardex").doc();
-        transaction.set(kardexRef, {
-          productoId: item.id,
-          producto: item.nombre,
-          tipo: "SALIDA",
-          cantidad: item.cantidad,
-          fecha: new Date(),
-          motivo: "VENTA",
-          stockFinal: nuevoStock
-        });
-
-        productosActualizados.push({
+        productosFinal.push({
           id: item.id,
           nombre: item.nombre,
           cantidad: item.cantidad,
           precio: item.precio
         });
+
+        // ⚠️ KARDEX (NO dentro de transaction en modo seguro)
+        db.collection("kardex").add({
+          productoId: item.id,
+          producto: item.nombre,
+          tipo: "SALIDA",
+          cantidad: item.cantidad,
+          stockFinal: nuevoStock,
+          fecha: new Date(),
+          motivo: "VENTA"
+        });
       }
 
+      // ✔ REGISTRAR VENTA
+      transaction.set(ventaRef, {
+        productos: productosFinal,
+        total,
+        fecha: new Date(),
+        tipo: "VENTA"
+      });
+
+    });
+
+    carrito = [];
+
+    alert("✅ SINCRONIZACIÓN REAL COMPLETADA (INVENTARIO + VENTA)");
+
+    view("historial");
+
+  } catch (e) {
+    alert("❌ Error: " + e.message);
+  }
+}
       // registrar venta
       transaction.set(ventaRef, {
         productos: productosActualizados,
