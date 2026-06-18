@@ -79,7 +79,7 @@
                   <span id="total" class="text-green-600">Q0.00</span>
                 </div>
               </div>
-              <button onclick="finalizarVenta()" class="mt-8 w-full bg-green-700 text-white py-6 rounded-3xl text-2xl font-bold">Finalizar Venta</button>
+              <button onclick="enviarAPendiente()" class="mt-8 w-full bg-yellow-600 hover:bg-yellow-700 text-white py-6 rounded-3xl font-bold">Enviar a Caja (Pendiente)</button>
             </div>
           </div>`;
       } else if (seccion === 'historial') {
@@ -138,30 +138,21 @@
       renderCarrito();
     }
 
-    async function finalizarVenta() {
+    async function enviarAPendiente() {
       if (carrito.length === 0) return alert("Carrito vacío");
 
-      const total = carrito.reduce((sum, i) => sum + i.precio * i.cantidad, 0);
+      const total = carrito.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
 
       try {
-        await db.runTransaction(async (tx) => {
-          for (let item of carrito) {
-            const query = await db.collection('productos').where('nombre', '==', item.nombre).get();
-            query.forEach(async (doc) => {
-              const stock = doc.data().stock || 0;
-              tx.update(doc.ref, { stock: Math.max(0, stock - item.cantidad) });
-            });
-          }
-        });
-
-        await db.collection('ventas').add({
+        await db.collection('ventas_pendientes').add({
           fecha: new Date(),
           productos: carrito,
           total,
-          tipo: "Venta en Tienda"
+          estado: "Pendiente",
+          cliente: "Cliente en Tienda"
         });
 
-        alert("✅ Venta registrada y stock actualizado");
+        alert("✅ Solicitud enviada a Caja");
         carrito = [];
         mostrarSeccion('historial');
       } catch (e) {
@@ -175,13 +166,9 @@
         let html = '';
         snap.forEach(doc => {
           const v = doc.data();
-          html += `
-            <div class="bg-white p-6 rounded-3xl shadow">
-              <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
-              <p class="font-bold">Total: Q${v.total.toFixed(2)}</p>
-            </div>`;
+          html += `<div class="bg-white p-6 rounded-3xl shadow"><p class="font-bold">Q${v.total}</p></div>`;
         });
-        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">Sin ventas</p>';
+        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">Sin historial</p>';
       });
     }
 
