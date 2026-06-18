@@ -153,12 +153,12 @@
           timestamp: new Date()
         });
 
-        alert("✅ Solicitud enviada correctamente a Caja");
+        alert("✅ Solicitud enviada a Caja");
         carrito = [];
         mostrarSeccion('historial');
       } catch (e) {
         console.error(e);
-        alert("Error al enviar: " + e.message + "\n\nVerifica las reglas de Firebase");
+        alert("Error: " + e.message);
       }
     }
 
