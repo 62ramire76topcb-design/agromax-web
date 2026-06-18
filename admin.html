@@ -133,7 +133,7 @@
       const valorTotal = productos.reduce((sum, p) => sum + (p.precio * (p.stock || 1)), 0);
 
       document.getElementById('stats-cards').innerHTML = `
-        <div class="bg-white p-6 rounded-4xl shadow text-center">
+        <div class="bg-white p-6 rounded-2xl shadow text-center">
           <p class="text-gray-500">Total Productos</p>
           <p class="text-5xl font-bold text-green-600">${total}</p>
         </div>
