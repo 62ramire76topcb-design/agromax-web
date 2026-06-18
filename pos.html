@@ -427,9 +427,23 @@ function cargarHistorial(){
       Total: Q${v.total || 0}
     </div>
 
-    <div class="text-sm text-gray-600 mt-1">
-      Método de pago: ${v.metodoPago || "No registrado"}
+    <div class="text-sm text-gray-700">
+      Método: ${v.metodoPago || "N/A"}
     </div>
+
+    ${
+      v.metodoPago === "Efectivo"
+      ? `
+        <div class="text-sm text-gray-700">
+          Recibido: Q${v.montoRecibido || 0}
+        </div>
+
+        <div class="text-sm text-green-600 font-semibold">
+          Cambio: Q${v.cambio || 0}
+        </div>
+      `
+      : ""
+    }
 
     <div class="text-xs text-gray-500 mt-2">
       ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
