@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAXGTM - Ventas</title>
+  <title>AGROMAXGTM - Caja Registradora</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -19,13 +19,14 @@
           <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
           <div>
             <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-            <p class="text-xs">Módulo de Ventas</p>
+            <p class="text-xs">Caja Registradora</p>
           </div>
         </div>
       </div>
       <nav class="p-4 space-y-1">
         <a href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-arrow-left"></i> Volver al Admin</a>
-        <a onclick="mostrarSeccion('nueva-venta')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus"></i> Nueva Venta</a>
+        <a onclick="mostrarSeccion('nueva-venta')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-cash-register"></i> Nueva Venta</a>
+        <a onclick="mostrarSeccion('pendientes')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-clock"></i> Ventas Pendientes</a>
         <a onclick="mostrarSeccion('historial')" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-history"></i> Historial</a>
       </nav>
     </div>
@@ -64,40 +65,34 @@
 
       if (seccion === 'nueva-venta') {
         content.innerHTML = `
-          <h1 class="text-4xl font-bold mb-8">🛒 Nueva Venta</h1>
-          <div class="grid grid-cols-12 gap-8">
-            <div class="col-span-7 bg-white p-8 rounded-3xl shadow">
-              <input id="buscar" placeholder="Buscar producto..." class="w-full p-6 text-xl border-2 border-green-400 rounded-3xl" autofocus onkeyup="if(event.key==='Enter') buscarProducto()">
-              <div id="resultados" class="mt-6 max-h-96 overflow-auto"></div>
-            </div>
-            <div class="col-span-5 bg-white p-8 rounded-3xl shadow">
-              <h2 class="text-2xl font-bold mb-6">Carrito</h2>
-              <div id="lista-carrito" class="space-y-4"></div>
-              <div class="mt-8 pt-6 border-t">
-                <div class="flex justify-between text-3xl font-bold">
-                  <span>Total:</span>
-                  <span id="total" class="text-green-600">Q0.00</span>
-                </div>
-              </div>
-              <button onclick="enviarAPendiente()" class="mt-8 w-full bg-yellow-600 hover:bg-yellow-700 text-white py-6 rounded-3xl font-bold">Enviar a Caja (Pendiente)</button>
-            </div>
-          </div>`;
-      } else if (seccion === 'historial') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial de Ventas</h1><div id="lista-historial" class="space-y-6"></div>`;
+          <h1 class="text-4xl font-bold mb-8">🛒 Nueva Venta Directa</h1>
+          <input id="barcode" placeholder="Escanea código de barras o escribe nombre..." 
+                 class="w-full p-6 text-xl border-4 border-green-500 rounded-3xl" autofocus 
+                 onkeypress="if(event.key==='Enter') procesarScan()">
+          <div id="resultados" class="mt-6 max-h-96 overflow-auto"></div>`;
+      } 
+      else if (seccion === 'pendientes') {
+        content.innerHTML = `
+          <h1 class="text-4xl font-bold mb-8">📋 Ventas Pendientes</h1>
+          <div id="lista-pendientes" class="space-y-6"></div>`;
+        cargarVentasPendientes();
+      } 
+      else if (seccion === 'historial') {
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial de Caja</h1><div id="historial-caja" class="space-y-6"></div>`;
         cargarHistorial();
       }
     }
 
-    async function buscarProducto() {
-      const term = document.getElementById('buscar').value.toLowerCase().trim();
-      const container = document.getElementById('resultados');
-      if (term.length < 2) return container.innerHTML = '';
+    // ==================== NUEVA VENTA DIRECTA ====================
+    async function procesarScan() {
+      const input = document.getElementById('barcode').value.trim();
+      if (!input) return;
 
       const snapshot = await db.collection('productos').get();
       let html = '';
       snapshot.forEach(doc => {
         const p = doc.data();
-        if (p.nombre && p.nombre.toLowerCase().includes(term)) {
+        if (p.nombre && p.nombre.toLowerCase().includes(input.toLowerCase())) {
           html += `
             <div onclick="agregarAlCarrito('${p.nombre}', ${p.precio || 0})" class="p-4 hover:bg-green-50 rounded-2xl cursor-pointer flex justify-between border-b">
               <span>${p.nombre}</span>
@@ -105,82 +100,92 @@
             </div>`;
         }
       });
-      container.innerHTML = html || '<p class="p-4 text-gray-500">No encontrado</p>';
+      document.getElementById('resultados').innerHTML = html || '<p class="p-4 text-gray-500">Producto no encontrado</p>';
+      document.getElementById('barcode').value = '';
     }
 
     function agregarAlCarrito(nombre, precio) {
       const existe = carrito.find(i => i.nombre === nombre);
       if (existe) existe.cantidad++;
       else carrito.push({nombre, precio, cantidad: 1});
-      renderCarrito();
+      alert(`${nombre} agregado al carrito`);
     }
 
-    function renderCarrito() {
-      const container = document.getElementById('lista-carrito');
-      let total = 0;
-      let html = '';
-      carrito.forEach((item, i) => {
-        const subtotal = item.precio * item.cantidad;
-        total += subtotal;
-        html += `
-          <div class="flex justify-between bg-gray-50 p-4 rounded-2xl">
-            <span>${item.nombre} × ${item.cantidad}</span>
-            <span class="font-bold">Q${subtotal.toFixed(2)}</span>
-            <button onclick="eliminarItem(${i})" class="text-red-600">Eliminar</button>
-          </div>`;
-      });
-      container.innerHTML = html || '<p class="text-gray-400 py-12 text-center">Carrito vacío</p>';
-      document.getElementById('total').textContent = `Q${total.toFixed(2)}`;
-    }
-
-    function eliminarItem(i) {
-      carrito.splice(i, 1);
-      renderCarrito();
-    }
-
-    async function enviarAPendiente() {
-      if (carrito.length === 0) return alert("Carrito vacío");
-
-      const total = carrito.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
-
-      try {
-        await db.collection('ventas_pendientes').add({
-          fecha: new Date(),
-          productos: carrito,
-          total,
-          estado: "Pendiente",
-          cliente: "Cliente en Tienda",
-          timestamp: new Date()
+    // ==================== VENTAS PENDIENTES ====================
+    async function cargarVentasPendientes() {
+      const container = document.getElementById('lista-pendientes');
+      
+      db.collection('ventas_pendientes')
+        .where('estado', '==', 'Pendiente')
+        .orderBy('fecha', 'desc')
+        .onSnapshot(snapshot => {
+          let html = '';
+          if (snapshot.empty) {
+            html = '<p class="text-center py-20 text-gray-400">No hay ventas pendientes</p>';
+          } else {
+            snapshot.forEach(doc => {
+              const v = doc.data();
+              html += `
+                <div class="bg-white rounded-3xl shadow p-6">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-bold">${v.cliente || 'Cliente General'}</p>
+                      <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
+                    </div>
+                    <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pendiente</span>
+                  </div>
+                  <div class="mt-4 text-sm">
+                    ${v.productos.map(p => `${p.nombre} × ${p.cantidad}`).join(' • ')}
+                  </div>
+                  <button onclick="procesarPendiente('${doc.id}', ${JSON.stringify(v.productos)})" 
+                          class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Procesar Pago</button>
+                </div>`;
+            });
+          }
+          container.innerHTML = html;
         });
+    }
 
-        alert("✅ Solicitud enviada a Caja");
-        carrito = [];
-        mostrarSeccion('historial');
-      } catch (e) {
-        console.error(e);
-        alert("Error: " + e.message);
+    async function procesarPendiente(id, productos) {
+      if (confirm("¿Confirmar pago y actualizar stock?")) {
+        try {
+          for (let item of productos) {
+            const query = await db.collection('productos').where('nombre', '==', item.nombre).get();
+            query.forEach(async (doc) => {
+              const stock = doc.data().stock || 0;
+              await db.collection('productos').doc(doc.id).update({
+                stock: Math.max(0, stock - item.cantidad)
+              });
+            });
+          }
+
+          await db.collection('ventas_pendientes').doc(id).update({ estado: "Completada" });
+          alert("✅ Pago procesado y stock actualizado");
+          cargarVentasPendientes();
+        } catch (e) {
+          alert("Error: " + e.message);
+        }
       }
     }
 
     async function cargarHistorial() {
-      const container = document.getElementById('lista-historial');
-      db.collection('ventas_pendientes').orderBy('timestamp', 'desc').onSnapshot(snap => {
+      const container = document.getElementById('historial-caja');
+      db.collection('ventas').orderBy('fecha', 'desc').onSnapshot(snapshot => {
         let html = '';
-        snap.forEach(doc => {
+        snapshot.forEach(doc => {
           const v = doc.data();
           html += `
-            <div class="bg-white p-6 rounded-3xl shadow">
-              <p class="font-bold">${v.cliente}</p>
+            <div class="bg-white rounded-3xl shadow p-6">
+              <p class="font-bold">${v.cliente || 'Cliente General'}</p>
               <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
-              <p class="font-bold text-green-600">Total: Q${v.total.toFixed(2)}</p>
-              <span class="inline-block mt-2 px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">${v.estado}</span>
+              <p class="font-bold text-green-600">Total: Q${v.total ? v.total.toFixed(2) : '0.00'}</p>
             </div>`;
         });
-        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay ventas pendientes</p>';
+        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay historial</p>';
       });
     }
 
-    window.onload = () => mostrarSeccion('nueva-venta');
+    window.onload = () => mostrarSeccion('pendientes');
   </script>
 </body>
 </html>
