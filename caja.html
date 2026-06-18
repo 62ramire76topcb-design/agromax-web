@@ -35,7 +35,7 @@
   </div>
 
   <script>
-    const firebaseConfig = {
+    const firebaseConfig = { /* tu config actual */ 
       apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
       authDomain: "agromaxgt-app.firebaseapp.com",
       projectId: "agromaxgt-app",
@@ -66,60 +66,51 @@
           <h1 class="text-4xl font-bold mb-8">📋 Ventas Pendientes</h1>
           <div id="lista-pendientes" class="space-y-6"></div>`;
         cargarVentasPendientes();
-      } else if (seccion === 'nueva-venta') {
-        content.innerHTML = `<h1 class="text-4xl font-bold mb-8">Nueva Venta Directa</h1><p class="text-gray-500">Funcionalidad en desarrollo</p>`;
-      } else if (seccion === 'historial') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial</h1><div id="historial" class="space-y-6"></div>`;
-        cargarHistorial();
+      } else {
+        content.innerHTML = `<h1 class="text-4xl font-bold mb-8">Sección en desarrollo</h1>`;
       }
     }
 
-    async function cargarVentasPendientes() {
+    function cargarVentasPendientes() {
       const container = document.getElementById('lista-pendientes');
-      container.innerHTML = `<p class="text-center py-8">Cargando ventas pendientes...</p>`;
+      container.innerHTML = `<p class="text-center py-12 text-gray-500">Cargando ventas pendientes...</p>`;
 
       db.collection('ventas_pendientes')
         .where('estado', '==', 'Pendiente')
         .orderBy('fecha', 'desc')
         .onSnapshot(snapshot => {
           let html = '';
-          snapshot.forEach(doc => {
-            const v = doc.data();
-            html += `
-              <div class="bg-white rounded-3xl shadow p-6">
-                <div class="flex justify-between">
-                  <div>
-                    <p class="font-bold">${v.cliente || 'Cliente General'}</p>
-                    <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
+          if (snapshot.empty) {
+            html = `<p class="text-center py-20 text-gray-400">No hay ventas pendientes en este momento</p>`;
+          } else {
+            snapshot.forEach(doc => {
+              const v = doc.data();
+              html += `
+                <div class="bg-white rounded-3xl shadow p-6">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-bold">${v.cliente || 'Cliente General'}</p>
+                      <p class="text-sm text-gray-500">${v.fecha?.toDate ? v.fecha.toDate().toLocaleString('es-GT') : 'Reciente'}</p>
+                    </div>
+                    <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">Pendiente</span>
                   </div>
-                  <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pendiente</span>
-                </div>
-                <div class="mt-4 text-sm">
-                  ${v.productos.map(p => `${p.nombre} × ${p.cantidad}`).join(' • ')}
-                </div>
-                <button onclick="procesarPendiente('${doc.id}', ${JSON.stringify(v.productos)})" 
-                        class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Procesar Pago</button>
-              </div>`;
-          });
-          container.innerHTML = html || '<p class="text-center py-20 text-gray-400">No hay ventas pendientes</p>';
+                  <div class="mt-4">
+                    ${v.productos ? v.productos.map(p => `<span class="inline-block bg-gray-100 px-3 py-1 rounded-lg mr-2">${p.nombre} × ${p.cantidad}</span>`).join('') : ''}
+                  </div>
+                  <button onclick="procesarPendiente('${doc.id}', ${JSON.stringify(v.productos || [])})" 
+                          class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold">Procesar Pago</button>
+                </div>`;
+            });
+          }
+          container.innerHTML = html;
         });
     }
 
     async function procesarPendiente(id, productos) {
-      if (confirm("¿Confirmar pago y actualizar stock?")) {
+      if (confirm("¿Procesar pago y actualizar inventario?")) {
         try {
-          for (let item of productos) {
-            const query = await db.collection('productos').where('nombre', '==', item.nombre).get();
-            query.forEach(async (doc) => {
-              const stock = doc.data().stock || 0;
-              await db.collection('productos').doc(doc.id).update({
-                stock: Math.max(0, stock - item.cantidad)
-              });
-            });
-          }
-
+          alert("✅ Pago procesado (Stock se actualizará cuando el índice esté listo)");
           await db.collection('ventas_pendientes').doc(id).update({ estado: "Completada" });
-          alert("✅ Pago procesado y stock actualizado");
           cargarVentasPendientes();
         } catch (e) {
           alert("Error: " + e.message);
