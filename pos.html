@@ -459,13 +459,6 @@ function cargarHistorial(){
   });
 }
 
-/* INIT */
-view("venta");
-
-</script>
-</body>
-</html>
-
 function abrirTicket(carrito, total, metodoPago, montoRecibido, cambio){
 
   const ticket = window.open("", "_blank");
@@ -473,7 +466,7 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido, cambio){
   ticket.document.write(`
     <html>
     <head>
-      <title>Ticket</title>
+      <title>Ticket de Venta</title>
       <style>
         body { font-family: monospace; padding: 20px; }
         h2 { text-align: center; }
@@ -505,11 +498,21 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido, cambio){
       ` : ""}
 
       <div class="line"></div>
+
       <p style="text-align:center;">Gracias por su compra</p>
 
-      <script>window.print();</script>
+      <script>
+        window.print();
+      </script>
 
     </body>
     </html>
   `);
 }
+  
+/* INIT */
+view("venta");
+
+</script>
+</body>
+</html>
