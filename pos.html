@@ -285,11 +285,12 @@ alert("Método de pago: " + metodoPago);
       // Guardar la venta completada
       const ventaRef = db.collection("ventas").doc();
       tx.set(ventaRef, {
-        fecha: new Date(),
-        productos: carrito,
-        total: total,
-        tipo: "CAJA"
-      });
+  fecha: new Date(),
+  productos: carrito,
+  total: total,
+  tipo: "CAJA",
+  metodoPago: metodoPago
+});
     });
 
     alert("✅ Venta finalizada y stock actualizado correctamente");
