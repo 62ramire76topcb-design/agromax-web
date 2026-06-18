@@ -362,61 +362,6 @@ alert("Método de pago: " + metodoPago);
   cambio: metodoPago === "Efectivo" ? cambio : 0
 });
     });
-
-    const ticket = window.open("", "_blank");
-
-ticket.document.write(`
-  <html>
-  <head>
-    <title>Ticket de Venta</title>
-    <style>
-      body { font-family: monospace; padding: 20px; }
-      h2 { text-align: center; }
-      .line { border-top: 1px dashed #000; margin: 10px 0; }
-    </style>
-  </head>
-  <body>
-
-    <h2>🌱 AGROMAXGTM</h2>
-    <p>Fecha: ${new Date().toLocaleString()}</p>
-
-    <div class="line"></div>
-
-    <h3>Productos</h3>
-
-    ${carrito.map(p => `
-      <p>
-        ${p.nombre} x${p.cantidad}
-        - Q${(p.precio * p.cantidad).toFixed(2)}
-      </p>
-    `).join("")}
-
-    <div class="line"></div>
-
-    <h3>Total: Q${total}</h3>
-
-    <p>Método: ${metodoPago}</p>
-
-    ${
-      metodoPago === "Efectivo"
-      ? `
-        <p>Recibido: Q${montoRecibido}</p>
-        <p>Cambio: Q${cambio}</p>
-      `
-      : ""
-    }
-
-    <div class="line"></div>
-
-    <p style="text-align:center;">Gracias por su compra</p>
-
-    <script>
-      window.print();
-    </script>
-
-  </body>
-  </html>
-`);
     
     alert("✅ Venta finalizada y stock actualizado correctamente");
     carrito = [];
