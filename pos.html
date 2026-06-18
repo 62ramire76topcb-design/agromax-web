@@ -355,10 +355,22 @@ function cargarHistorial(){
     snap.forEach(doc=>{
       const v = doc.data();
       html += `
-        <div class="bg-white p-4 rounded-xl shadow mb-3">
-          <b>Total: Q${v.total || 0}</b> - ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
-        </div>
-      `;
+  <div class="bg-white p-4 rounded-xl shadow mb-3">
+
+    <div class="font-bold text-lg">
+      Total: Q${v.total || 0}
+    </div>
+
+    <div class="text-sm text-gray-600 mt-1">
+      Método de pago: ${v.metodoPago || "No registrado"}
+    </div>
+
+    <div class="text-xs text-gray-500 mt-2">
+      ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
+    </div>
+
+  </div>
+`;
     });
     document.getElementById("hist").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>Sin historial</p>";
   });
