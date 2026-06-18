@@ -117,6 +117,23 @@ function view(v){
     }
   }
 });
+
+  document.addEventListener("input", function(e){
+  if(e.target && e.target.id === "montoRecibido"){
+
+    const total = carrito.reduce((sum, p) =>
+      sum + (p.precio * p.cantidad), 0
+    );
+
+    const recibido = parseFloat(e.target.value) || 0;
+
+    const cambio = recibido - total;
+
+    document.getElementById("cambioTexto").innerText =
+      "Q" + (cambio >= 0 ? cambio.toFixed(2) : "0.00");
+  }
+});
+  
   if(v === "venta"){
     app.innerHTML = `
       <h1 class="text-3xl font-bold mb-6">🛒 Nueva Venta</h1>
