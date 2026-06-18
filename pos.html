@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; }
+        body { font-family: system-ui, sans-serif; }
         .btn-big { padding: 1.25rem; font-size: 1.25rem; }
     </style>
 </head>
@@ -18,7 +18,7 @@
 
 <div class="flex h-screen">
 
-    <!-- Sidebar -->
+    <!-- Sidebar más limpia para mostrador -->
     <div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
         <div class="p-6 border-b bg-green-700 text-white">
             <div class="flex items-center gap-3">
@@ -31,19 +31,20 @@
         </div>
 
         <nav class="p-4 space-y-2">
-            <a onclick="view('venta')" class="block p-4 hover:bg-green-50 rounded-xl flex items-center gap-3 text-lg">
+            <a onclick="view('venta')" class="block p-4 hover:bg-green-50 rounded-xl flex items-center gap-3 text-lg font-medium">
                 <i class="fas fa-cash-register"></i> Nueva Venta
             </a>
-            <a onclick="view('pendientes')" class="block p-4 hover:bg-green-50 rounded-xl flex items-center gap-3 text-lg">
+            <a onclick="view('pendientes')" class="block p-4 hover:bg-green-50 rounded-xl flex items-center gap-3 text-lg font-medium">
                 <i class="fas fa-clock"></i> Ventas Pendientes
             </a>
-            <a onclick="view('historial')" class="block p-4 hover:bg-green-50 rounded-xl flex items-center gap-3 text-lg">
+            <a onclick="view('historial')" class="block p-4 hover:bg-green-50 rounded-xl flex items-center gap-3 text-lg font-medium">
                 <i class="fas fa-history"></i> Historial Caja
             </a>
-            <a href="admin.html" class="block p-4 hover:bg-green-50 rounded-xl flex items-center gap-3 text-lg text-orange-600">
-                <i class="fas fa-arrow-left"></i> Volver al Admin
-            </a>
         </nav>
+
+        <div class="absolute bottom-6 left-6 text-xs text-gray-400">
+            Solo para personal de mostrador
+        </div>
     </div>
 
     <!-- Contenido Principal -->
@@ -61,14 +62,10 @@
     const auth = firebase.auth();
     let carrito = [];
 
-    // Verificar autenticación
     auth.onAuthStateChanged(user => {
-        if (!user) {
-            window.location.href = "admin.html";
-        }
+        if (!user) window.location.href = "admin.html";
     });
 
-    // Cambiar vista
     function view(v) {
         const app = document.getElementById("app");
 
@@ -106,7 +103,7 @@
         else if (v === "historial") cargarHistorial();
     }
 
-    // Buscar productos
+    // ==================== Funciones (mismas que antes) ====================
     async function buscar() {
         const term = document.getElementById("search").value.toLowerCase();
         const box = document.getElementById("results");
@@ -137,20 +134,16 @@
 
     function add(id, nombre, precio, stock) {
         if (stock <= 0) return alert("Producto sin stock disponible");
-        
         let item = carrito.find(i => i.id === id);
         if (item) item.cantidad++;
         else carrito.push({id, nombre, precio, cantidad: 1});
-        
         renderCarrito();
     }
 
     function renderCarrito() {
         const box = document.getElementById("cart");
         if (!box) return;
-        
-        let html = "";
-        let total = 0;
+        let html = "", total = 0;
 
         carrito.forEach((item, i) => {
             total += item.precio * item.cantidad;
@@ -177,13 +170,7 @@
 
     async function guardarPendiente() {
         if (carrito.length === 0) return alert("El carrito está vacío");
-        
-        await db.collection("ventas_pendientes").add({
-            fecha: new Date(),
-            productos: carrito,
-            estado: "pendiente"
-        });
-        
+        await db.collection("ventas_pendientes").add({ fecha: new Date(), productos: carrito, estado: "pendiente" });
         alert("✅ Venta guardada como pendiente");
         carrito = [];
         renderCarrito();
@@ -200,43 +187,30 @@
                     const prodRef = db.collection("productos").doc(item.id);
                     const snap = await tx.get(prodRef);
                     const data = snap.data();
-                    
-                    if ((data.stock || 0) < item.cantidad) {
-                        throw "Stock insuficiente para " + item.nombre;
-                    }
-                    
+                    if ((data.stock || 0) < item.cantidad) throw "Stock insuficiente para " + item.nombre;
                     tx.update(prodRef, { stock: data.stock - item.cantidad });
                     total += item.precio * item.cantidad;
                 }
-
                 tx.set(db.collection("ventas").doc(), {
-                    fecha: new Date(),
-                    productos: carrito,
-                    total: total,
-                    tipo: "CAJA"
+                    fecha: new Date(), productos: carrito, total: total, tipo: "CAJA"
                 });
             });
-
             alert("✅ Venta finalizada correctamente");
             carrito = [];
             renderCarrito();
             view("venta");
         } catch (e) {
-            console.error(e);
             alert("Error: " + e.message);
         }
     }
 
     function cargarPendientes() {
-        // (Mantengo tu código original aquí, puedes expandirlo después)
         document.getElementById("app").innerHTML = `<h1 class="text-3xl font-bold">Ventas Pendientes</h1><div id="pend" class="mt-6"></div>`;
-        // ... resto de tu código original para pendientes
+        // Puedes completar esta función después si lo necesitas
     }
 
     function cargarHistorial() {
-        // Similar al anterior
         document.getElementById("app").innerHTML = `<h1 class="text-3xl font-bold">Historial de Caja</h1><div id="hist" class="mt-6"></div>`;
-        // ... resto de tu código original
     }
 
     // Iniciar
