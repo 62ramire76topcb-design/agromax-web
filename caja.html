@@ -48,8 +48,6 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let carrito = [];
-
     async function verificarAuth() {
       return new Promise(resolve => {
         auth.onAuthStateChanged(user => {
@@ -64,12 +62,7 @@
       const content = document.getElementById('main-content');
 
       if (seccion === 'nueva-venta') {
-        content.innerHTML = `
-          <h1 class="text-4xl font-bold mb-8">🛒 Nueva Venta Directa</h1>
-          <input id="barcode" placeholder="Escanea código de barras o escribe nombre..." 
-                 class="w-full p-6 text-xl border-4 border-green-500 rounded-3xl" autofocus 
-                 onkeypress="if(event.key==='Enter') procesarScan()">
-          <div id="resultados" class="mt-6 max-h-96 overflow-auto"></div>`;
+        content.innerHTML = `<h1 class="text-4xl font-bold mb-8">Nueva Venta Directa</h1><p class="text-gray-500">Escáner activo</p>`;
       } 
       else if (seccion === 'pendientes') {
         content.innerHTML = `
@@ -78,71 +71,48 @@
         cargarVentasPendientes();
       } 
       else if (seccion === 'historial') {
-        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial de Caja</h1><div id="historial-caja" class="space-y-6"></div>`;
+        content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial</h1><div id="historial" class="space-y-6"></div>`;
         cargarHistorial();
       }
-    }
-
-    // ==================== NUEVA VENTA DIRECTA ====================
-    async function procesarScan() {
-      const input = document.getElementById('barcode').value.trim();
-      if (!input) return;
-
-      const snapshot = await db.collection('productos').get();
-      let html = '';
-      snapshot.forEach(doc => {
-        const p = doc.data();
-        if (p.nombre && p.nombre.toLowerCase().includes(input.toLowerCase())) {
-          html += `
-            <div onclick="agregarAlCarrito('${p.nombre}', ${p.precio || 0})" class="p-4 hover:bg-green-50 rounded-2xl cursor-pointer flex justify-between border-b">
-              <span>${p.nombre}</span>
-              <span class="font-bold text-green-600">Q${p.precio || 0}</span>
-            </div>`;
-        }
-      });
-      document.getElementById('resultados').innerHTML = html || '<p class="p-4 text-gray-500">Producto no encontrado</p>';
-      document.getElementById('barcode').value = '';
-    }
-
-    function agregarAlCarrito(nombre, precio) {
-      const existe = carrito.find(i => i.nombre === nombre);
-      if (existe) existe.cantidad++;
-      else carrito.push({nombre, precio, cantidad: 1});
-      alert(`${nombre} agregado al carrito`);
     }
 
     // ==================== VENTAS PENDIENTES ====================
     async function cargarVentasPendientes() {
       const container = document.getElementById('lista-pendientes');
-      
+      console.log("Cargando ventas pendientes...");
+
       db.collection('ventas_pendientes')
         .where('estado', '==', 'Pendiente')
         .orderBy('fecha', 'desc')
         .onSnapshot(snapshot => {
+          console.log("Documentos recibidos:", snapshot.size);
           let html = '';
           if (snapshot.empty) {
-            html = '<p class="text-center py-20 text-gray-400">No hay ventas pendientes</p>';
+            html = '<p class="text-center py-20 text-gray-400">No hay ventas pendientes en este momento</p>';
           } else {
             snapshot.forEach(doc => {
               const v = doc.data();
               html += `
                 <div class="bg-white rounded-3xl shadow p-6">
-                  <div class="flex justify-between items-start">
+                  <div class="flex justify-between">
                     <div>
                       <p class="font-bold">${v.cliente || 'Cliente General'}</p>
-                      <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
+                      <p class="text-sm text-gray-500">${v.fecha.toDate ? v.fecha.toDate().toLocaleString('es-GT') : 'Sin fecha'}</p>
                     </div>
                     <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pendiente</span>
                   </div>
                   <div class="mt-4 text-sm">
-                    ${v.productos.map(p => `${p.nombre} × ${p.cantidad}`).join(' • ')}
+                    ${v.productos ? v.productos.map(p => `${p.nombre} × ${p.cantidad}`).join(' • ') : 'Sin productos'}
                   </div>
-                  <button onclick="procesarPendiente('${doc.id}', ${JSON.stringify(v.productos)})" 
+                  <button onclick="procesarPendiente('${doc.id}', ${JSON.stringify(v.productos || [])})" 
                           class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Procesar Pago</button>
                 </div>`;
             });
           }
           container.innerHTML = html;
+        }, error => {
+          console.error("Error en snapshot:", error);
+          container.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
         });
     }
 
@@ -160,7 +130,7 @@
           }
 
           await db.collection('ventas_pendientes').doc(id).update({ estado: "Completada" });
-          alert("✅ Pago procesado y stock actualizado");
+          alert("✅ Pago procesado correctamente");
           cargarVentasPendientes();
         } catch (e) {
           alert("Error: " + e.message);
@@ -169,17 +139,12 @@
     }
 
     async function cargarHistorial() {
-      const container = document.getElementById('historial-caja');
+      const container = document.getElementById('historial');
       db.collection('ventas').orderBy('fecha', 'desc').onSnapshot(snapshot => {
         let html = '';
         snapshot.forEach(doc => {
           const v = doc.data();
-          html += `
-            <div class="bg-white rounded-3xl shadow p-6">
-              <p class="font-bold">${v.cliente || 'Cliente General'}</p>
-              <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
-              <p class="font-bold text-green-600">Total: Q${v.total ? v.total.toFixed(2) : '0.00'}</p>
-            </div>`;
+          html += `<div class="bg-white p-6 rounded-3xl shadow"><p class="font-bold">Q${v.total || 0}</p></div>`;
         });
         container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay historial</p>';
       });
