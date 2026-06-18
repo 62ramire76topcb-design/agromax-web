@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGROMAXGTM - Caja Registradora</title>
+  <title>AGROMAXGTM - Caja</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -61,58 +61,47 @@
       await verificarAuth();
       const content = document.getElementById('main-content');
 
-      if (seccion === 'nueva-venta') {
-        content.innerHTML = `<h1 class="text-4xl font-bold mb-8">Nueva Venta Directa</h1><p class="text-gray-500">Escáner activo</p>`;
-      } 
-      else if (seccion === 'pendientes') {
+      if (seccion === 'pendientes') {
         content.innerHTML = `
           <h1 class="text-4xl font-bold mb-8">📋 Ventas Pendientes</h1>
           <div id="lista-pendientes" class="space-y-6"></div>`;
         cargarVentasPendientes();
-      } 
-      else if (seccion === 'historial') {
+      } else if (seccion === 'nueva-venta') {
+        content.innerHTML = `<h1 class="text-4xl font-bold mb-8">Nueva Venta Directa</h1><p class="text-gray-500">Funcionalidad en desarrollo</p>`;
+      } else if (seccion === 'historial') {
         content.innerHTML = `<h1 class="text-3xl font-bold mb-8">Historial</h1><div id="historial" class="space-y-6"></div>`;
         cargarHistorial();
       }
     }
 
-    // ==================== VENTAS PENDIENTES ====================
     async function cargarVentasPendientes() {
       const container = document.getElementById('lista-pendientes');
-      console.log("Cargando ventas pendientes...");
+      container.innerHTML = `<p class="text-center py-8">Cargando ventas pendientes...</p>`;
 
       db.collection('ventas_pendientes')
         .where('estado', '==', 'Pendiente')
         .orderBy('fecha', 'desc')
         .onSnapshot(snapshot => {
-          console.log("Documentos recibidos:", snapshot.size);
           let html = '';
-          if (snapshot.empty) {
-            html = '<p class="text-center py-20 text-gray-400">No hay ventas pendientes en este momento</p>';
-          } else {
-            snapshot.forEach(doc => {
-              const v = doc.data();
-              html += `
-                <div class="bg-white rounded-3xl shadow p-6">
-                  <div class="flex justify-between">
-                    <div>
-                      <p class="font-bold">${v.cliente || 'Cliente General'}</p>
-                      <p class="text-sm text-gray-500">${v.fecha.toDate ? v.fecha.toDate().toLocaleString('es-GT') : 'Sin fecha'}</p>
-                    </div>
-                    <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pendiente</span>
+          snapshot.forEach(doc => {
+            const v = doc.data();
+            html += `
+              <div class="bg-white rounded-3xl shadow p-6">
+                <div class="flex justify-between">
+                  <div>
+                    <p class="font-bold">${v.cliente || 'Cliente General'}</p>
+                    <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
                   </div>
-                  <div class="mt-4 text-sm">
-                    ${v.productos ? v.productos.map(p => `${p.nombre} × ${p.cantidad}`).join(' • ') : 'Sin productos'}
-                  </div>
-                  <button onclick="procesarPendiente('${doc.id}', ${JSON.stringify(v.productos || [])})" 
-                          class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Procesar Pago</button>
-                </div>`;
-            });
-          }
-          container.innerHTML = html;
-        }, error => {
-          console.error("Error en snapshot:", error);
-          container.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+                  <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pendiente</span>
+                </div>
+                <div class="mt-4 text-sm">
+                  ${v.productos.map(p => `${p.nombre} × ${p.cantidad}`).join(' • ')}
+                </div>
+                <button onclick="procesarPendiente('${doc.id}', ${JSON.stringify(v.productos)})" 
+                        class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Procesar Pago</button>
+              </div>`;
+          });
+          container.innerHTML = html || '<p class="text-center py-20 text-gray-400">No hay ventas pendientes</p>';
         });
     }
 
@@ -130,24 +119,12 @@
           }
 
           await db.collection('ventas_pendientes').doc(id).update({ estado: "Completada" });
-          alert("✅ Pago procesado correctamente");
+          alert("✅ Pago procesado y stock actualizado");
           cargarVentasPendientes();
         } catch (e) {
           alert("Error: " + e.message);
         }
       }
-    }
-
-    async function cargarHistorial() {
-      const container = document.getElementById('historial');
-      db.collection('ventas').orderBy('fecha', 'desc').onSnapshot(snapshot => {
-        let html = '';
-        snapshot.forEach(doc => {
-          const v = doc.data();
-          html += `<div class="bg-white p-6 rounded-3xl shadow"><p class="font-bold">Q${v.total || 0}</p></div>`;
-        });
-        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay historial</p>';
-      });
     }
 
     window.onload = () => mostrarSeccion('pendientes');
