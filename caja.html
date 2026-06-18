@@ -33,22 +33,19 @@
     <a href="admin.html" class="block p-3 hover:bg-green-50 rounded-xl">
       <i class="fas fa-arrow-left"></i> Volver al Admin
     </a>
-
     <a onclick="nuevaVenta()" class="block p-3 hover:bg-green-50 rounded-xl">
       <i class="fas fa-cash-register"></i> Nueva Venta
     </a>
-
     <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl">
       <i class="fas fa-clock"></i> Ventas Pendientes
     </a>
-
     <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl">
       <i class="fas fa-history"></i> Historial Caja
     </a>
   </nav>
 </div>
 
-<!-- MAIN -->
+<!-- MAIN CONTENT -->
 <div class="flex-1 p-8 overflow-auto" id="app"></div>
 
 </div>
@@ -66,19 +63,19 @@ const auth = firebase.auth();
 let carrito = [];
 let clienteActual = "Cliente General";
 
-/* AUTH */
+/* ================= AUTH ================= */
 auth.onAuthStateChanged(user => {
-  if(!user) window.location.href = "admin.html";
+  if (!user) window.location.href = "admin.html";
 });
 
-/* NUEVA VENTA RÁPIDA */
+/* ================= NUEVA VENTA ================= */
 function nuevaVenta() {
-  clienteActual = "Cliente General";
   carrito = [];
+  clienteActual = "Cliente General";
   view("venta");
 }
 
-/* VIEWS */
+/* ================= CAMBIAR VISTA ================= */
 function view(v) {
   const app = document.getElementById("app");
 
@@ -86,54 +83,60 @@ function view(v) {
     app.innerHTML = `
       <div class="max-w-6xl mx-auto">
         <h1 class="text-4xl font-bold mb-2">🛒 Nueva Venta</h1>
+        
         <input id="cliente" value="${clienteActual}" 
-               class="w-full mb-6 p-4 border rounded-2xl text-lg" 
+               class="w-full mb-6 p-5 border-2 border-gray-300 rounded-3xl text-lg focus:border-green-500" 
                placeholder="Nombre del cliente (opcional)" 
                onchange="clienteActual = this.value">
 
         <div class="grid grid-cols-12 gap-8">
-          <div class="col-span-7 bg-white p-8 rounded-3xl shadow">
-            <input id="search" placeholder="Buscar producto..." 
-                   class="w-full p-5 border-2 border-green-300 rounded-2xl text-xl" 
-                   onkeyup="if(event.key==='Enter') buscar()">
-            <div id="results" class="mt-6 max-h-[70vh] overflow-auto"></div>
+          <!-- Buscador -->
+          <div class="col-span-7 bg-white p-8 rounded-3xl shadow-xl">
+            <input id="search" placeholder="Buscar producto por nombre..." 
+                   class="w-full p-6 text-xl border-2 border-green-400 rounded-3xl focus:outline-none" 
+                   autofocus onkeyup="if(event.key==='Enter') buscar()">
+            <div id="results" class="mt-6 max-h-[65vh] overflow-auto pr-2"></div>
           </div>
 
-          <div class="col-span-5 bg-white p-8 rounded-3xl shadow">
+          <!-- Carrito -->
+          <div class="col-span-5 bg-white p-8 rounded-3xl shadow-xl">
             <h2 class="text-2xl font-bold mb-6">Carrito</h2>
-            <div id="cart" class="min-h-[400px]"></div>
+            <div id="cart" class="min-h-[380px] max-h-[65vh] overflow-auto"></div>
             
-            <div class="mt-8 pt-6 border-t">
-              <div class="flex justify-between text-3xl font-bold mb-6">
+            <div class="mt-8 pt-8 border-t border-gray-200">
+              <div class="flex justify-between items-baseline text-4xl font-bold mb-8">
                 <span>Total:</span>
                 <span id="total" class="text-green-600">Q0.00</span>
               </div>
               
               <button onclick="guardarPendiente()" 
-                      class="w-full mb-3 bg-yellow-500 hover:bg-yellow-600 py-5 rounded-2xl text-white font-bold text-lg">
+                      class="w-full mb-4 bg-yellow-500 hover:bg-yellow-600 py-6 rounded-3xl text-white font-bold text-xl">
                 💾 Guardar como Pendiente
               </button>
               <button onclick="finalizarVenta()" 
-                      class="w-full bg-green-700 hover:bg-green-800 py-6 rounded-2xl text-white font-bold text-xl">
-                ✅ Finalizar Venta y Descontar Stock
+                      class="w-full bg-green-700 hover:bg-green-800 py-6 rounded-3xl text-white font-bold text-xl">
+                ✅ Finalizar Venta y Actualizar Stock
               </button>
             </div>
           </div>
         </div>
       </div>
     `;
-    setTimeout(() => document.getElementById("search").focus(), 100);
+    setTimeout(() => document.getElementById("search").focus(), 150);
   }
 
   if (v === "pendientes") cargarPendientes();
   if (v === "historial") cargarHistorial();
 }
 
-/* BUSCAR */
+/* ================= BUSCAR PRODUCTO ================= */
 async function buscar() {
   const term = document.getElementById("search").value.toLowerCase().trim();
   const box = document.getElementById("results");
-  if (term.length < 2) return box.innerHTML = "";
+  if (term.length < 2) {
+    box.innerHTML = "";
+    return;
+  }
 
   const snap = await db.collection("productos").limit(30).get();
   let html = "";
@@ -143,17 +146,17 @@ async function buscar() {
     if (p.nombre && p.nombre.toLowerCase().includes(term)) {
       html += `
         <div onclick="add('${doc.id}','${p.nombre}',${p.precio||0},${p.stock||0})" 
-             class="p-5 hover:bg-green-50 rounded-2xl cursor-pointer flex justify-between border-b">
+             class="p-5 hover:bg-green-50 rounded-2xl cursor-pointer flex justify-between items-center border-b">
           <span class="font-medium">${p.nombre}</span>
-          <span class="text-green-600 font-bold">Q${p.precio||0} | Stock: ${p.stock||0}</span>
+          <span class="text-green-600 font-bold">Q${p.precio||0} • Stock: ${p.stock||0}</span>
         </div>`;
     }
   });
 
-  box.innerHTML = html || `<p class="p-8 text-gray-400 text-center">No se encontró el producto</p>`;
+  box.innerHTML = html || `<p class="p-8 text-center text-gray-400">No se encontró el producto</p>`;
 }
 
-/* CARRITO */
+/* ================= CARRITO ================= */
 function add(id, nombre, precio, stock) {
   if (stock <= 0) return alert("❌ Sin stock disponible");
   
@@ -173,20 +176,20 @@ function renderCarrito() {
     const subtotal = item.precio * item.cantidad;
     total += subtotal;
     html += `
-      <div class="flex justify-between items-center p-4 bg-gray-50 rounded-2xl mb-3">
+      <div class="flex justify-between items-center p-5 bg-gray-50 rounded-2xl mb-3">
         <div>
           <p class="font-medium">${item.nombre}</p>
-          <p class="text-sm text-gray-500">× ${item.cantidad}</p>
+          <p class="text-sm text-gray-500">Cantidad: ${item.cantidad}</p>
         </div>
         <div class="text-right">
-          <p class="font-bold">Q${subtotal.toFixed(2)}</p>
-          <button onclick="del(${i})" class="text-red-600 text-sm mt-1">Eliminar</button>
+          <p class="font-bold text-lg">Q${subtotal.toFixed(2)}</p>
+          <button onclick="del(${i})" class="text-red-600 text-sm mt-1 hover:underline">Eliminar</button>
         </div>
       </div>`;
   });
 
-  box.innerHTML = html || `<p class="text-center py-16 text-gray-400">El carrito está vacío</p>`;
-  document.getElementById("total").textContent = `Q${total.toFixed(2)}`;
+  box.innerHTML = html || `<p class="text-center py-20 text-gray-400 text-xl">El carrito está vacío</p>`;
+  if (document.getElementById("total")) document.getElementById("total").textContent = `Q${total.toFixed(2)}`;
 }
 
 function del(i) {
@@ -194,26 +197,30 @@ function del(i) {
   renderCarrito();
 }
 
-/* GUARDAR PENDIENTE */
+/* ================= GUARDAR PENDIENTE ================= */
 async function guardarPendiente() {
   if (carrito.length === 0) return alert("Carrito vacío");
-  if (!confirm("¿Guardar como venta pendiente?")) return;
 
-  await db.collection("ventas_pendientes").add({
-    fecha: new Date(),
-    cliente: clienteActual,
-    productos: carrito,
-    estado: "pendiente"
-  });
+  try {
+    await db.collection("ventas_pendientes").add({
+      fecha: firebase.firestore.FieldValue.serverTimestamp(),
+      cliente: clienteActual,
+      productos: carrito,
+      estado: "pendiente",
+      timestamp: Date.now()
+    });
 
-  alert("✅ Guardado como pendiente");
-  nuevaVenta();
+    alert("✅ Venta guardada como pendiente");
+    nuevaVenta();
+  } catch (e) {
+    alert("Error al guardar pendiente: " + e.message);
+  }
 }
 
-/* FINALIZAR VENTA + DESCUENTO DE STOCK */
+/* ================= FINALIZAR VENTA ================= */
 async function finalizarVenta() {
   if (carrito.length === 0) return alert("Carrito vacío");
-  if (!confirm("¿Finalizar venta y actualizar inventario?")) return;
+  if (!confirm("¿Finalizar venta y descontar del inventario?")) return;
 
   try {
     await db.runTransaction(async (tx) => {
@@ -235,7 +242,7 @@ async function finalizarVenta() {
       }
 
       tx.set(db.collection("ventas").doc(), {
-        fecha: new Date(),
+        fecha: firebase.firestore.FieldValue.serverTimestamp(),
         cliente: clienteActual,
         productos: carrito,
         total: total,
@@ -243,7 +250,7 @@ async function finalizarVenta() {
       });
     });
 
-    alert("🎉 Venta finalizada correctamente\nStock actualizado");
+    alert("🎉 Venta finalizada correctamente\nStock actualizado en inventario");
     nuevaVenta();
 
   } catch (e) {
@@ -252,65 +259,67 @@ async function finalizarVenta() {
   }
 }
 
-/* PENDIENTES */
+/* ================= VENTAS PENDIENTES ================= */
 function cargarPendientes() {
   document.getElementById("app").innerHTML = `
     <h1 class="text-4xl font-bold mb-8">📋 Ventas Pendientes</h1>
-    <div id="pendientes-list" class="space-y-4"></div>
+    <div id="pend-list" class="space-y-4"></div>
   `;
 
   db.collection("ventas_pendientes")
     .where("estado", "==", "pendiente")
-    .orderBy("fecha", "desc")
-    .onSnapshot(snap => {
+    .orderBy("timestamp", "desc")
+    .onSnapshot(snapshot => {
       let html = "";
-      snap.forEach(doc => {
+      snapshot.forEach(doc => {
         const v = doc.data();
         html += `
           <div class="bg-white p-6 rounded-3xl shadow flex justify-between items-center">
             <div>
               <p class="font-bold">${v.cliente || 'Cliente General'}</p>
-              <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
+              <p class="text-sm text-gray-500">${v.fecha && v.fecha.toDate ? v.fecha.toDate().toLocaleString('es-GT') : 'Reciente'}</p>
             </div>
             <button onclick="abrirPendiente('${doc.id}')" 
-                    class="bg-green-600 text-white px-8 py-3 rounded-2xl font-bold">Abrir</button>
+                    class="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl font-bold">Abrir Venta</button>
           </div>`;
       });
-      document.getElementById("pendientes-list").innerHTML = html || 
-        `<p class="text-center py-20 text-gray-400">No hay ventas pendientes</p>`;
+      document.getElementById("pend-list").innerHTML = html || 
+        `<p class="text-center py-20 text-gray-400 text-xl">No hay ventas pendientes</p>`;
     });
 }
 
 async function abrirPendiente(id) {
   const doc = await db.collection("ventas_pendientes").doc(id).get();
-  carrito = doc.data().productos || [];
-  clienteActual = doc.data().cliente || "Cliente General";
-  view("venta");
-  setTimeout(renderCarrito, 300);
+  if (doc.exists) {
+    carrito = doc.data().productos || [];
+    clienteActual = doc.data().cliente || "Cliente General";
+    view("venta");
+    setTimeout(renderCarrito, 300);
+  }
 }
 
-/* HISTORIAL */
+/* ================= HISTORIAL ================= */
 function cargarHistorial() {
   document.getElementById("app").innerHTML = `
     <h1 class="text-4xl font-bold mb-8">Historial de Ventas</h1>
-    <div id="historial-list" class="space-y-4"></div>
+    <div id="hist-list" class="space-y-4"></div>
   `;
 
   db.collection("ventas")
     .orderBy("fecha", "desc")
-    .onSnapshot(snap => {
+    .onSnapshot(snapshot => {
       let html = "";
-      snap.forEach(doc => {
+      snapshot.forEach(doc => {
         const v = doc.data();
         html += `
           <div class="bg-white p-6 rounded-3xl shadow">
             <p class="font-bold">${v.cliente || 'Cliente General'}</p>
-            <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
-            <p class="text-2xl font-bold text-green-600 mt-2">Total: Q${v.total || 0}</p>
+            <p class="text-sm text-gray-500">${v.fecha && v.fecha.toDate ? v.fecha.toDate().toLocaleString('es-GT') : ''}</p>
+            <p class="text-2xl font-bold text-green-600 mt-3">Total: Q${v.total || 0}</p>
           </div>`;
       });
-      document.getElementById("historial-list").innerHTML = html || 
-        `<p class="text-center py-20 text-gray-400">Sin historial aún</p>`;
+      document.getElementById("hist-list").innerHTML = html || 
+        `<p class="text-center py-20 text-gray-400 text-xl">Aún no hay ventas completadas</p>`;
     });
 }
 
