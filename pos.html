@@ -253,6 +253,12 @@ async function guardarPendiente(){
 
 /* ================= FINALIZAR VENTA + DESCONTAR STOCK ================= */
 async function finalizarVenta(){
+
+  const metodoPago =
+document.getElementById("metodoPago").value;
+
+alert("Método de pago: " + metodoPago);
+  
   if(carrito.length===0) return alert("Carrito vacío");
 
   if(!confirm("¿Finalizar venta y descontar stock?")) return;
