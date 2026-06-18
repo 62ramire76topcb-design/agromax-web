@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -97,7 +97,7 @@
       let html = '';
       snapshot.forEach(doc => {
         const p = doc.data();
-        if (p.nombre.toLowerCase().includes(term)) {
+        if (p.nombre && p.nombre.toLowerCase().includes(term)) {
           html += `
             <div onclick="agregarAlCarrito('${p.nombre}', ${p.precio || 0})" class="p-4 hover:bg-green-50 rounded-2xl cursor-pointer flex justify-between border-b">
               <span>${p.nombre}</span>
@@ -149,26 +149,34 @@
           productos: carrito,
           total,
           estado: "Pendiente",
-          cliente: "Cliente en Tienda"
+          cliente: "Cliente en Tienda",
+          timestamp: new Date()
         });
 
-        alert("✅ Solicitud enviada a Caja");
+        alert("✅ Solicitud enviada correctamente a Caja");
         carrito = [];
         mostrarSeccion('historial');
       } catch (e) {
-        alert("Error: " + e.message);
+        console.error(e);
+        alert("Error al enviar: " + e.message + "\n\nVerifica las reglas de Firebase");
       }
     }
 
     async function cargarHistorial() {
       const container = document.getElementById('lista-historial');
-      db.collection('ventas').orderBy('fecha', 'desc').onSnapshot(snap => {
+      db.collection('ventas_pendientes').orderBy('timestamp', 'desc').onSnapshot(snap => {
         let html = '';
         snap.forEach(doc => {
           const v = doc.data();
-          html += `<div class="bg-white p-6 rounded-3xl shadow"><p class="font-bold">Q${v.total}</p></div>`;
+          html += `
+            <div class="bg-white p-6 rounded-3xl shadow">
+              <p class="font-bold">${v.cliente}</p>
+              <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
+              <p class="font-bold text-green-600">Total: Q${v.total.toFixed(2)}</p>
+              <span class="inline-block mt-2 px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">${v.estado}</span>
+            </div>`;
         });
-        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">Sin historial</p>';
+        container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay ventas pendientes</p>';
       });
     }
 
