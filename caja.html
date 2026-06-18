@@ -66,8 +66,10 @@
       if (seccion === 'nueva-venta') {
         content.innerHTML = `
           <h1 class="text-4xl font-bold mb-8">🛒 Nueva Venta Directa</h1>
-          <input id="barcode" placeholder="Escanea código de barras o escribe nombre..." class="w-full p-6 text-xl border-4 border-green-500 rounded-3xl" autofocus onkeypress="if(event.key==='Enter') procesarScan()">
-          <div id="resultados" class="mt-6 max-h-96 overflow-auto"></div>`;
+          <input id="barcode" placeholder="Escanea código o escribe nombre..." 
+                 class="w-full p-6 text-xl border-4 border-green-500 rounded-3xl" autofocus 
+                 onkeypress="if(event.key==='Enter') procesarScan()">
+          <div id="resultados" class="mt-6 max-h-96 overflow-auto border rounded-2xl"></div>`;
       } 
       else if (seccion === 'pendientes') {
         content.innerHTML = `
@@ -81,7 +83,7 @@
       }
     }
 
-    // ==================== NUEVA VENTA DIRECTA ====================
+    // ==================== NUEVA VENTA ====================
     async function procesarScan() {
       const input = document.getElementById('barcode').value.trim();
       if (!input) return;
@@ -105,7 +107,7 @@
       const existe = carrito.find(i => i.nombre === nombre);
       if (existe) existe.cantidad++;
       else carrito.push({nombre, precio, cantidad: 1});
-      alert(`${nombre} agregado al carrito`);
+      alert(`${nombre} agregado`);
     }
 
     // ==================== VENTAS PENDIENTES ====================
@@ -113,25 +115,29 @@
       const container = document.getElementById('lista-pendientes');
       db.collection('ventas_pendientes').where('estado', '==', 'Pendiente').orderBy('fecha', 'desc').onSnapshot(snapshot => {
         let html = '';
-        snapshot.forEach(doc => {
-          const v = doc.data();
-          html += `
-            <div class="bg-white rounded-3xl shadow p-6">
-              <div class="flex justify-between items-start">
-                <div>
-                  <p class="font-bold">${v.cliente || 'Cliente General'}</p>
-                  <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
+        if (snapshot.empty) {
+          html = '<p class="text-center py-20 text-gray-400">No hay ventas pendientes</p>';
+        } else {
+          snapshot.forEach(doc => {
+            const v = doc.data();
+            html += `
+              <div class="bg-white rounded-3xl shadow p-6">
+                <div class="flex justify-between">
+                  <div>
+                    <p class="font-bold">${v.cliente || 'Cliente General'}</p>
+                    <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
+                  </div>
+                  <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pendiente</span>
                 </div>
-                <span class="px-4 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">Pendiente</span>
-              </div>
-              <div class="mt-4 text-sm space-y-1">
-                ${v.productos.map(p => `<div>${p.nombre} × ${p.cantidad} → Q${(p.precio * p.cantidad).toFixed(2)}</div>`).join('')}
-              </div>
-              <button onclick="procesarPendiente('${doc.id}', ${JSON.stringify(v.productos)})" 
-                      class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Procesar Pago</button>
-            </div>`;
-        });
-        container.innerHTML = html || '<p class="text-center py-20 text-gray-400">No hay ventas pendientes</p>';
+                <div class="mt-4 text-sm">
+                  ${v.productos.map(p => `${p.nombre} × ${p.cantidad}`).join(' • ')}
+                </div>
+                <button onclick="procesarPendiente('${doc.id}', ${JSON.stringify(v.productos)})" 
+                        class="mt-6 w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Procesar Pago</button>
+              </div>`;
+          });
+        }
+        container.innerHTML = html;
       });
     }
 
@@ -149,7 +155,7 @@
           }
 
           await db.collection('ventas_pendientes').doc(id).update({ estado: "Completada" });
-          alert("✅ Pago procesado y stock actualizado");
+          alert("✅ Pago procesado correctamente");
           cargarVentasPendientes();
         } catch (e) {
           alert("Error: " + e.message);
@@ -165,8 +171,9 @@
           const v = doc.data();
           html += `
             <div class="bg-white rounded-3xl shadow p-6">
+              <p class="font-bold">${v.cliente || 'Cliente General'}</p>
               <p class="text-sm text-gray-500">${v.fecha.toDate().toLocaleString('es-GT')}</p>
-              <p class="font-bold">Total: Q${v.total ? v.total.toFixed(2) : '0.00'}</p>
+              <p class="font-bold text-green-600">Total: Q${v.total ? v.total.toFixed(2) : '0.00'}</p>
             </div>`;
         });
         container.innerHTML = html || '<p class="text-center py-12 text-gray-400">No hay historial</p>';
