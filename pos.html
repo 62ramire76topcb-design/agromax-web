@@ -312,6 +312,19 @@ async function finalizarVenta(){
   const metodoPago =
 document.getElementById("metodoPago").value;
 
+  const montoRecibido =
+parseFloat(document.getElementById("montoRecibido").value) || 0;
+
+const total = carrito.reduce((sum,p)=>sum + (p.precio * p.cantidad),0);
+
+const cambio = montoRecibido - total;
+
+  if(metodoPago === "Efectivo"){
+  if(montoRecibido < total){
+    return alert("El monto recibido es menor al total");
+  }
+}
+
 alert("Método de pago: " + metodoPago);
   
   if(carrito.length===0) return alert("Carrito vacío");
@@ -344,7 +357,9 @@ alert("Método de pago: " + metodoPago);
   productos: carrito,
   total: total,
   tipo: "CAJA",
-  metodoPago: metodoPago
+  metodoPago: metodoPago,
+  montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
+  cambio: metodoPago === "Efectivo" ? cambio : 0
 });
     });
 
