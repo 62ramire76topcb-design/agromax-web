@@ -246,6 +246,7 @@ async function finalizarVenta(){
         total += item.precio * item.cantidad;
       }
 
+      // Guardar la venta completada
       const ventaRef = db.collection("ventas").doc();
       tx.set(ventaRef, {
         fecha: new Date(),
@@ -258,7 +259,7 @@ async function finalizarVenta(){
     alert("✅ Venta finalizada y stock actualizado correctamente");
     carrito = [];
     render();
-    view("venta");
+    view("venta"); // Recargar vista
 
   } catch(e){
     console.error(e);
@@ -266,7 +267,7 @@ async function finalizarVenta(){
   }
 }
 
-/* ================= PENDIENTES & HISTORIAL ================= */
+/* ================= PENDIENTES & HISTORIAL (sin cambios) ================= */
 function cargarPendientes(){
   document.getElementById("app").innerHTML = `
     <h1 class="text-3xl font-bold mb-6">Ventas Pendientes</h1>
@@ -322,8 +323,8 @@ function cargarHistorial(){
   });
 }
 
-// INIT
-if (auth.currentUser) view("venta");
+/* INIT */
+view("venta");
 
 </script>
 </body>
