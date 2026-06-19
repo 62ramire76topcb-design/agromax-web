@@ -56,50 +56,15 @@ const db = firebase.firestore();
 const auth = firebase.auth();
 
 let carrito = [];
-let listenersInit = false;
 
-/* ================= LISTENERS SOLO 1 VEZ ================= */
-function initListeners(){
-  if(listenersInit) return;
-  listenersInit = true;
-
-  document.addEventListener("change", function(e){
-    if(e.target && e.target.id === "metodoPago"){
-      const box = document.getElementById("efectivoBox");
-
-      if(!box) return;
-
-      if(e.target.value === "Efectivo"){
-        box.classList.remove("hidden");
-      } else {
-        box.classList.add("hidden");
-        const m = document.getElementById("montoRecibido");
-        const c = document.getElementById("cambioTexto");
-        if(m) m.value = "";
-        if(c) c.innerText = "Q0.00";
-      }
-    }
-  });
-
-  document.addEventListener("input", function(e){
-    if(e.target && e.target.id === "montoRecibido"){
-      const total = carrito.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
-      const recibido = parseFloat(e.target.value) || 0;
-      const cambio = recibido - total;
-
-      const c = document.getElementById("cambioTexto");
-      if(c){
-        c.innerText = "Q" + (cambio >= 0 ? cambio.toFixed(2) : "0.00");
-      }
-    }
-  });
-}
-initListeners();
-
-/* ================= AUTH ================= */
+/* AUTH - Mejorado para POS */
 auth.onAuthStateChanged(user => {
-  if (!user) mostrarLoginPOS();
-  else view("venta");
+  if (!user) {
+    // En vez de redirigir a admin.html, mostramos login dentro del POS
+    mostrarLoginPOS();
+  } else {
+    view("venta");
+  }
 });
 
 function mostrarLoginPOS() {
@@ -111,32 +76,64 @@ function mostrarLoginPOS() {
         </div>
         <h1 class="text-3xl font-bold text-center mb-2">Caja AGROMAXGTM</h1>
         <p class="text-center text-green-600 mb-8">Iniciar Sesión - Mostrador</p>
-
-        <input id="email" type="email" class="w-full p-4 border rounded-2xl mb-4">
-        <input id="password" type="password" class="w-full p-4 border rounded-2xl mb-6">
-
-        <button onclick="loginPOS()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg">
+        
+        <input id="email" type="email" placeholder="Correo" class="w-full p-4 border rounded-2xl mb-4">
+        <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
+        
+        <button onclick="loginPOS()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
           Ingresar a Caja
         </button>
+        <p class="text-center text-xs text-gray-500 mt-6">Solo para personal de mostrador</p>
       </div>
     </div>`;
 }
 
-async function loginPOS(){
-  try{
-    await auth.signInWithEmailAndPassword(
-      document.getElementById("email").value,
-      document.getElementById("password").value
-    );
-  }catch(e){
-    alert(e.message);
+async function loginPOS() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+  } catch (e) {
+    alert("Error de inicio de sesión: " + e.message);
   }
 }
 
-/* ================= VIEW ================= */
+/* ================= VIEWS ================= */
 function view(v){
   const app = document.getElementById("app");
 
+  document.addEventListener("change", function(e){
+  if(e.target && e.target.id === "metodoPago"){
+
+    const box = document.getElementById("efectivoBox");
+
+    if(e.target.value === "Efectivo"){
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
+
+      document.getElementById("montoRecibido").value = "";
+      document.getElementById("cambioTexto").innerText = "Q0.00";
+    }
+  }
+});
+
+  document.addEventListener("input", function(e){
+  if(e.target && e.target.id === "montoRecibido"){
+
+    const total = carrito.reduce((sum, p) =>
+      sum + (p.precio * p.cantidad), 0
+    );
+
+    const recibido = parseFloat(e.target.value) || 0;
+
+    const cambio = recibido - total;
+
+    document.getElementById("cambioTexto").innerText =
+      "Q" + (cambio >= 0 ? cambio.toFixed(2) : "0.00");
+  }
+});
+  
   if(v === "venta"){
     app.innerHTML = `
       <h1 class="text-3xl font-bold mb-6">🛒 Nueva Venta</h1>
@@ -156,22 +153,71 @@ function view(v){
           <div id="cart"></div>
 
           <div id="efectivoBox" class="mt-4 hidden">
-            <input id="montoRecibido" type="number" class="w-full p-3 border rounded-xl">
-            <div class="mt-2">Cambio: <b id="cambioTexto">Q0.00</b></div>
-          </div>
 
-          <select id="metodoPago" class="w-full p-3 border rounded-xl mt-4">
-            <option value="">Seleccione método</option>
-            <option value="Efectivo">Efectivo</option>
-            <option value="Tarjeta">Tarjeta</option>
-          </select>
+  <label class="block mb-2 font-semibold text-gray-700">
+    Monto recibido
+  </label>
 
-          <button onclick="finalizarVenta()" class="w-full mt-4 bg-green-700 text-white py-4 rounded-xl font-bold">
-            Finalizar Venta
+  <input
+    type="number"
+    id="montoRecibido"
+    placeholder="Ej: 200"
+    class="w-full p-3 border rounded-xl"
+  />
+
+  <div class="mt-3 text-sm text-gray-600">
+    Cambio: <b id="cambioTexto">Q0.00</b>
+  </div>
+
+</div>
+
+          <div class="mt-4">
+
+  <label class="block mb-2 font-semibold text-gray-700">
+    Método de Pago
+  </label>
+
+  <select
+    id="metodoPago"
+    class="w-full p-3 border rounded-xl">
+
+      <option value="">
+  Seleccione método de pago
+</option>
+
+<option value="Efectivo">
+  💵 Efectivo
+</option>
+
+<option value="Tarjeta">
+  💳 Tarjeta
+</option>
+
+<option value="Transferencia">
+  🏦 Transferencia
+</option>
+
+<option value="Credito">
+  📒 Crédito
+</option>
+
+  </select>
+
+</div>
+
+          <button onclick="guardarPendiente()"
+          class="w-full mt-6 bg-yellow-500 py-3 rounded-xl text-white font-bold">
+            Guardar como Pendiente
+          </button>
+
+          <button onclick="finalizarVenta()"
+          class="w-full mt-3 bg-green-700 py-4 rounded-xl text-white font-bold">
+            Finalizar Venta (Descontar Stock)
           </button>
         </div>
 
-      </div>`;
+      </div>
+    `;
   }
 
   if(v === "pendientes") cargarPendientes();
@@ -183,27 +229,36 @@ async function buscar(){
   const t = document.getElementById("search").value.toLowerCase();
   const box = document.getElementById("results");
 
+  if(t.length < 2){
+    box.innerHTML = "";
+    return;
+  }
+
   const snap = await db.collection("productos").limit(20).get();
 
   let html = "";
   snap.forEach(doc=>{
     const p = doc.data();
-    if(p.nombre.toLowerCase().includes(t)){
-      html += `<div onclick="add('${doc.id}','${p.nombre}',${p.precio||0},${p.stock||0})"
-      class="p-2 bg-gray-100 rounded-xl">${p.nombre}</div>`;
+    if(p.nombre && p.nombre.toLowerCase().includes(t)){
+      html += `
+        <div onclick="add('${doc.id}','${p.nombre}',${p.precio||0},${p.stock||0})"
+        class="p-3 bg-gray-50 rounded-xl cursor-pointer flex justify-between">
+          <span>${p.nombre}</span>
+          <b>Stock: ${p.stock||0}</b>
+        </div>
+      `;
     }
   });
-
-  box.innerHTML = html;
+  box.innerHTML = html || "<p class='p-3 text-gray-500'>No encontrado</p>";
 }
 
 /* ================= CART ================= */
-function add(id,nombre,precio,stock){
-  if(stock<=0) return alert("Sin stock");
+function add(id, nombre, precio, stock){
+  if(stock <= 0) return alert("Sin stock disponible");
 
-  let i = carrito.find(p=>p.id===id);
-  if(i) i.cantidad++;
-  else carrito.push({id,nombre,precio,cantidad:1});
+  let item = carrito.find(p=>p.id===id);
+  if(item) item.cantidad++;
+  else carrito.push({id, nombre, precio, cantidad:1});
 
   render();
 }
@@ -216,57 +271,194 @@ function render(){
   let total = 0;
 
   carrito.forEach((p,i)=>{
-    total += p.precio*p.cantidad;
+    total += p.precio * p.cantidad;
     html += `
-      <div class="flex justify-between p-2">
-        ${p.nombre} x${p.cantidad}
-        <b>Q${(p.precio*p.cantidad).toFixed(2)}</b>
-      </div>`;
+      <div class="flex justify-between p-3 bg-gray-100 rounded-xl mb-2">
+        <div>${p.nombre} × ${p.cantidad}</div>
+        <div>
+          Q${(p.precio*p.cantidad).toFixed(2)}
+          <button onclick="del(${i})" class="text-red-600 ml-3">X</button>
+        </div>
+      </div>
+    `;
   });
 
-  box.innerHTML = html;
+  box.innerHTML = html || "<p class='text-gray-400 py-8 text-center'>Carrito vacío</p>";
 }
 
-/* ================= FINALIZAR ================= */
-async function finalizarVenta(){
+function del(i){
+  carrito.splice(i,1);
+  render();
+}
 
+/* ================= GUARDAR PENDIENTE ================= */
+async function guardarPendiente(){
   if(carrito.length===0) return alert("Carrito vacío");
 
-  const carritoSnapshot = JSON.parse(JSON.stringify(carrito));
-  const totalFinal = carritoSnapshot.reduce((s,p)=>s+(p.precio*p.cantidad),0);
-
-  const metodo = document.getElementById("metodoPago").value;
-
-  await db.runTransaction(async(tx)=>{
-    for(const item of carritoSnapshot){
-      const ref = db.collection("productos").doc(item.id);
-      const snap = await tx.get(ref);
-
-      const data = snap.data();
-      if(data.stock < item.cantidad) throw "Sin stock";
-
-      tx.update(ref,{stock:data.stock-item.cantidad});
-    }
-
-    tx.set(db.collection("ventas").doc(),{
-      fecha:new Date(),
-      productos:carritoSnapshot,
-      total:totalFinal,
-      metodoPago:metodo
-    });
+  await db.collection("ventas_pendientes").add({
+    fecha: new Date(),
+    productos: carrito,
+    estado: "pendiente"
   });
 
-  if(typeof abrirTicket === "function"){
-    abrirTicket(carritoSnapshot,totalFinal);
-  }
-
+  alert("✅ Venta guardada como pendiente");
   carrito = [];
   render();
-  view("venta");
 }
 
-/* ================= INIT ================= */
+/* ================= FINALIZAR VENTA + DESCONTAR STOCK ================= */
+async function finalizarVenta(){
+
+  const metodoPago =
+document.getElementById("metodoPago").value;
+
+  const montoRecibido =
+parseFloat(document.getElementById("montoRecibido").value) || 0;
+
+const total = carrito.reduce((sum,p)=>sum + (p.precio * p.cantidad),0);
+
+const cambio = montoRecibido - total;
+
+  if(metodoPago === "Efectivo"){
+  if(montoRecibido < total){
+    return alert("El monto recibido es menor al total");
+  }
+}
+
+alert("Método de pago: " + metodoPago);
+  
+  if(carrito.length===0) return alert("Carrito vacío");
+
+  if(!confirm("¿Finalizar venta y descontar stock?")) return;
+
+  try {
+    await db.runTransaction(async (tx) => {
+      let total = 0;
+
+      for(const item of carrito){
+        const prodRef = db.collection("productos").doc(item.id);
+        const snap = await tx.get(prodRef);
+
+        if(!snap.exists) throw "Producto no encontrado: " + item.nombre;
+
+        const data = snap.data();
+        if((data.stock || 0) < item.cantidad){
+          throw "Stock insuficiente para " + item.nombre;
+        }
+
+        tx.update(prodRef, { stock: data.stock - item.cantidad });
+        total += item.precio * item.cantidad;
+      }
+
+      // Guardar la venta completada
+      const ventaRef = db.collection("ventas").doc();
+      tx.set(ventaRef, {
+  fecha: new Date(),
+  productos: carrito,
+  total: total,
+  tipo: "CAJA",
+  metodoPago: metodoPago,
+  montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
+  cambio: metodoPago === "Efectivo" ? cambio : 0
+});
+    });
+
+    alert("✅ Venta finalizada y stock actualizado correctamente");
+    carrito = [];
+    render();
+    view("venta"); // Recargar vista
+
+  } catch(e){
+    console.error(e);
+    alert("Error: " + (e.message || e));
+  }
+}
+
+/* ================= PENDIENTES & HISTORIAL (sin cambios) ================= */
+function cargarPendientes(){
+  document.getElementById("app").innerHTML = `
+    <h1 class="text-3xl font-bold mb-6">Ventas Pendientes</h1>
+    <div id="pend"></div>
+  `;
+
+  db.collection("ventas_pendientes")
+  .where("estado", "==", "pendiente")
+  .onSnapshot(snap=>{
+    let html = "";
+    snap.forEach(doc=>{
+      const v = doc.data();
+      html += `
+        <div class="bg-white p-4 rounded-xl shadow mb-3 flex justify-between items-center">
+          <div>
+            <b>${v.fecha.toDate ? v.fecha.toDate().toLocaleString() : ""}</b>
+          </div>
+          <button onclick="cargarPendiente('${doc.id}')" 
+          class="bg-green-600 text-white px-4 py-2 rounded-xl">Abrir</button>
+        </div>
+      `;
+    });
+    document.getElementById("pend").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>No hay ventas pendientes</p>";
+  });
+}
+
+async function cargarPendiente(id){
+  const doc = await db.collection("ventas_pendientes").doc(id).get();
+  carrito = doc.data().productos || [];
+  view("venta");
+  setTimeout(render, 300);
+}
+
+function cargarHistorial(){
+  document.getElementById("app").innerHTML = `
+    <h1 class="text-3xl font-bold mb-6">Historial Caja</h1>
+    <div id="hist"></div>
+  `;
+
+  db.collection("ventas")
+  .orderBy("fecha","desc")
+  .onSnapshot(snap=>{
+    let html = "";
+    snap.forEach(doc=>{
+      const v = doc.data();
+      html += `
+  <div class="bg-white p-4 rounded-xl shadow mb-3">
+
+    <div class="font-bold text-lg">
+      Total: Q${v.total || 0}
+    </div>
+
+    <div class="text-sm text-gray-700">
+      Método: ${v.metodoPago || "N/A"}
+    </div>
+
+    ${
+      v.metodoPago === "Efectivo"
+      ? `
+        <div class="text-sm text-gray-700">
+          Recibido: Q${v.montoRecibido || 0}
+        </div>
+
+        <div class="text-sm text-green-600 font-semibold">
+          Cambio: Q${v.cambio || 0}
+        </div>
+      `
+      : ""
+    }
+
+    <div class="text-xs text-gray-500 mt-2">
+      ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
+    </div>
+
+  </div>
+`;
+    });
+    document.getElementById("hist").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>Sin historial</p>";
+  });
+}
+
+/* INIT */
 view("venta");
+
 </script>
 </body>
 </html>
