@@ -17,27 +17,35 @@
 
 <div class="flex h-screen">
 
-<!-- SIDEBAR -->
 <div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
   <div class="p-6 border-b bg-green-700 text-white">
-    <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-    <p class="text-xs">Caja Registradora</p>
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
+      <div>
+        <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+        <p class="text-xs">Caja Registradora - Mostrador</p>
+      </div>
+    </div>
   </div>
 
   <nav class="p-4 space-y-2">
-    <a onclick="view('venta')" class="block p-3 hover:bg-green-50 rounded-xl">🛒 Nueva Venta</a>
-    <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl">⏳ Pendientes</a>
-    <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl">📊 Historial</a>
+    <a onclick="view('venta')" class="block p-3 hover:bg-green-50 rounded-xl">
+      <i class="fas fa-cash-register"></i> Nueva Venta
+    </a>
+    <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl">
+      <i class="fas fa-clock"></i> Ventas Pendientes
+    </a>
+    <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl">
+      <i class="fas fa-history"></i> Historial Caja
+    </a>
   </nav>
 </div>
 
-<!-- APP -->
 <div class="flex-1 p-8 overflow-auto" id="app"></div>
 
 </div>
 
 <script>
-/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
   authDomain: "agromaxgt-app.firebaseapp.com",
@@ -47,40 +55,80 @@ firebase.initializeApp({
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-/* ================= VARIABLES ================= */
 let carrito = [];
+let listenersInit = false;
+
+/* ================= LISTENERS SOLO 1 VEZ ================= */
+function initListeners(){
+  if(listenersInit) return;
+  listenersInit = true;
+
+  document.addEventListener("change", function(e){
+    if(e.target && e.target.id === "metodoPago"){
+      const box = document.getElementById("efectivoBox");
+
+      if(!box) return;
+
+      if(e.target.value === "Efectivo"){
+        box.classList.remove("hidden");
+      } else {
+        box.classList.add("hidden");
+        const m = document.getElementById("montoRecibido");
+        const c = document.getElementById("cambioTexto");
+        if(m) m.value = "";
+        if(c) c.innerText = "Q0.00";
+      }
+    }
+  });
+
+  document.addEventListener("input", function(e){
+    if(e.target && e.target.id === "montoRecibido"){
+      const total = carrito.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+      const recibido = parseFloat(e.target.value) || 0;
+      const cambio = recibido - total;
+
+      const c = document.getElementById("cambioTexto");
+      if(c){
+        c.innerText = "Q" + (cambio >= 0 ? cambio.toFixed(2) : "0.00");
+      }
+    }
+  });
+}
+initListeners();
 
 /* ================= AUTH ================= */
-auth.onAuthStateChanged(user=>{
-  if(!user){
-    mostrarLogin();
-  } else {
-    view("venta");
-  }
+auth.onAuthStateChanged(user => {
+  if (!user) mostrarLoginPOS();
+  else view("venta");
 });
 
-function mostrarLogin(){
+function mostrarLoginPOS() {
   document.getElementById("app").innerHTML = `
-    <div class="flex items-center justify-center h-full">
-      <div class="bg-white p-10 rounded-2xl shadow w-96">
-        <h2 class="text-xl font-bold mb-4">Login Caja</h2>
-        <input id="email" class="w-full border p-2 mb-3" placeholder="Correo">
-        <input id="pass" type="password" class="w-full border p-2 mb-3" placeholder="Contraseña">
-        <button onclick="login()" class="w-full bg-green-600 text-white p-2 rounded">
-          Entrar
+    <div class="min-h-screen flex items-center justify-center bg-gray-100">
+      <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
+        <div class="flex justify-center mb-6">
+          <div class="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-white text-6xl">🖨️</div>
+        </div>
+        <h1 class="text-3xl font-bold text-center mb-2">Caja AGROMAXGTM</h1>
+        <p class="text-center text-green-600 mb-8">Iniciar Sesión - Mostrador</p>
+
+        <input id="email" type="email" class="w-full p-4 border rounded-2xl mb-4">
+        <input id="password" type="password" class="w-full p-4 border rounded-2xl mb-6">
+
+        <button onclick="loginPOS()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg">
+          Ingresar a Caja
         </button>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
-async function login(){
+async function loginPOS(){
   try{
     await auth.signInWithEmailAndPassword(
       document.getElementById("email").value,
-      document.getElementById("pass").value
+      document.getElementById("password").value
     );
-  } catch(e){
+  }catch(e){
     alert(e.message);
   }
 }
@@ -91,61 +139,43 @@ function view(v){
 
   if(v === "venta"){
     app.innerHTML = `
-      <h1 class="text-2xl font-bold mb-4">Nueva Venta</h1>
+      <h1 class="text-3xl font-bold mb-6">🛒 Nueva Venta</h1>
 
-      <input id="search" onkeyup="buscar()" class="w-full border p-2 mb-4" placeholder="Buscar">
+      <div class="grid grid-cols-12 gap-6">
 
-      <div id="results"></div>
+        <div class="col-span-7 bg-white p-6 rounded-3xl shadow">
+          <input id="search" placeholder="Buscar producto..."
+          class="w-full p-4 border rounded-2xl"
+          onkeyup="buscar()">
 
-      <hr class="my-4">
+          <div id="results" class="mt-4"></div>
+        </div>
 
-      <div id="cart"></div>
+        <div class="col-span-5 bg-white p-6 rounded-3xl shadow">
+          <h2 class="text-xl font-bold mb-4">Carrito</h2>
+          <div id="cart"></div>
 
-      <div class="mt-4">
-        <label>Método de Pago</label>
-        <select id="metodoPago" class="w-full border p-2">
-          <option value="">Seleccione</option>
-          <option value="Efectivo">Efectivo</option>
-          <option value="Tarjeta">Tarjeta</option>
-          <option value="Transferencia">Transferencia</option>
-        </select>
-      </div>
+          <div id="efectivoBox" class="mt-4 hidden">
+            <input id="montoRecibido" type="number" class="w-full p-3 border rounded-xl">
+            <div class="mt-2">Cambio: <b id="cambioTexto">Q0.00</b></div>
+          </div>
 
-      <div id="efectivoBox" class="hidden mt-3">
-        <input id="montoRecibido" class="w-full border p-2" placeholder="Monto recibido">
-        <p>Cambio: <b id="cambioTexto">Q0.00</b></p>
-      </div>
+          <select id="metodoPago" class="w-full p-3 border rounded-xl mt-4">
+            <option value="">Seleccione método</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Tarjeta">Tarjeta</option>
+          </select>
 
-      <button onclick="finalizarVenta()" class="w-full bg-green-600 text-white p-3 mt-4">
-        Finalizar Venta
-      </button>
-    `;
+          <button onclick="finalizarVenta()" class="w-full mt-4 bg-green-700 text-white py-4 rounded-xl font-bold">
+            Finalizar Venta
+          </button>
+        </div>
+
+      </div>`;
   }
 
-  if(v==="historial") cargarHistorial();
-  if(v==="pendientes") cargarPendientes();
-
-  /* EVENTOS SOLO 1 VEZ */
-  setTimeout(()=>{
-    const mp = document.getElementById("metodoPago");
-    if(mp){
-      mp.onchange = ()=>{
-        const box = document.getElementById("efectivoBox");
-        box.style.display = mp.value==="Efectivo"?"block":"none";
-      }
-    }
-
-    const monto = document.getElementById("montoRecibido");
-    if(monto){
-      monto.oninput = ()=>{
-        const total = carrito.reduce((s,p)=>s+p.precio*p.cantidad,0);
-        const recibido = parseFloat(monto.value)||0;
-        const cambio = recibido - total;
-        document.getElementById("cambioTexto").innerText =
-        "Q"+(cambio>0?cambio.toFixed(2):"0.00");
-      }
-    }
-  },200);
+  if(v === "pendientes") cargarPendientes();
+  if(v === "historial") cargarHistorial();
 }
 
 /* ================= SEARCH ================= */
@@ -153,20 +183,14 @@ async function buscar(){
   const t = document.getElementById("search").value.toLowerCase();
   const box = document.getElementById("results");
 
-  if(t.length<2){ box.innerHTML=""; return; }
+  const snap = await db.collection("productos").limit(20).get();
 
-  const snap = await db.collection("productos").get();
-
-  let html="";
+  let html = "";
   snap.forEach(doc=>{
     const p = doc.data();
     if(p.nombre.toLowerCase().includes(t)){
-      html += `
-        <div class="p-2 border mb-2 cursor-pointer"
-        onclick="add('${doc.id}','${p.nombre}',${p.precio},${p.stock})">
-          ${p.nombre} - Q${p.precio}
-        </div>
-      `;
+      html += `<div onclick="add('${doc.id}','${p.nombre}',${p.precio||0},${p.stock||0})"
+      class="p-2 bg-gray-100 rounded-xl">${p.nombre}</div>`;
     }
   });
 
@@ -175,8 +199,10 @@ async function buscar(){
 
 /* ================= CART ================= */
 function add(id,nombre,precio,stock){
-  let f = carrito.find(p=>p.id===id);
-  if(f) f.cantidad++;
+  if(stock<=0) return alert("Sin stock");
+
+  let i = carrito.find(p=>p.id===id);
+  if(i) i.cantidad++;
   else carrito.push({id,nombre,precio,cantidad:1});
 
   render();
@@ -186,26 +212,19 @@ function render(){
   const box = document.getElementById("cart");
   if(!box) return;
 
-  let html="";
-  let total=0;
+  let html = "";
+  let total = 0;
 
   carrito.forEach((p,i)=>{
     total += p.precio*p.cantidad;
     html += `
-      <div class="flex justify-between border p-2 mb-2">
+      <div class="flex justify-between p-2">
         ${p.nombre} x${p.cantidad}
-        <b>Q${p.precio*p.cantidad}</b>
-        <button onclick="del(${i})">X</button>
-      </div>
-    `;
+        <b>Q${(p.precio*p.cantidad).toFixed(2)}</b>
+      </div>`;
   });
 
-  box.innerHTML = html + `<hr>Total: Q${total}`;
-}
-
-function del(i){
-  carrito.splice(i,1);
-  render();
+  box.innerHTML = html;
 }
 
 /* ================= FINALIZAR ================= */
@@ -213,59 +232,41 @@ async function finalizarVenta(){
 
   if(carrito.length===0) return alert("Carrito vacío");
 
-  const metodoPago = document.getElementById("metodoPago").value;
-  const montoRecibido = parseFloat(document.getElementById("montoRecibido")?.value)||0;
+  const carritoSnapshot = JSON.parse(JSON.stringify(carrito));
+  const totalFinal = carritoSnapshot.reduce((s,p)=>s+(p.precio*p.cantidad),0);
 
-  const total = carrito.reduce((s,p)=>s+p.precio*p.cantidad,0);
-  const cambio = montoRecibido - total;
+  const metodo = document.getElementById("metodoPago").value;
 
-  if(metodoPago==="Efectivo" && montoRecibido < total){
-    return alert("Monto insuficiente");
-  }
+  await db.runTransaction(async(tx)=>{
+    for(const item of carritoSnapshot){
+      const ref = db.collection("productos").doc(item.id);
+      const snap = await tx.get(ref);
 
-  await db.collection("ventas").add({
-    carrito,
-    total,
-    metodoPago,
-    montoRecibido,
-    cambio,
-    fecha:new Date()
+      const data = snap.data();
+      if(data.stock < item.cantidad) throw "Sin stock";
+
+      tx.update(ref,{stock:data.stock-item.cantidad});
+    }
+
+    tx.set(db.collection("ventas").doc(),{
+      fecha:new Date(),
+      productos:carritoSnapshot,
+      total:totalFinal,
+      metodoPago:metodo
+    });
   });
 
-  abrirTicket({carrito,total,metodoPago,montoRecibido,cambio});
+  if(typeof abrirTicket === "function"){
+    abrirTicket(carritoSnapshot,totalFinal);
+  }
 
-  carrito=[];
+  carrito = [];
   render();
   view("venta");
 }
 
-/* ================= TICKET ================= */
-function abrirTicket(d){
-  const w = window.open();
-  w.document.write(`
-    <h2>AGROMAXGTM</h2>
-    ${d.carrito.map(p=>`<p>${p.nombre} x${p.cantidad}</p>`).join("")}
-    <hr>
-    <p>Total: Q${d.total}</p>
-    <p>Método: ${d.metodoPago}</p>
-    <p>Cambio: Q${d.cambio}</p>
-  `);
-  w.print();
-}
-
-/* ================= HISTORIAL ================= */
-function cargarHistorial(){
-  document.getElementById("app").innerHTML = `<h2>Historial</h2>`;
-}
-
-/* ================= PENDIENTES ================= */
-function cargarPendientes(){
-  document.getElementById("app").innerHTML = `<h2>Pendientes</h2>`;
-}
-
-/* INIT */
+/* ================= INIT ================= */
 view("venta");
 </script>
-
 </body>
 </html>
