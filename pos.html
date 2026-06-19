@@ -17,35 +17,27 @@
 
 <div class="flex h-screen">
 
+<!-- SIDEBAR -->
 <div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
   <div class="p-6 border-b bg-green-700 text-white">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
-      <div>
-        <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-        <p class="text-xs">Caja Registradora - Mostrador</p>
-      </div>
-    </div>
+    <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
+    <p class="text-xs">Caja Registradora</p>
   </div>
 
   <nav class="p-4 space-y-2">
-    <a onclick="view('venta')" class="block p-3 hover:bg-green-50 rounded-xl">
-      <i class="fas fa-cash-register"></i> Nueva Venta
-    </a>
-    <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl">
-      <i class="fas fa-clock"></i> Ventas Pendientes
-    </a>
-    <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl">
-      <i class="fas fa-history"></i> Historial Caja
-    </a>
+    <a onclick="view('venta')" class="block p-3 hover:bg-green-50 rounded-xl">🛒 Nueva Venta</a>
+    <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl">⏳ Pendientes</a>
+    <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl">📊 Historial</a>
   </nav>
 </div>
 
+<!-- APP -->
 <div class="flex-1 p-8 overflow-auto" id="app"></div>
 
 </div>
 
 <script>
+/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
   authDomain: "agromaxgt-app.firebaseapp.com",
@@ -55,173 +47,105 @@ firebase.initializeApp({
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+/* ================= VARIABLES ================= */
 let carrito = [];
 
-/* AUTH - Mejorado para POS */
-auth.onAuthStateChanged(user => {
-  if (!user) {
-    // En vez de redirigir a admin.html, mostramos login dentro del POS
-    mostrarLoginPOS();
+/* ================= AUTH ================= */
+auth.onAuthStateChanged(user=>{
+  if(!user){
+    mostrarLogin();
   } else {
     view("venta");
   }
 });
 
-function mostrarLoginPOS() {
+function mostrarLogin(){
   document.getElementById("app").innerHTML = `
-    <div class="min-h-screen flex items-center justify-center bg-gray-100">
-      <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
-        <div class="flex justify-center mb-6">
-          <div class="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-white text-6xl">🖨️</div>
-        </div>
-        <h1 class="text-3xl font-bold text-center mb-2">Caja AGROMAXGTM</h1>
-        <p class="text-center text-green-600 mb-8">Iniciar Sesión - Mostrador</p>
-        
-        <input id="email" type="email" placeholder="Correo" class="w-full p-4 border rounded-2xl mb-4">
-        <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
-        
-        <button onclick="loginPOS()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
-          Ingresar a Caja
+    <div class="flex items-center justify-center h-full">
+      <div class="bg-white p-10 rounded-2xl shadow w-96">
+        <h2 class="text-xl font-bold mb-4">Login Caja</h2>
+        <input id="email" class="w-full border p-2 mb-3" placeholder="Correo">
+        <input id="pass" type="password" class="w-full border p-2 mb-3" placeholder="Contraseña">
+        <button onclick="login()" class="w-full bg-green-600 text-white p-2 rounded">
+          Entrar
         </button>
-        <p class="text-center text-xs text-gray-500 mt-6">Solo para personal de mostrador</p>
       </div>
-    </div>`;
+    </div>
+  `;
 }
 
-async function loginPOS() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  try {
-    await auth.signInWithEmailAndPassword(email, password);
-  } catch (e) {
-    alert("Error de inicio de sesión: " + e.message);
+async function login(){
+  try{
+    await auth.signInWithEmailAndPassword(
+      document.getElementById("email").value,
+      document.getElementById("pass").value
+    );
+  } catch(e){
+    alert(e.message);
   }
 }
 
-/* ================= VIEWS ================= */
+/* ================= VIEW ================= */
 function view(v){
   const app = document.getElementById("app");
 
-  document.addEventListener("change", function(e){
-  if(e.target && e.target.id === "metodoPago"){
-
-    const box = document.getElementById("efectivoBox");
-
-    if(e.target.value === "Efectivo"){
-      box.classList.remove("hidden");
-    } else {
-      box.classList.add("hidden");
-
-      document.getElementById("montoRecibido").value = "";
-      document.getElementById("cambioTexto").innerText = "Q0.00";
-    }
-  }
-});
-
-  document.addEventListener("input", function(e){
-  if(e.target && e.target.id === "montoRecibido"){
-
-    const total = carrito.reduce((sum, p) =>
-      sum + (p.precio * p.cantidad), 0
-    );
-
-    const recibido = parseFloat(e.target.value) || 0;
-
-    const cambio = recibido - total;
-
-    document.getElementById("cambioTexto").innerText =
-      "Q" + (cambio >= 0 ? cambio.toFixed(2) : "0.00");
-  }
-});
-  
   if(v === "venta"){
     app.innerHTML = `
-      <h1 class="text-3xl font-bold mb-6">🛒 Nueva Venta</h1>
+      <h1 class="text-2xl font-bold mb-4">Nueva Venta</h1>
 
-      <div class="grid grid-cols-12 gap-6">
+      <input id="search" onkeyup="buscar()" class="w-full border p-2 mb-4" placeholder="Buscar">
 
-        <div class="col-span-7 bg-white p-6 rounded-3xl shadow">
-          <input id="search" placeholder="Buscar producto..."
-          class="w-full p-4 border rounded-2xl"
-          onkeyup="buscar()">
+      <div id="results"></div>
 
-          <div id="results" class="mt-4"></div>
-        </div>
+      <hr class="my-4">
 
-        <div class="col-span-5 bg-white p-6 rounded-3xl shadow">
-          <h2 class="text-xl font-bold mb-4">Carrito</h2>
-          <div id="cart"></div>
+      <div id="cart"></div>
 
-          <div id="efectivoBox" class="mt-4 hidden">
-
-  <label class="block mb-2 font-semibold text-gray-700">
-    Monto recibido
-  </label>
-
-  <input
-    type="number"
-    id="montoRecibido"
-    placeholder="Ej: 200"
-    class="w-full p-3 border rounded-xl"
-  />
-
-  <div class="mt-3 text-sm text-gray-600">
-    Cambio: <b id="cambioTexto">Q0.00</b>
-  </div>
-
-</div>
-
-          <div class="mt-4">
-
-  <label class="block mb-2 font-semibold text-gray-700">
-    Método de Pago
-  </label>
-
-  <select
-    id="metodoPago"
-    class="w-full p-3 border rounded-xl">
-
-      <option value="">
-  Seleccione método de pago
-</option>
-
-<option value="Efectivo">
-  💵 Efectivo
-</option>
-
-<option value="Tarjeta">
-  💳 Tarjeta
-</option>
-
-<option value="Transferencia">
-  🏦 Transferencia
-</option>
-
-<option value="Credito">
-  📒 Crédito
-</option>
-
-  </select>
-
-</div>
-
-          <button onclick="guardarPendiente()"
-          class="w-full mt-6 bg-yellow-500 py-3 rounded-xl text-white font-bold">
-            Guardar como Pendiente
-          </button>
-
-          <button onclick="finalizarVenta()"
-          class="w-full mt-3 bg-green-700 py-4 rounded-xl text-white font-bold">
-            Finalizar Venta (Descontar Stock)
-          </button>
-        </div>
-
+      <div class="mt-4">
+        <label>Método de Pago</label>
+        <select id="metodoPago" class="w-full border p-2">
+          <option value="">Seleccione</option>
+          <option value="Efectivo">Efectivo</option>
+          <option value="Tarjeta">Tarjeta</option>
+          <option value="Transferencia">Transferencia</option>
+        </select>
       </div>
+
+      <div id="efectivoBox" class="hidden mt-3">
+        <input id="montoRecibido" class="w-full border p-2" placeholder="Monto recibido">
+        <p>Cambio: <b id="cambioTexto">Q0.00</b></p>
+      </div>
+
+      <button onclick="finalizarVenta()" class="w-full bg-green-600 text-white p-3 mt-4">
+        Finalizar Venta
+      </button>
     `;
   }
 
-  if(v === "pendientes") cargarPendientes();
-  if(v === "historial") cargarHistorial();
+  if(v==="historial") cargarHistorial();
+  if(v==="pendientes") cargarPendientes();
+
+  /* EVENTOS SOLO 1 VEZ */
+  setTimeout(()=>{
+    const mp = document.getElementById("metodoPago");
+    if(mp){
+      mp.onchange = ()=>{
+        const box = document.getElementById("efectivoBox");
+        box.style.display = mp.value==="Efectivo"?"block":"none";
+      }
+    }
+
+    const monto = document.getElementById("montoRecibido");
+    if(monto){
+      monto.oninput = ()=>{
+        const total = carrito.reduce((s,p)=>s+p.precio*p.cantidad,0);
+        const recibido = parseFloat(monto.value)||0;
+        const cambio = recibido - total;
+        document.getElementById("cambioTexto").innerText =
+        "Q"+(cambio>0?cambio.toFixed(2):"0.00");
+      }
+    }
+  },200);
 }
 
 /* ================= SEARCH ================= */
@@ -229,36 +153,31 @@ async function buscar(){
   const t = document.getElementById("search").value.toLowerCase();
   const box = document.getElementById("results");
 
-  if(t.length < 2){
-    box.innerHTML = "";
-    return;
-  }
+  if(t.length<2){ box.innerHTML=""; return; }
 
-  const snap = await db.collection("productos").limit(20).get();
+  const snap = await db.collection("productos").get();
 
-  let html = "";
+  let html="";
   snap.forEach(doc=>{
     const p = doc.data();
-    if(p.nombre && p.nombre.toLowerCase().includes(t)){
+    if(p.nombre.toLowerCase().includes(t)){
       html += `
-        <div onclick="add('${doc.id}','${p.nombre}',${p.precio||0},${p.stock||0})"
-        class="p-3 bg-gray-50 rounded-xl cursor-pointer flex justify-between">
-          <span>${p.nombre}</span>
-          <b>Stock: ${p.stock||0}</b>
+        <div class="p-2 border mb-2 cursor-pointer"
+        onclick="add('${doc.id}','${p.nombre}',${p.precio},${p.stock})">
+          ${p.nombre} - Q${p.precio}
         </div>
       `;
     }
   });
-  box.innerHTML = html || "<p class='p-3 text-gray-500'>No encontrado</p>";
+
+  box.innerHTML = html;
 }
 
 /* ================= CART ================= */
-function add(id, nombre, precio, stock){
-  if(stock <= 0) return alert("Sin stock disponible");
-
-  let item = carrito.find(p=>p.id===id);
-  if(item) item.cantidad++;
-  else carrito.push({id, nombre, precio, cantidad:1});
+function add(id,nombre,precio,stock){
+  let f = carrito.find(p=>p.id===id);
+  if(f) f.cantidad++;
+  else carrito.push({id,nombre,precio,cantidad:1});
 
   render();
 }
@@ -267,23 +186,21 @@ function render(){
   const box = document.getElementById("cart");
   if(!box) return;
 
-  let html = "";
-  let total = 0;
+  let html="";
+  let total=0;
 
   carrito.forEach((p,i)=>{
-    total += p.precio * p.cantidad;
+    total += p.precio*p.cantidad;
     html += `
-      <div class="flex justify-between p-3 bg-gray-100 rounded-xl mb-2">
-        <div>${p.nombre} × ${p.cantidad}</div>
-        <div>
-          Q${(p.precio*p.cantidad).toFixed(2)}
-          <button onclick="del(${i})" class="text-red-600 ml-3">X</button>
-        </div>
+      <div class="flex justify-between border p-2 mb-2">
+        ${p.nombre} x${p.cantidad}
+        <b>Q${p.precio*p.cantidad}</b>
+        <button onclick="del(${i})">X</button>
       </div>
     `;
   });
 
-  box.innerHTML = html || "<p class='text-gray-400 py-8 text-center'>Carrito vacío</p>";
+  box.innerHTML = html + `<hr>Total: Q${total}`;
 }
 
 function del(i){
@@ -291,177 +208,64 @@ function del(i){
   render();
 }
 
-/* ================= GUARDAR PENDIENTE ================= */
-async function guardarPendiente(){
-  if(carrito.length===0) return alert("Carrito vacío");
-
-  await db.collection("ventas_pendientes").add({
-    fecha: new Date(),
-    productos: carrito,
-    estado: "pendiente"
-  });
-
-  alert("✅ Venta guardada como pendiente");
-  carrito = [];
-  render();
-}
-
-/* ================= FINALIZAR VENTA + DESCONTAR STOCK ================= */
+/* ================= FINALIZAR ================= */
 async function finalizarVenta(){
 
-  const metodoPago =
-document.getElementById("metodoPago").value;
-
-  const montoRecibido =
-parseFloat(document.getElementById("montoRecibido").value) || 0;
-
-const total = carrito.reduce((sum,p)=>sum + (p.precio * p.cantidad),0);
-
-const cambio = montoRecibido - total;
-
-  if(metodoPago === "Efectivo"){
-  if(montoRecibido < total){
-    return alert("El monto recibido es menor al total");
-  }
-}
-
-alert("Método de pago: " + metodoPago);
-  
   if(carrito.length===0) return alert("Carrito vacío");
 
-  if(!confirm("¿Finalizar venta y descontar stock?")) return;
+  const metodoPago = document.getElementById("metodoPago").value;
+  const montoRecibido = parseFloat(document.getElementById("montoRecibido")?.value)||0;
 
-  try {
-    await db.runTransaction(async (tx) => {
-      let total = 0;
+  const total = carrito.reduce((s,p)=>s+p.precio*p.cantidad,0);
+  const cambio = montoRecibido - total;
 
-      for(const item of carrito){
-        const prodRef = db.collection("productos").doc(item.id);
-        const snap = await tx.get(prodRef);
-
-        if(!snap.exists) throw "Producto no encontrado: " + item.nombre;
-
-        const data = snap.data();
-        if((data.stock || 0) < item.cantidad){
-          throw "Stock insuficiente para " + item.nombre;
-        }
-
-        tx.update(prodRef, { stock: data.stock - item.cantidad });
-        total += item.precio * item.cantidad;
-      }
-
-      // Guardar la venta completada
-      const ventaRef = db.collection("ventas").doc();
-      tx.set(ventaRef, {
-  fecha: new Date(),
-  productos: carrito,
-  total: total,
-  tipo: "CAJA",
-  metodoPago: metodoPago,
-  montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
-  cambio: metodoPago === "Efectivo" ? cambio : 0
-});
-    });
-    
-    // 1. mostrar ticket primero
-abrirTicket(carrito, total, metodoPago, montoRecibido, cambio);
-
-// 2. limpiar
-carrito = [];
-render();
-view("venta");
-    
-  } catch(e){
-    console.error(e);
-    alert("Error: " + (e.message || e));
+  if(metodoPago==="Efectivo" && montoRecibido < total){
+    return alert("Monto insuficiente");
   }
-}
 
-/* ================= PENDIENTES & HISTORIAL (sin cambios) ================= */
-function cargarPendientes(){
-  document.getElementById("app").innerHTML = `
-    <h1 class="text-3xl font-bold mb-6">Ventas Pendientes</h1>
-    <div id="pend"></div>
-  `;
-
-  db.collection("ventas_pendientes")
-  .where("estado", "==", "pendiente")
-  .onSnapshot(snap=>{
-    let html = "";
-    snap.forEach(doc=>{
-      const v = doc.data();
-      html += `
-        <div class="bg-white p-4 rounded-xl shadow mb-3 flex justify-between items-center">
-          <div>
-            <b>${v.fecha.toDate ? v.fecha.toDate().toLocaleString() : ""}</b>
-          </div>
-          <button onclick="cargarPendiente('${doc.id}')" 
-          class="bg-green-600 text-white px-4 py-2 rounded-xl">Abrir</button>
-        </div>
-      `;
-    });
-    document.getElementById("pend").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>No hay ventas pendientes</p>";
+  await db.collection("ventas").add({
+    carrito,
+    total,
+    metodoPago,
+    montoRecibido,
+    cambio,
+    fecha:new Date()
   });
-}
 
-async function cargarPendiente(id){
-  const doc = await db.collection("ventas_pendientes").doc(id).get();
-  carrito = doc.data().productos || [];
+  abrirTicket({carrito,total,metodoPago,montoRecibido,cambio});
+
+  carrito=[];
+  render();
   view("venta");
-  setTimeout(render, 300);
 }
 
+/* ================= TICKET ================= */
+function abrirTicket(d){
+  const w = window.open();
+  w.document.write(`
+    <h2>AGROMAXGTM</h2>
+    ${d.carrito.map(p=>`<p>${p.nombre} x${p.cantidad}</p>`).join("")}
+    <hr>
+    <p>Total: Q${d.total}</p>
+    <p>Método: ${d.metodoPago}</p>
+    <p>Cambio: Q${d.cambio}</p>
+  `);
+  w.print();
+}
+
+/* ================= HISTORIAL ================= */
 function cargarHistorial(){
-  document.getElementById("app").innerHTML = `
-    <h1 class="text-3xl font-bold mb-6">Historial Caja</h1>
-    <div id="hist"></div>
-  `;
-
-  db.collection("ventas")
-  .orderBy("fecha","desc")
-  .onSnapshot(snap=>{
-    let html = "";
-    snap.forEach(doc=>{
-      const v = doc.data();
-      html += `
-  <div class="bg-white p-4 rounded-xl shadow mb-3">
-
-    <div class="font-bold text-lg">
-      Total: Q${v.total || 0}
-    </div>
-
-    <div class="text-sm text-gray-700">
-      Método: ${v.metodoPago || "N/A"}
-    </div>
-
-    ${
-      v.metodoPago === "Efectivo"
-      ? `
-        <div class="text-sm text-gray-700">
-          Recibido: Q${v.montoRecibido || 0}
-        </div>
-
-        <div class="text-sm text-green-600 font-semibold">
-          Cambio: Q${v.cambio || 0}
-        </div>
-      `
-      : ""
-    }
-
-    <div class="text-xs text-gray-500 mt-2">
-      ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
-    </div>
-
-  </div>
-`;
-    });
-    document.getElementById("hist").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>Sin historial</p>";
-  });
+  document.getElementById("app").innerHTML = `<h2>Historial</h2>`;
 }
- 
+
+/* ================= PENDIENTES ================= */
+function cargarPendientes(){
+  document.getElementById("app").innerHTML = `<h2>Pendientes</h2>`;
+}
+
 /* INIT */
 view("venta");
-
 </script>
+
 </body>
 </html>
