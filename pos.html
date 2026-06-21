@@ -316,13 +316,16 @@ async function finalizarVenta() {
   const cambio = montoRecibido - total;
 
   if (metodoPago === "Efectivo" && montoRecibido < total) {
-    return alert("El monto recibido es menor al total");
+    return alert("❌ El monto recibido es menor al total");
   }
 
-  if (carrito.length === 0) return alert("Carrito vacío");
-  if (!metodoPago) return alert("Selecciona un método de pago");
+  if (carrito.length === 0) return alert("❌ Carrito vacío");
+  if (!metodoPago) return alert("❌ Selecciona un método de pago");
 
   if (!confirm("¿Finalizar venta y descontar stock?")) return;
+
+  // === PRIMERO MOSTRAMOS EL TICKET (mantiene el user gesture) ===
+  abrirTicket(carrito, total, metodoPago, montoRecibido, cambio);
 
   try {
     await db.runTransaction(async (tx) => {
@@ -355,20 +358,16 @@ async function finalizarVenta() {
       });
     });
 
-    // ÉXITO
-    alert("✅ Venta finalizada correctamente");
+    alert("✅ Venta finalizada y stock actualizado correctamente");
 
-    // Imprimir ticket
-    abrirTicket(carrito, total, metodoPago, montoRecibido, cambio);
-
-    // Limpiar
+    // Limpiar carrito
     carrito = [];
     render();
     view("venta");
 
   } catch (e) {
     console.error(e);
-    alert("Error: " + (e.message || e));
+    alert("❌ Error al procesar la venta: " + (e.message || e));
   }
 }
 /* ================= PENDIENTES & HISTORIAL (sin cambios) ================= */
