@@ -1,5 +1,4 @@
-// ticket.js - Versión mejorada (no rompe nada)
-
+// ticket.js
 function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0) {
   const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=650,scrollbars=yes");
 
@@ -48,9 +47,7 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0) 
       <hr>
       ${productosHTML}
       <hr>
-      <div class="total">
-        TOTAL: Q${total.toFixed(2)}
-      </div>
+      <div class="total">TOTAL: Q${total.toFixed(2)}</div>
       <p><strong>Método:</strong> ${metodoPago}</p>
       ${metodoPago === "Efectivo" ? `
         <p>Recibido: Q${montoRecibido.toFixed(2)}</p>
