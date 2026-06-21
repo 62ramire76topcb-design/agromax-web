@@ -310,31 +310,27 @@ async function guardarPendiente(){
 /* ================= FINALIZAR VENTA + DESCONTAR STOCK ================= */
 async function finalizarVenta(){
 
-  const metodoPago =
-document.getElementById("metodoPago").value;
+  const metodoPago = document.getElementById("metodoPago").value;
 
-  const montoRecibido =
-parseFloat(document.getElementById("montoRecibido").value) || 0;
+  const montoRecibido = parseFloat(document.getElementById("montoRecibido").value) || 0;
 
-const total = carrito.reduce((sum,p)=>sum + (p.precio * p.cantidad),0);
+  const total = carrito.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
 
-const cambio = montoRecibido - total;
+  const cambio = montoRecibido - total;
 
   if(metodoPago === "Efectivo"){
-  if(montoRecibido < total){
-    return alert("El monto recibido es menor al total");
+    if(montoRecibido < total){
+      return alert("El monto recibido es menor al total");
+    }
   }
-}
 
-alert("Método de pago: " + metodoPago);
-  
-  if(carrito.length===0) return alert("Carrito vacío");
+  if(carrito.length === 0) return alert("Carrito vacío");
 
   if(!confirm("¿Finalizar venta y descontar stock?")) return;
 
   try {
     await db.runTransaction(async (tx) => {
-      let total = 0;
+      let totalCalculado = 0;
 
       for(const item of carrito){
         const prodRef = db.collection("productos").doc(item.id);
@@ -348,26 +344,31 @@ alert("Método de pago: " + metodoPago);
         }
 
         tx.update(prodRef, { stock: data.stock - item.cantidad });
-        total += item.precio * item.cantidad;
+        totalCalculado += item.precio * item.cantidad;
       }
 
       // Guardar la venta completada
       const ventaRef = db.collection("ventas").doc();
       tx.set(ventaRef, {
-  fecha: new Date(),
-  productos: carrito,
-  total: total,
-  tipo: "CAJA",
-  metodoPago: metodoPago,
-  montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
-  cambio: metodoPago === "Efectivo" ? cambio : 0
-});
+        fecha: new Date(),
+        productos: carrito,
+        total: totalCalculado,
+        tipo: "CAJA",
+        metodoPago: metodoPago,
+        montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
+        cambio: metodoPago === "Efectivo" ? cambio : 0
+      });
     });
 
+    // ✅ ÉXITO - Ahora imprimimos el ticket
     alert("✅ Venta finalizada y stock actualizado correctamente");
+    
+    abrirTicket(carrito, total, metodoPago, montoRecibido, cambio);
+
+    // Limpiar carrito y recargar vista
     carrito = [];
     render();
-    view("venta"); // Recargar vista
+    view("venta");
 
   } catch(e){
     console.error(e);
