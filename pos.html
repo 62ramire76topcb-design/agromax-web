@@ -57,14 +57,14 @@ const db = firebase.firestore();
 const auth = firebase.auth();
 
 let carrito = [];
+let cajeroActual = "";   // ← Agrega esta línea
 
 /* AUTH - Mejorado para POS */
 auth.onAuthStateChanged(user => {
   if (!user) {
-    // En vez de redirigir a admin.html, mostramos login dentro del POS
     mostrarLoginPOS();
   } else {
-    view("venta");
+    mostrarSeleccionCajero();   // ← Cambiado
   }
 });
 
@@ -97,6 +97,38 @@ async function loginPOS() {
   } catch (e) {
     alert("Error de inicio de sesión: " + e.message);
   }
+}
+  function mostrarSeleccionCajero() {
+  document.getElementById("app").innerHTML = `
+    <div class="min-h-screen flex items-center justify-center bg-gray-100">
+      <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
+        <div class="flex justify-center mb-6">
+          <div class="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-white text-6xl">👤</div>
+        </div>
+        <h1 class="text-3xl font-bold text-center mb-2">Bienvenido a Caja</h1>
+        <p class="text-center text-green-600 mb-8">¿Quién está atendiendo hoy?</p>
+        
+        <input id="nombreCajero" type="text" placeholder="Ej: Juan Pérez, María López, CAJERO-01" 
+               class="w-full p-4 border rounded-2xl mb-6 text-center text-lg focus:outline-none focus:border-green-500">
+        
+        <button onclick="confirmarCajero()" 
+                class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+          Ingresar a Caja
+        </button>
+      </div>
+    </div>`;
+}
+
+function confirmarCajero() {
+  const nombre = document.getElementById("nombreCajero").value.trim();
+  
+  if (!nombre) {
+    alert("❌ Por favor ingresa tu nombre o código de cajero");
+    return;
+  }
+  
+  cajeroActual = nombre;
+  view("venta");
 }
 
 /* ================= VIEWS ================= */
@@ -347,15 +379,16 @@ async function finalizarVenta() {
       }
 
       const ventaRef = db.collection("ventas").doc();
-      tx.set(ventaRef, {
-        fecha: new Date(),
-        productos: carrito,
-        total: totalCalculado,
-        tipo: "CAJA",
-        metodoPago: metodoPago,
-        montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
-        cambio: metodoPago === "Efectivo" ? cambio : 0
-      });
+    tx.set(ventaRef, {
+  fecha: new Date(),
+  productos: carrito,
+  total: totalCalculado,
+  tipo: "CAJA",
+  metodoPago: metodoPago,
+  montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
+  cambio: metodoPago === "Efectivo" ? cambio : 0,
+  cajero: cajeroActual || "Sin registrar"   // ← Nuevo
+});
     });
 
     alert("✅ Venta finalizada y stock actualizado correctamente");
@@ -418,26 +451,26 @@ function cargarHistorial(){
       const v = doc.data();
       html += `
   <div class="bg-white p-4 rounded-xl shadow mb-3">
-
-    <div class="font-bold text-lg">
-      Total: Q${v.total || 0}
+    <div class="flex justify-between items-start">
+      <div>
+        <div class="font-bold text-lg">Total: Q${v.total || 0}</div>
+        <div class="text-sm text-gray-700">Cajero: <strong>${v.cajero || 'Desconocido'}</strong></div>
+      </div>
+      <div class="text-right">
+        <div class="text-sm">${v.metodoPago || "N/A"}</div>
+        ${v.metodoPago === "Efectivo" ? `
+          <div class="text-xs text-gray-600">
+            Recibido: Q${v.montoRecibido} | Cambio: Q${v.cambio}
+          </div>
+        ` : ''}
+      </div>
     </div>
 
-    <div class="text-sm text-gray-700">
-      Método: ${v.metodoPago || "N/A"}
+    <div class="text-xs text-gray-500 mt-3">
+      ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
     </div>
-
-    ${
-      v.metodoPago === "Efectivo"
-      ? `
-        <div class="text-sm text-gray-700">
-          Recibido: Q${v.montoRecibido || 0}
-        </div>
-
-        <div class="text-sm text-green-600 font-semibold">
-          Cambio: Q${v.cambio || 0}
-        </div>
-      `
+  </div>
+`;
       : ""
     }
 
