@@ -308,38 +308,34 @@ async function guardarPendiente(){
 }
 
 /* ================= FINALIZAR VENTA + DESCONTAR STOCK ================= */
-async function finalizarVenta(){
+async function finalizarVenta() {
 
   const metodoPago = document.getElementById("metodoPago").value;
-
   const montoRecibido = parseFloat(document.getElementById("montoRecibido").value) || 0;
-
   const total = carrito.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
-
   const cambio = montoRecibido - total;
 
-  if(metodoPago === "Efectivo"){
-    if(montoRecibido < total){
-      return alert("El monto recibido es menor al total");
-    }
+  if (metodoPago === "Efectivo" && montoRecibido < total) {
+    return alert("El monto recibido es menor al total");
   }
 
-  if(carrito.length === 0) return alert("Carrito vacío");
+  if (carrito.length === 0) return alert("Carrito vacío");
+  if (!metodoPago) return alert("Selecciona un método de pago");
 
-  if(!confirm("¿Finalizar venta y descontar stock?")) return;
+  if (!confirm("¿Finalizar venta y descontar stock?")) return;
 
   try {
     await db.runTransaction(async (tx) => {
       let totalCalculado = 0;
 
-      for(const item of carrito){
+      for (const item of carrito) {
         const prodRef = db.collection("productos").doc(item.id);
         const snap = await tx.get(prodRef);
 
-        if(!snap.exists) throw "Producto no encontrado: " + item.nombre;
+        if (!snap.exists) throw "Producto no encontrado: " + item.nombre;
 
         const data = snap.data();
-        if((data.stock || 0) < item.cantidad){
+        if ((data.stock || 0) < item.cantidad) {
           throw "Stock insuficiente para " + item.nombre;
         }
 
@@ -347,7 +343,6 @@ async function finalizarVenta(){
         totalCalculado += item.precio * item.cantidad;
       }
 
-      // Guardar la venta completada
       const ventaRef = db.collection("ventas").doc();
       tx.set(ventaRef, {
         fecha: new Date(),
@@ -360,22 +355,22 @@ async function finalizarVenta(){
       });
     });
 
-    // ✅ ÉXITO - Ahora imprimimos el ticket
-    alert("✅ Venta finalizada y stock actualizado correctamente");
-    
+    // ÉXITO
+    alert("✅ Venta finalizada correctamente");
+
+    // Imprimir ticket
     abrirTicket(carrito, total, metodoPago, montoRecibido, cambio);
 
-    // Limpiar carrito y recargar vista
+    // Limpiar
     carrito = [];
     render();
     view("venta");
 
-  } catch(e){
+  } catch (e) {
     console.error(e);
     alert("Error: " + (e.message || e));
   }
 }
-
 /* ================= PENDIENTES & HISTORIAL (sin cambios) ================= */
 function cargarPendientes(){
   document.getElementById("app").innerHTML = `
