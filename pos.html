@@ -450,40 +450,32 @@ function cargarHistorial(){
     snap.forEach(doc=>{
       const v = doc.data();
       html += `
-  <div class="bg-white p-4 rounded-xl shadow mb-3">
-    <div class="flex justify-between items-start">
-      <div>
-        <div class="font-bold text-lg">Total: Q${v.total || 0}</div>
-        <div class="text-sm text-gray-700">Cajero: <strong>${v.cajero || 'Desconocido'}</strong></div>
-      </div>
-      <div class="text-right">
-        <div class="text-sm">${v.metodoPago || "N/A"}</div>
-        ${v.metodoPago === "Efectivo" ? `
-          <div class="text-xs text-gray-600">
-            Recibido: Q${v.montoRecibido} | Cambio: Q${v.cambio}
+        <div class="bg-white p-4 rounded-xl shadow mb-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="font-bold text-lg">Total: Q${v.total || 0}</div>
+              <div class="text-sm text-gray-700">Cajero: <strong>${v.cajero || 'Desconocido'}</strong></div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm">${v.metodoPago || "N/A"}</div>
+              ${v.metodoPago === "Efectivo" ? `
+                <div class="text-xs text-gray-600">
+                  Recibido: Q${v.montoRecibido || 0} | Cambio: Q${v.cambio || 0}
+                </div>
+              ` : ''}
+            </div>
           </div>
-        ` : ''}
-      </div>
-    </div>
 
-    <div class="text-xs text-gray-500 mt-3">
-      ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
-    </div>
-  </div>
-`;
-      : ""
-    }
-
-    <div class="text-xs text-gray-500 mt-2">
-      ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
-    </div>
-
-  </div>
-`;
+          <div class="text-xs text-gray-500 mt-3">
+            ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
+          </div>
+        </div>
+      `;
     });
     document.getElementById("hist").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>Sin historial</p>";
   });
 }
+ 
 
 /* INIT */
 view("venta");
