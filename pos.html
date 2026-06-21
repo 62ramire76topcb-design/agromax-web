@@ -430,13 +430,6 @@ function cargarPendientes(){
   });
 }
 
-async function cargarPendiente(id){
-  const doc = await db.collection("ventas_pendientes").doc(id).get();
-  carrito = doc.data().productos || [];
-  view("venta");
-  setTimeout(render, 300);
-}
-
 function cargarHistorial(){
   document.getElementById("app").innerHTML = `
     <h1 class="text-3xl font-bold mb-6">Historial Caja</h1>
@@ -475,7 +468,6 @@ function cargarHistorial(){
     document.getElementById("hist").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>Sin historial</p>";
   });
 }
- 
 
 /* INIT */
 view("venta");
