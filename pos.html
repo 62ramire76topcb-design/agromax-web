@@ -429,7 +429,16 @@ async function finalizarVenta() {
     return;
   }
 
-  abrirTicket(carrito, total, metodoPago, montoRecibido, cambio);
+    // === PRIMERO MOSTRAMOS EL TICKET (con Cliente y NIT) ===
+  abrirTicket(
+    carrito, 
+    total, 
+    metodoPago, 
+    montoRecibido, 
+    cambio,
+    document.getElementById("nombreCliente").value.trim() || "Consumidor Final",
+    document.getElementById("nitCliente").value.trim()
+  );
 
   try {
     await db.runTransaction(async (tx) => {
