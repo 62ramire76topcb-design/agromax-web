@@ -137,6 +137,17 @@ async function cargarClientesFrecuentes() {
     datalist.appendChild(option);
   });
 }
+
+  // Autocompletar NIT cuando se selecciona un cliente
+document.addEventListener('input', function(e) {
+  if (e.target.id === "nombreCliente") {
+    const nombre = e.target.value.trim();
+    const cliente = clientesFrecuentes.find(c => c.nombre === nombre);
+    if (cliente && cliente.nit) {
+      document.getElementById("nitCliente").value = cliente.nit;
+    }
+  }
+});
   
 async function loginPOS() {
   const email = document.getElementById('email').value;
