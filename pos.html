@@ -395,6 +395,12 @@ async function guardarPendiente(){
 
 /* ================= FINALIZAR VENTA + DESCONTAR STOCK ================= */
 async function finalizarVenta() {
+  const btn = document.querySelector('button[onclick="finalizarVenta()"]');
+  const textoOriginal = btn.innerHTML;
+
+  // Mostrar loading
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Procesando Venta...`;
 
   const metodoPago = document.getElementById("metodoPago").value;
   const montoRecibido = parseFloat(document.getElementById("montoRecibido").value) || 0;
@@ -402,15 +408,27 @@ async function finalizarVenta() {
   const cambio = montoRecibido - total;
 
   if (metodoPago === "Efectivo" && montoRecibido < total) {
-    return alert("❌ El monto recibido es menor al total");
+    alert("❌ El monto recibido es menor al total");
+    restaurarBoton(btn, textoOriginal);
+    return;
   }
 
-  if (carrito.length === 0) return alert("❌ Carrito vacío");
-  if (!metodoPago) return alert("❌ Selecciona un método de pago");
+  if (carrito.length === 0) {
+    alert("❌ Carrito vacío");
+    restaurarBoton(btn, textoOriginal);
+    return;
+  }
+  if (!metodoPago) {
+    alert("❌ Selecciona un método de pago");
+    restaurarBoton(btn, textoOriginal);
+    return;
+  }
 
-  if (!confirm("¿Finalizar venta y descontar stock?")) return;
+  if (!confirm("¿Finalizar venta y descontar stock?")) {
+    restaurarBoton(btn, textoOriginal);
+    return;
+  }
 
-  // === PRIMERO MOSTRAMOS EL TICKET ===
   abrirTicket(carrito, total, metodoPago, montoRecibido, cambio);
 
   try {
@@ -449,7 +467,6 @@ async function finalizarVenta() {
 
     alert("✅ Venta finalizada y stock actualizado correctamente");
 
-    // Limpiar carrito
     carrito = [];
     render();
     view("venta");
@@ -457,9 +474,15 @@ async function finalizarVenta() {
   } catch (e) {
     console.error(e);
     alert("❌ Error al procesar la venta: " + (e.message || e));
+  } finally {
+    restaurarBoton(btn, textoOriginal);
   }
 }
-  
+
+function restaurarBoton(btn, textoOriginal) {
+  btn.disabled = false;
+  btn.innerHTML = textoOriginal;
+}
 /* ================= PENDIENTES & HISTORIAL (sin cambios) ================= */
 function cargarPendientes(){
   document.getElementById("app").innerHTML = `
