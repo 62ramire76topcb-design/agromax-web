@@ -1,4 +1,4 @@
-// ticket.js - Versión mejorada con Cliente y NIT
+// ticket.js - Versión final con "Nombre" en lugar de "Cliente"
 function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, cliente = "Consumidor Final", nit = "") {
   
   const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=700,scrollbars=yes");
@@ -50,7 +50,7 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
       <p class="center">${fecha}</p>
       
       <hr>
-      <p><strong>Cliente:</strong> ${Nombre}</p>
+      <p><strong>Nombre:</strong> ${cliente}</p>
       ${nit ? `<p><strong>NIT:</strong> ${nit}</p>` : ''}
       <hr>
       
