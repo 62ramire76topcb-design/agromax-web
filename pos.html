@@ -343,7 +343,7 @@ async function finalizarVenta() {
 
   if (!confirm("¿Finalizar venta y descontar stock?")) return;
 
-  // === PRIMERO MOSTRAMOS EL TICKET (mantiene el user gesture) ===
+  // === PRIMERO MOSTRAMOS EL TICKET ===
   abrirTicket(carrito, total, metodoPago, montoRecibido, cambio);
 
   try {
@@ -365,7 +365,7 @@ async function finalizarVenta() {
         totalCalculado += item.precio * item.cantidad;
       }
 
-            const ventaRef = db.collection("ventas").doc();
+      const ventaRef = db.collection("ventas").doc();
       tx.set(ventaRef, {
         fecha: new Date(),
         productos: carrito,
