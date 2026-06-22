@@ -50,7 +50,7 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
       <p class="center">${fecha}</p>
       
       <hr>
-      <p><strong>Cliente:</strong> ${cliente}</p>
+      <p><strong>Cliente:</strong> ${Nombre}</p>
       ${nit ? `<p><strong>NIT:</strong> ${nit}</p>` : ''}
       <hr>
       
