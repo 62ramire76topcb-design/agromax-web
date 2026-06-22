@@ -1,6 +1,7 @@
-// ticket.js - Versión Final Recomendada
-function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0) {
-  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=650,scrollbars=yes");
+// ticket.js - Versión mejorada con Cliente y NIT
+function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, cliente = "Consumidor Final", nit = "") {
+  
+  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=700,scrollbars=yes");
 
   let productosHTML = "";
   carrito.forEach(p => {
@@ -36,18 +37,10 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0) 
           font-size: 15px;
           line-height: 1.4;
         }
-        h1 { 
-          text-align:center; 
-          margin:10px 0 5px; 
-          font-size:20px; 
-        }
+        h1 { text-align:center; margin:10px 0 5px; font-size:20px; }
         .center { text-align:center; }
         hr { border:1px dashed #333; margin:12px 0; }
-        .total { 
-          font-size:18px; 
-          font-weight:bold; 
-          margin:15px 0; 
-        }
+        .total { font-size:18px; font-weight:bold; margin:15px 0; }
         .footer { margin-top:25px; font-size:13px; }
       </style>
     </head>
@@ -57,12 +50,14 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0) 
       <p class="center">${fecha}</p>
       
       <hr>
-      ${productosHTML}
+      <p><strong>Cliente:</strong> ${cliente}</p>
+      ${nit ? `<p><strong>NIT:</strong> ${nit}</p>` : ''}
       <hr>
       
-      <div class="total">
-        TOTAL: Q${total.toFixed(2)}
-      </div>
+      ${productosHTML}
+      
+      <hr>
+      <div class="total">TOTAL: Q${total.toFixed(2)}</div>
       
       <p><strong>Método:</strong> ${metodoPago}</p>
       ${metodoPago === "Efectivo" ? `
