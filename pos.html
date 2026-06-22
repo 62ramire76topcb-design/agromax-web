@@ -58,6 +58,7 @@ const auth = firebase.auth();
 
 let carrito = [];
 let cajeroActual = "";   // ← Agrega esta línea
+let clientesFrecuentes = [];   // Para guardar sugerencias
 
 /* AUTH - Mejorado para POS */
 auth.onAuthStateChanged(user => {
@@ -89,6 +90,54 @@ function mostrarLoginPOS() {
     </div>`;
 }
 
+async function cargarClientesFrecuentes() {
+  try {
+    const snap = await db.collection("ventas")
+      .orderBy("fecha", "desc")
+      .limit(50)
+      .get();
+
+    const clientesMap = new Map();
+
+    snap.forEach(doc => {
+      const data = doc.data();
+      if (data.cliente && data.cliente !== "Consumidor Final") {
+        const key = data.cliente.toLowerCase();
+        if (!clientesMap.has(key)) {
+          clientesMap.set(key, {
+            nombre: data.cliente,
+            nit: data.nit || ""
+          });
+        }
+      }
+    });
+
+    clientesFrecuentes = Array.from(clientesMap.values());
+  } catch (e) {
+    console.error("Error cargando clientes frecuentes:", e);
+  }
+}
+
+  function filtrarSugerencias() {
+  const input = document.getElementById("nombreCliente");
+  const datalist = document.getElementById("clientesSugerencias");
+  datalist.innerHTML = "";
+
+  const texto = input.value.toLowerCase().trim();
+
+  if (texto.length < 2) return;
+
+  const filtrados = clientesFrecuentes.filter(c => 
+    c.nombre.toLowerCase().includes(texto)
+  );
+
+  filtrados.forEach(cliente => {
+    const option = document.createElement("option");
+    option.value = cliente.nombre;
+    datalist.appendChild(option);
+  });
+}
+  
 async function loginPOS() {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
@@ -119,6 +168,7 @@ async function loginPOS() {
     </div>`;
 }
 
+  
 function confirmarCajero() {
   const nombre = document.getElementById("nombreCajero").value.trim();
   
@@ -127,8 +177,9 @@ function confirmarCajero() {
     return;
   }
   
-  cajeroActual = nombre;
-  view("venta");        // Mostrar vista normal con menú lateral
+    cajeroActual = nombre;
+  view("venta");
+  cargarClientesFrecuentes();   // ← Agregar esta línea
 }
   function cambiarCajero() {
   if (confirm("¿Cambiar de cajero?")) {
@@ -184,21 +235,25 @@ function view(v){
         </div>
       </div>
 
-      <!-- NUEVO: Datos del Cliente -->
+            <!-- NUEVO: Datos del Cliente con Autocompletado -->
       <div class="bg-white p-6 rounded-3xl shadow mb-6">
         <h3 class="font-bold text-lg mb-4">Datos del Cliente</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
-            <input id="nombreCliente" type="text" placeholder="Ej: Juan Pérez o Consumidor Final" 
-                   class="w-full p-4 border rounded-2xl">
+            <input id="nombreCliente" type="text" list="clientesSugerencias" 
+                   placeholder="Ej: Juan Pérez o Consumidor Final" 
+                   class="w-full p-4 border rounded-2xl"
+                   oninput="filtrarSugerencias()">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">NIT (opcional)</label>
-            <input id="nitCliente" type="text" placeholder="Ej: 12345678-9" 
+            <input id="nitCliente" type="text" 
+                   placeholder="Ej: 12345678-9" 
                    class="w-full p-4 border rounded-2xl">
           </div>
         </div>
+        <datalist id="clientesSugerencias"></datalist>
       </div>
 
       <div class="grid grid-cols-12 gap-6">
