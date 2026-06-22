@@ -365,20 +365,20 @@ async function finalizarVenta() {
         totalCalculado += item.precio * item.cantidad;
       }
 
-      const ventaRef = db.collection("ventas").doc();
+            const ventaRef = db.collection("ventas").doc();
       tx.set(ventaRef, {
-  fecha: new Date(),
-  productos: carrito,
-  total: totalCalculado,
-  tipo: "CAJA",
-  metodoPago: metodoPago,
-  montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
-  cambio: metodoPago === "Efectivo" ? cambio : 0,
-  cajero: cajeroActual || "Sin registrar",
-  cliente: document.getElementById("nombreCliente").value.trim() || "Consumidor Final",
-  nit: document.getElementById("nitCliente").value.trim() || ""
-});
- 
+        fecha: new Date(),
+        productos: carrito,
+        total: totalCalculado,
+        tipo: "CAJA",
+        metodoPago: metodoPago,
+        montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
+        cambio: metodoPago === "Efectivo" ? cambio : 0,
+        cajero: cajeroActual || "Sin registrar",
+        cliente: document.getElementById("nombreCliente").value.trim() || "Consumidor Final",
+        nit: document.getElementById("nitCliente").value.trim() || ""
+      });
+    });
 
     alert("✅ Venta finalizada y stock actualizado correctamente");
 
@@ -392,6 +392,7 @@ async function finalizarVenta() {
     alert("❌ Error al procesar la venta: " + (e.message || e));
   }
 }
+  
 /* ================= PENDIENTES & HISTORIAL (sin cambios) ================= */
 function cargarPendientes(){
   document.getElementById("app").innerHTML = `
