@@ -1,7 +1,11 @@
-// ticket.js - Versión final con "Nombre" en lugar de "Cliente"
+// ticket.js - Con Código QR
 function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, cliente = "Consumidor Final", nit = "") {
   
-  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=700,scrollbars=yes");
+  const whatsappNumber = "50242664744"; // ← Cambia si es necesario
+  const mensajeWhatsApp = encodeURIComponent(`Hola AGROMAXGTM, mi compra fue de Q${total.toFixed(2)}`);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://wa.me/${whatsappNumber}?text=${mensajeWhatsApp}`;
+
+  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=750,scrollbars=yes");
 
   let productosHTML = "";
   carrito.forEach(p => {
@@ -41,7 +45,8 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
         .center { text-align:center; }
         hr { border:1px dashed #333; margin:12px 0; }
         .total { font-size:18px; font-weight:bold; margin:15px 0; }
-        .footer { margin-top:25px; font-size:13px; }
+        .footer { margin-top:20px; font-size:13px; }
+        img.qr { display:block; margin:15px auto; border:1px solid #ddd; }
       </style>
     </head>
     <body>
@@ -65,6 +70,11 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
         <p><strong>Cambio: Q${cambio.toFixed(2)}</strong></p>
       ` : ''}
       
+      <div class="center">
+        <img src="${qrUrl}" class="qr" width="180" alt="QR WhatsApp">
+        <p style="font-size:12px;margin-top:5px;">Escanea para contactarnos</p>
+      </div>
+
       <div class="footer center">
         <p>¡Gracias por su compra!</p>
         <p>AGROMAXGTM • Guatemala</p>
