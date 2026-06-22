@@ -138,11 +138,12 @@ async function cargarClientesFrecuentes() {
   });
 }
 
-  // Autocompletar NIT cuando se selecciona un cliente
-document.addEventListener('input', function(e) {
+ // Autocompletar NIT al seleccionar un cliente del datalist
+document.addEventListener('change', function(e) {
   if (e.target.id === "nombreCliente") {
     const nombre = e.target.value.trim();
     const cliente = clientesFrecuentes.find(c => c.nombre === nombre);
+    
     if (cliente && cliente.nit) {
       document.getElementById("nitCliente").value = cliente.nit;
     }
