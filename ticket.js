@@ -1,11 +1,10 @@
-// ticket.js - Con Código QR
+// ticket.js - QR apunta a tu página web
 function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, cliente = "Consumidor Final", nit = "") {
   
-  const whatsappNumber = "50242664744"; // ← Cambia si es necesario
-  const mensajeWhatsApp = encodeURIComponent(`Hola AGROMAXGTM, mi compra fue de Q${total.toFixed(2)}`);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://wa.me/${whatsappNumber}?text=${mensajeWhatsApp}`;
+  const webUrl = "https://agromax-web.vercel.app";
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(webUrl)}`;
 
-  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=750,scrollbars=yes");
+  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=720,scrollbars=yes");
 
   let productosHTML = "";
   carrito.forEach(p => {
@@ -71,8 +70,8 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
       ` : ''}
       
       <div class="center">
-        <img src="${qrUrl}" class="qr" width="180" alt="QR WhatsApp">
-        <p style="font-size:12px;margin-top:5px;">Escanea para contactarnos</p>
+        <img src="${qrUrl}" class="qr" width="180" alt="QR Sitio Web">
+        <p style="font-size:12px;margin-top:5px;">Escanea para ver nuestro catálogo</p>
       </div>
 
       <div class="footer center">
