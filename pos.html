@@ -203,6 +203,14 @@ function confirmarCajero() {
   cargarClientesFrecuentes();
 }
 
+  function cambiarCajero() {
+  if (confirm("¿Cambiar de cajero?")) {
+    localStorage.removeItem("ultimoCajero");
+    cajeroActual = "";
+    mostrarSeleccionCajero();
+  }
+}
+  
     function buscarClienteEnVivo() {
   const input = document.getElementById("nombreCliente");
   const listaDiv = document.getElementById("listaClientes");
