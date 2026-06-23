@@ -205,9 +205,11 @@ function confirmarCajero() {
 
   if (texto.length < 2) return;
 
-  const filtrados = clientesFrecuentes.filter(c => 
-    c.nombre.toLowerCase().includes(texto)
-  );
+  const filtrados = clientesFrecuentes.filter(c => {
+    const nombreMatch = c.nombre.toLowerCase().includes(texto);
+    const nitMatch = c.nit && c.nit.toLowerCase().includes(texto);
+    return nombreMatch || nitMatch;
+  });
 
   if (filtrados.length === 0) return;
 
@@ -215,8 +217,8 @@ function confirmarCajero() {
     const div = document.createElement("div");
     div.className = "p-3 hover:bg-green-50 cursor-pointer border-b last:border-none flex justify-between items-center";
     div.innerHTML = `
-      <span>${cliente.nombre}</span>
-      ${cliente.nit ? `<span class="text-xs text-gray-500">${cliente.nit}</span>` : ''}
+      <span class="font-medium">${cliente.nombre}</span>
+      ${cliente.nit ? `<span class="text-xs bg-gray-100 px-2 py-1 rounded-full">${cliente.nit}</span>` : ''}
     `;
     div.onclick = () => {
       input.value = cliente.nombre;
@@ -228,7 +230,8 @@ function confirmarCajero() {
 
   listaDiv.classList.remove("hidden");
 }
-  
+
+ 
 /* ================= VIEWS ================= */
 function view(v){
   
