@@ -274,17 +274,17 @@ function view(v){
         </div>
       </div>
 
-             <!-- Datos del Cliente con búsqueda dinámica -->
+                   <!-- Datos del Cliente con búsqueda dinámica -->
       <div class="bg-white p-6 rounded-3xl shadow mb-6">
         <h3 class="font-bold text-lg mb-4">Datos del Cliente</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
-           <input id="nombreCliente" type="text" 
-       placeholder="Escribe para buscar cliente..." 
-       class="w-full p-4 border rounded-2xl"
-       onkeyup="buscarClienteEnVivo()">
-            <div id="listaClientes" class="mt-2 max-h-60 overflow-auto border rounded-2xl bg-white hidden"></div>
+            <input id="nombreCliente" type="text" 
+                   placeholder="Escribe para buscar cliente..." 
+                   class="w-full p-4 border rounded-2xl"
+                   onkeyup="buscarClienteEnVivo()">
+            <div id="listaClientes" class="mt-2 max-h-60 overflow-auto border rounded-2xl bg-white shadow-sm hidden"></div>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">NIT (opcional)</label>
