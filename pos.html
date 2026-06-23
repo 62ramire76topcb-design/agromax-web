@@ -189,16 +189,43 @@ function confirmarCajero() {
     return;
   }
   
-    cajeroActual = nombre;
+  cajeroActual = nombre;
+  localStorage.setItem("ultimoCajero", nombre);   // Guardar en el navegador
   view("venta");
-  cargarClientesFrecuentes();   // ← Agregar esta línea
+  cargarClientesFrecuentes();
 }
-  function cambiarCajero() {
-  if (confirm("¿Cambiar de cajero?")) {
-    cajeroActual = "";
-    mostrarSeleccionCajero();
-  }
+
+  function buscarClienteEnVivo() {
+  const input = document.getElementById("nombreCliente");
+  const listaDiv = document.getElementById("listaClientes");
+  const texto = input.value.toLowerCase().trim();
+
+  listaDiv.innerHTML = "";
+  listaDiv.classList.add("hidden");
+
+  if (texto.length < 2) return;
+
+  const filtrados = clientesFrecuentes.filter(c => 
+    c.nombre.toLowerCase().includes(texto)
+  );
+
+  if (filtrados.length === 0) return;
+
+  filtrados.forEach(cliente => {
+    const div = document.createElement("div");
+    div.className = "p-3 hover:bg-gray-100 cursor-pointer border-b last:border-none";
+    div.textContent = cliente.nombre;
+    div.onclick = () => {
+      input.value = cliente.nombre;
+      if (cliente.nit) document.getElementById("nitCliente").value = cliente.nit;
+      listaDiv.classList.add("hidden");
+    };
+    listaDiv.appendChild(div);
+  });
+
+  listaDiv.classList.remove("hidden");
 }
+  
 /* ================= VIEWS ================= */
 function view(v){
   
@@ -247,25 +274,24 @@ function view(v){
         </div>
       </div>
 
-            <!-- NUEVO: Datos del Cliente con Autocompletado -->
+             <!-- Datos del Cliente con búsqueda dinámica -->
       <div class="bg-white p-6 rounded-3xl shadow mb-6">
         <h3 class="font-bold text-lg mb-4">Datos del Cliente</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
-            <input id="nombreCliente" type="text" list="clientesSugerencias" 
-                   placeholder="Ej: Juan Pérez o Consumidor Final" 
+            <input id="nombreCliente" type="text" 
+                   placeholder="Escribe para buscar..." 
                    class="w-full p-4 border rounded-2xl"
-                   oninput="filtrarSugerencias()">
+                   onkeyup="buscarClienteEnVivo()">
+            <div id="listaClientes" class="mt-2 max-h-60 overflow-auto border rounded-2xl bg-white hidden"></div>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">NIT (opcional)</label>
-            <input id="nitCliente" type="text" 
-                   placeholder="Ej: 12345678-9" 
+            <input id="nitCliente" type="text" placeholder="Ej: 12345678-9" 
                    class="w-full p-4 border rounded-2xl">
           </div>
         </div>
-        <datalist id="clientesSugerencias"></datalist>
       </div>
 
       <div class="grid grid-cols-12 gap-6">
@@ -561,7 +587,14 @@ function cargarHistorial(){
 }
 
 /* INIT */
-mostrarSeleccionCajero();   // Forzar siempre la pantalla de cajero al recargar
+const ultimoCajero = localStorage.getItem("ultimoCajero");
+if (ultimoCajero) {
+  cajeroActual = ultimoCajero;
+  view("venta");
+  cargarClientesFrecuentes();
+} else {
+  mostrarSeleccionCajero();
+}
 
 </script>
 </body>
