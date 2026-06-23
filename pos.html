@@ -195,7 +195,7 @@ function confirmarCajero() {
   cargarClientesFrecuentes();
 }
 
-  function buscarClienteEnVivo() {
+    function buscarClienteEnVivo() {
   const input = document.getElementById("nombreCliente");
   const listaDiv = document.getElementById("listaClientes");
   const texto = input.value.toLowerCase().trim();
@@ -213,8 +213,11 @@ function confirmarCajero() {
 
   filtrados.forEach(cliente => {
     const div = document.createElement("div");
-    div.className = "p-3 hover:bg-gray-100 cursor-pointer border-b last:border-none";
-    div.textContent = cliente.nombre;
+    div.className = "p-3 hover:bg-green-50 cursor-pointer border-b last:border-none flex justify-between items-center";
+    div.innerHTML = `
+      <span>${cliente.nombre}</span>
+      ${cliente.nit ? `<span class="text-xs text-gray-500">${cliente.nit}</span>` : ''}
+    `;
     div.onclick = () => {
       input.value = cliente.nombre;
       if (cliente.nit) document.getElementById("nitCliente").value = cliente.nit;
