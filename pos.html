@@ -60,12 +60,20 @@ let carrito = [];
 let cajeroActual = "";   // ← Agrega esta línea
 let clientesFrecuentes = [];   // Para guardar sugerencias
 
-/* AUTH - Mejorado para POS */
+/* AUTH + INICIALIZACIÓN */
 auth.onAuthStateChanged(user => {
   if (!user) {
     mostrarLoginPOS();
   } else {
-    mostrarSeleccionCajero();   // ← Cambiado
+    // Intentar recuperar cajero guardado
+    const ultimoCajero = localStorage.getItem("ultimoCajero");
+    if (ultimoCajero) {
+      cajeroActual = ultimoCajero;
+      view("venta");
+      cargarClientesFrecuentes();
+    } else {
+      mostrarSeleccionCajero();
+    }
   }
 });
 
@@ -594,13 +602,7 @@ function cargarHistorial(){
 
 /* INIT */
 const ultimoCajero = localStorage.getItem("ultimoCajero");
-if (ultimoCajero) {
-  cajeroActual = ultimoCajero;
-  view("venta");
-  cargarClientesFrecuentes();
-} else {
-  mostrarSeleccionCajero();
-}
+...
 
 </script>
 </body>
