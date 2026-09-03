@@ -1,0 +1,495 @@
+// js/pos.js - Lógica de Caja Mostrador (pos.html)
+
+let carrito = [];
+let cajeroActual = "";
+let clientesFrecuentes = [];
+
+/* AUTH + INICIALIZACIÓN */
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    mostrarLoginPOS();
+  } else {
+    const ultimoCajero = localStorage.getItem("ultimoCajero");
+    if (ultimoCajero) {
+      cajeroActual = ultimoCajero;
+      view("venta");
+      cargarClientesFrecuentes();
+    } else {
+      mostrarSeleccionCajero();
+    }
+  }
+});
+
+function mostrarLoginPOS() {
+  document.getElementById("app").innerHTML = `
+    <div class="min-h-screen flex items-center justify-center bg-gray-100">
+      <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
+        <div class="flex justify-center mb-6">
+          <div class="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-white text-6xl">🖨️</div>
+        </div>
+        <h1 class="text-3xl font-bold text-center mb-2">Caja AGROMAXGTM</h1>
+        <p class="text-center text-green-600 mb-8">Iniciar Sesión - Mostrador</p>
+        <input id="email" type="email" placeholder="Correo" class="w-full p-4 border rounded-2xl mb-4">
+        <input id="password" type="password" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-6">
+        <button onclick="loginPOS()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+          Ingresar a Caja
+        </button>
+        <p class="text-center text-xs text-gray-500 mt-6">Solo para personal de mostrador</p>
+      </div>
+    </div>`;
+}
+
+async function cargarClientesFrecuentes() {
+  try {
+    const snap = await db.collection("ventas").orderBy("fecha", "desc").limit(50).get();
+    const clientesMap = new Map();
+    snap.forEach(doc => {
+      const data = doc.data();
+      if (data.cliente && data.cliente !== "Consumidor Final") {
+        const key = data.cliente.toLowerCase();
+        if (!clientesMap.has(key)) {
+          clientesMap.set(key, { nombre: data.cliente, nit: data.nit || "" });
+        }
+      }
+    });
+    clientesFrecuentes = Array.from(clientesMap.values());
+  } catch (e) {
+    console.error("Error cargando clientes frecuentes:", e);
+  }
+}
+
+function filtrarSugerencias() {
+  const input = document.getElementById("nombreCliente");
+  const datalist = document.getElementById("clientesSugerencias");
+  if (!datalist) return;
+  datalist.innerHTML = "";
+  const texto = input.value.toLowerCase().trim();
+  if (texto.length < 2) return;
+  clientesFrecuentes.filter(c => c.nombre.toLowerCase().includes(texto)).forEach(cliente => {
+    const option = document.createElement("option");
+    option.value = cliente.nombre;
+    datalist.appendChild(option);
+  });
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target.id === "nombreCliente") {
+    const nombre = e.target.value.trim();
+    const cliente = clientesFrecuentes.find(c => c.nombre === nombre);
+    if (cliente && cliente.nit) {
+      document.getElementById("nitCliente").value = cliente.nit;
+    }
+  }
+});
+
+async function loginPOS() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+  } catch (e) {
+    alert("Error de inicio de sesión: " + e.message);
+  }
+}
+
+function mostrarSeleccionCajero() {
+  document.getElementById("app").innerHTML = `
+    <div class="min-h-screen flex items-center justify-center bg-gray-100">
+      <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
+        <div class="flex justify-center mb-6">
+          <div class="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-white text-6xl">👤</div>
+        </div>
+        <h1 class="text-3xl font-bold text-center mb-2">Bienvenido a Caja</h1>
+        <p class="text-center text-green-600 mb-8">¿Quién está atendiendo hoy?</p>
+        <input id="nombreCajero" type="text" placeholder="Ej: Juan Pérez, María López, CAJERO-01"
+               class="w-full p-4 border rounded-2xl mb-6 text-center text-lg focus:outline-none focus:border-green-500">
+        <button onclick="confirmarCajero()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
+          Ingresar a Caja
+        </button>
+      </div>
+    </div>`;
+}
+
+function confirmarCajero() {
+  const nombre = document.getElementById("nombreCajero").value.trim();
+  if (!nombre) {
+    alert("❌ Por favor ingresa tu nombre o código de cajero");
+    return;
+  }
+  cajeroActual = nombre;
+  localStorage.setItem("ultimoCajero", nombre);
+  view("venta");
+  cargarClientesFrecuentes();
+}
+
+function cambiarCajero() {
+  if (confirm("¿Cambiar de cajero?")) {
+    localStorage.removeItem("ultimoCajero");
+    cajeroActual = "";
+    mostrarSeleccionCajero();
+  }
+}
+
+function buscarClienteEnVivo() {
+  const input = document.getElementById("nombreCliente");
+  const listaDiv = document.getElementById("listaClientes");
+  const texto = input.value.toLowerCase().trim();
+  listaDiv.innerHTML = "";
+  listaDiv.classList.add("hidden");
+  if (texto.length < 2) return;
+
+  const filtrados = clientesFrecuentes.filter(c => {
+    const nombreMatch = c.nombre.toLowerCase().includes(texto);
+    const nitMatch = c.nit && c.nit.toLowerCase().includes(texto);
+    return nombreMatch || nitMatch;
+  });
+  if (filtrados.length === 0) return;
+
+  filtrados.forEach(cliente => {
+    const div = document.createElement("div");
+    div.className = "p-3 hover:bg-green-50 cursor-pointer border-b last:border-none flex justify-between items-center";
+    div.innerHTML = `
+      <span class="font-medium">${cliente.nombre}</span>
+      ${cliente.nit ? `<span class="text-xs bg-gray-100 px-2 py-1 rounded-full">${cliente.nit}</span>` : ''}
+    `;
+    div.onclick = () => {
+      input.value = cliente.nombre;
+      if (cliente.nit) document.getElementById("nitCliente").value = cliente.nit;
+      listaDiv.classList.add("hidden");
+    };
+    listaDiv.appendChild(div);
+  });
+  listaDiv.classList.remove("hidden");
+}
+
+/* ================= VIEWS ================= */
+function view(v) {
+  if (!cajeroActual) {
+    alert("❌ Debes ingresar tu nombre o código de cajero primero");
+    mostrarSeleccionCajero();
+    return;
+  }
+
+  const app = document.getElementById("app");
+
+  if (v === "venta") {
+    app.innerHTML = `
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">🛒 Nueva Venta</h1>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-600">Cajero:</span>
+          <span class="bg-green-100 text-green-700 px-4 py-2 rounded-2xl font-medium">${cajeroActual}</span>
+          <button onclick="cambiarCajero()" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-4 py-2 rounded-2xl text-sm font-medium flex items-center gap-2">
+            <i class="fas fa-user-edit"></i> Cambiar
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-3xl shadow mb-6">
+        <h3 class="font-bold text-lg mb-4">Datos del Cliente</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
+            <input id="nombreCliente" type="text" placeholder="Escribe para buscar cliente..."
+                   class="w-full p-4 border rounded-2xl focus:outline-none focus:border-green-500"
+                   onkeyup="buscarClienteEnVivo()">
+            <div id="listaClientes" class="mt-2 max-h-60 overflow-auto border rounded-2xl bg-white shadow-sm hidden"></div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">NIT (opcional)</label>
+            <input id="nitCliente" type="text" placeholder="Ej: 12345678-9" class="w-full p-4 border rounded-2xl">
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-12 gap-6">
+        <div class="col-span-7 bg-white p-6 rounded-3xl shadow">
+          <input id="search" placeholder="Buscar producto..." class="w-full p-4 border rounded-2xl" onkeyup="buscar()">
+          <div id="results" class="mt-4"></div>
+        </div>
+        <div class="col-span-5 bg-white p-6 rounded-3xl shadow">
+          <h2 class="text-xl font-bold mb-4">Carrito</h2>
+          <div id="cart"></div>
+          <div id="efectivoBox" class="mt-4 hidden">
+            <label class="block mb-2 font-semibold text-gray-700">Monto recibido</label>
+            <input type="number" id="montoRecibido" placeholder="Ej: 200" class="w-full p-3 border rounded-xl">
+            <div class="mt-3 text-sm text-gray-600">Cambio: <b id="cambioTexto">Q0.00</b></div>
+          </div>
+          <div class="mt-4">
+            <label class="block mb-2 font-semibold text-gray-700">Método de Pago</label>
+            <select id="metodoPago" class="w-full p-3 border rounded-xl">
+              <option value="">Seleccione método de pago</option>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Tarjeta">💳 Tarjeta</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+              <option value="Credito">📒 Crédito</option>
+            </select>
+          </div>
+          <button onclick="guardarPendiente()" class="w-full mt-6 bg-yellow-500 py-3 rounded-xl text-white font-bold">
+            Guardar como Pendiente
+          </button>
+          <button onclick="finalizarVenta()" class="w-full mt-3 bg-green-700 py-4 rounded-xl text-white font-bold">
+            Finalizar Venta (Descontar Stock)
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Event listeners para método de pago y cambio
+    const metodoSelect = document.getElementById("metodoPago");
+    if (metodoSelect) {
+      metodoSelect.addEventListener("change", function() {
+        const box = document.getElementById("efectivoBox");
+        if (this.value === "Efectivo") {
+          box.classList.remove("hidden");
+        } else {
+          box.classList.add("hidden");
+          document.getElementById("montoRecibido").value = "";
+          document.getElementById("cambioTexto").innerText = "Q0.00";
+        }
+      });
+    }
+    const montoInput = document.getElementById("montoRecibido");
+    if (montoInput) {
+      montoInput.addEventListener("input", function() {
+        const total = carrito.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+        const recibido = parseFloat(this.value) || 0;
+        const cambio = recibido - total;
+        document.getElementById("cambioTexto").innerText = "Q" + (cambio >= 0 ? cambio.toFixed(2) : "0.00");
+      });
+    }
+    render();
+  }
+
+  if (v === "pendientes") cargarPendientes();
+  if (v === "historial") cargarHistorial();
+}
+
+/* ================= SEARCH ================= */
+async function buscar() {
+  const t = document.getElementById("search").value.toLowerCase();
+  const box = document.getElementById("results");
+  if (t.length < 2) {
+    box.innerHTML = "";
+    return;
+  }
+  const snap = await db.collection("productos").limit(20).get();
+  let html = "";
+  snap.forEach(doc => {
+    const p = doc.data();
+    if (p.nombre && p.nombre.toLowerCase().includes(t)) {
+      html += `
+        <div onclick="add('${doc.id}','${p.nombre.replace(/'/g, "\\'")}',${p.precio||0},${p.stock||0})"
+        class="p-3 bg-gray-50 rounded-xl cursor-pointer flex justify-between">
+          <span>${p.nombre}</span>
+          <b>Stock: ${p.stock||0}</b>
+        </div>`;
+    }
+  });
+  box.innerHTML = html || "<p class='p-3 text-gray-500'>No encontrado</p>";
+}
+
+/* ================= CART ================= */
+function add(id, nombre, precio, stock) {
+  if (stock <= 0) return alert("Sin stock disponible");
+  let item = carrito.find(p => p.id === id);
+  if (item) item.cantidad++;
+  else carrito.push({ id, nombre, precio, cantidad: 1 });
+  render();
+}
+
+function render() {
+  const box = document.getElementById("cart");
+  if (!box) return;
+  let html = "";
+  carrito.forEach((p, i) => {
+    html += `
+      <div class="flex justify-between p-3 bg-gray-100 rounded-xl mb-2">
+        <div>${p.nombre} × ${p.cantidad}</div>
+        <div>
+          Q${(p.precio * p.cantidad).toFixed(2)}
+          <button onclick="del(${i})" class="text-red-600 ml-3">X</button>
+        </div>
+      </div>`;
+  });
+  box.innerHTML = html || "<p class='text-gray-400 py-8 text-center'>Carrito vacío</p>";
+}
+
+function del(i) {
+  carrito.splice(i, 1);
+  render();
+}
+
+/* ================= GUARDAR PENDIENTE ================= */
+async function guardarPendiente() {
+  if (carrito.length === 0) return alert("Carrito vacío");
+  await db.collection("ventas_pendientes").add({
+    fecha: new Date(),
+    productos: carrito,
+    estado: "pendiente",
+    cajero: cajeroActual || "Sin registrar"
+  });
+  alert("✅ Venta guardada como pendiente");
+  carrito = [];
+  render();
+}
+
+/* ================= FINALIZAR VENTA ================= */
+async function finalizarVenta() {
+  const btn = document.querySelector('button[onclick="finalizarVenta()"]');
+  if (!btn) return;
+  const textoOriginal = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Procesando Venta...`;
+
+  const metodoPago = document.getElementById("metodoPago").value;
+  const montoRecibido = parseFloat(document.getElementById("montoRecibido")?.value) || 0;
+  const total = carrito.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+  const cambio = montoRecibido - total;
+
+  if (metodoPago === "Efectivo" && montoRecibido < total) {
+    alert("❌ El monto recibido es menor al total");
+    restaurarBoton(btn, textoOriginal);
+    return;
+  }
+  if (carrito.length === 0) {
+    alert("❌ Carrito vacío");
+    restaurarBoton(btn, textoOriginal);
+    return;
+  }
+  if (!metodoPago) {
+    alert("❌ Selecciona un método de pago");
+    restaurarBoton(btn, textoOriginal);
+    return;
+  }
+  if (!confirm("¿Finalizar venta y descontar stock?")) {
+    restaurarBoton(btn, textoOriginal);
+    return;
+  }
+
+  abrirTicket(
+    carrito,
+    total,
+    metodoPago,
+    montoRecibido,
+    cambio,
+    document.getElementById("nombreCliente").value.trim() || "Consumidor Final",
+    document.getElementById("nitCliente").value.trim()
+  );
+
+  try {
+    await db.runTransaction(async (tx) => {
+      let totalCalculado = 0;
+      for (const item of carrito) {
+        const prodRef = db.collection("productos").doc(item.id);
+        const snap = await tx.get(prodRef);
+        if (!snap.exists) throw "Producto no encontrado: " + item.nombre;
+        const data = snap.data();
+        if ((data.stock || 0) < item.cantidad) throw "Stock insuficiente para " + item.nombre;
+        tx.update(prodRef, { stock: data.stock - item.cantidad });
+        totalCalculado += item.precio * item.cantidad;
+      }
+      const ventaRef = db.collection("ventas").doc();
+      tx.set(ventaRef, {
+        fecha: new Date(),
+        productos: carrito,
+        total: totalCalculado,
+        tipo: "CAJA",
+        metodoPago: metodoPago,
+        montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
+        cambio: metodoPago === "Efectivo" ? cambio : 0,
+        cajero: cajeroActual || "Sin registrar",
+        cliente: document.getElementById("nombreCliente").value.trim() || "Consumidor Final",
+        nit: document.getElementById("nitCliente").value.trim() || ""
+      });
+    });
+    alert("✅ Venta finalizada y stock actualizado correctamente");
+    carrito = [];
+    render();
+    view("venta");
+  } catch (e) {
+    console.error(e);
+    alert("❌ Error al procesar la venta: " + (e.message || e));
+  } finally {
+    restaurarBoton(btn, textoOriginal);
+  }
+}
+
+function restaurarBoton(btn, textoOriginal) {
+  btn.disabled = false;
+  btn.innerHTML = textoOriginal;
+}
+
+/* ================= PENDIENTES ================= */
+function cargarPendientes() {
+  document.getElementById("app").innerHTML = `
+    <h1 class="text-3xl font-bold mb-6">Ventas Pendientes</h1>
+    <div id="pend"></div>
+  `;
+  db.collection("ventas_pendientes").where("estado", "==", "pendiente").onSnapshot(snap => {
+    let html = "";
+    snap.forEach(doc => {
+      const v = doc.data();
+      html += `
+        <div class="bg-white p-4 rounded-xl shadow mb-3 flex justify-between items-center">
+          <div>
+            <b>${v.fecha.toDate ? v.fecha.toDate().toLocaleString() : ""}</b>
+            ${v.cajero ? `<div class="text-sm text-gray-600">Cajero: ${v.cajero}</div>` : ""}
+          </div>
+          <button onclick="cargarPendiente('${doc.id}')" class="bg-green-600 text-white px-4 py-2 rounded-xl">Abrir</button>
+        </div>`;
+    });
+    document.getElementById("pend").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>No hay ventas pendientes</p>";
+  });
+}
+
+async function cargarPendiente(id) {
+  try {
+    const doc = await db.collection("ventas_pendientes").doc(id).get();
+    if (!doc.exists) return alert("Pedido no encontrado");
+    const data = doc.data();
+    carrito = data.productos || [];
+    await db.collection("ventas_pendientes").doc(id).update({ estado: "abierto" });
+    view("venta");
+    render();
+  } catch (e) {
+    alert("Error al abrir pendiente: " + e.message);
+  }
+}
+
+/* ================= HISTORIAL ================= */
+function cargarHistorial() {
+  document.getElementById("app").innerHTML = `
+    <h1 class="text-3xl font-bold mb-6">Historial Caja</h1>
+    <div id="hist"></div>
+  `;
+  db.collection("ventas").orderBy("fecha", "desc").onSnapshot(snap => {
+    let html = "";
+    snap.forEach(doc => {
+      const v = doc.data();
+      html += `
+        <div class="bg-white p-4 rounded-xl shadow mb-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="font-bold text-lg">Total: Q${v.total || 0}</div>
+              <div class="text-sm text-gray-700">Cajero: <strong>${v.cajero || 'Desconocido'}</strong></div>
+              <div class="text-sm">Cliente: ${v.cliente || 'Consumidor Final'}</div>
+              ${v.nit ? `<div class="text-sm text-gray-600">NIT: ${v.nit}</div>` : ''}
+            </div>
+            <div class="text-right">
+              <div class="text-sm">${v.metodoPago || "N/A"}</div>
+              ${v.metodoPago === "Efectivo" ? `
+                <div class="text-xs text-gray-600">
+                  Recibido: Q${v.montoRecibido || 0} | Cambio: Q${v.cambio || 0}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+          <div class="text-xs text-gray-500 mt-3">
+            ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
+          </div>
+        </div>`;
+    });
+    document.getElementById("hist").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>Sin historial</p>";
+  });
+}
