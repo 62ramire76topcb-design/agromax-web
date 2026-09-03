@@ -83,8 +83,16 @@
           <span>Total:</span>
           <span id="cart-total" class="text-green-600">Q0.00</span>
         </div>
+
+        <!-- Botón Pagar con Stripe -->
+        <button onclick="pagarConStripe()" id="btn-stripe"
+                class="w-full bg-blue-600 hover:bg-blue-700 py-5 rounded-2xl text-white font-bold text-lg mb-3 flex items-center justify-center gap-2">
+          <i class="fas fa-credit-card"></i> Pagar con Tarjeta
+        </button>
+
+        <!-- Botón WhatsApp -->
         <button onclick="enviarPedidoWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 py-5 rounded-2xl text-white font-bold text-lg">
-          Enviar Pedido por WhatsApp
+          <i class="fab fa-whatsapp"></i> Enviar Pedido por WhatsApp
         </button>
       </div>
     </div>
@@ -166,6 +174,46 @@
       actualizarContador();
     }
 
+    // ===== NUEVA FUNCIÓN: Pagar con Stripe =====
+    async function pagarConStripe() {
+      if (carrito.length === 0) return alert("El carrito está vacío");
+
+      const btn = document.getElementById('btn-stripe');
+      const textoOriginal = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+      try {
+        const response = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: carrito.map(item => ({
+              nombre: item.nombre,
+              precio: item.precio,
+              cantidad: item.cantidad
+            })),
+            cliente: 'Cliente Web'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.url) {
+          // Guardar carrito temporalmente por si regresa
+          localStorage.setItem('carritoPendienteStripe', JSON.stringify(carrito));
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'No se pudo crear la sesión de pago');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('❌ Error al iniciar el pago: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+      }
+    }
+
     async function enviarPedidoWhatsApp() {
       if (carrito.length === 0) return alert("El carrito está vacío");
 
@@ -182,23 +230,21 @@
 
       mensaje += `\nTotal: Q${total.toFixed(2)}`;
 
-      // Guardar en Firebase antes de abrir WhatsApp
       try {
         await db.collection('pedidos').add({
           cliente: "Cliente WhatsApp",
           productos: productosPedido,
           total: total,
           fecha: new Date(),
-          estado: "Pendiente"
+          estado: "Pendiente",
+          metodo: "WhatsApp"
         });
       } catch (e) {
         console.error("Error guardando pedido:", e);
       }
 
-      // Abrir WhatsApp (mejor compatibilidad)
       window.location.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensaje)}`;
 
-      // Limpiar carrito
       carrito = [];
       localStorage.setItem('carritoAGROMAXGTM', JSON.stringify(carrito));
       actualizarContador();
