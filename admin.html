@@ -85,7 +85,6 @@
              <a href="compras.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-truck"></i> Compras</a>
              <a href="inventario.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-warehouse"></i> Inventario</a>
   
-             <!-- NUEVOS MÓDULOS -->
              <a href="ventas.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-cash-register"></i> Ventas</a>
              <a href="bonificaciones.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-gift"></i> Bonificaciones</a>
              <a href="alquileres.html" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-key"></i> Alquileres</a>
@@ -137,7 +136,7 @@
           <p class="text-gray-500">Total Productos</p>
           <p class="text-5xl font-bold text-green-600">${total}</p>
         </div>
-        <div class="bg-white p-6 rounded-3x1 shadow text-center">
+        <div class="bg-white p-6 rounded-3xl shadow text-center">
           <p class="text-gray-500">Valor Inventario</p>
           <p class="text-5xl font-bold text-blue-600">Q${valorTotal.toLocaleString('es-GT')}</p>
         </div>
@@ -307,10 +306,17 @@
       }
     }
 
+    // ==================== PEDIDOS MEJORADOS ====================
     async function mostrarPedidos() {
       const content = document.getElementById('main-content');
       content.innerHTML = `
-        <h1 class="text-3xl font-bold mb-8">📋 Pedidos Recibidos</h1>
+        <div class="flex justify-between items-center mb-8">
+          <h1 class="text-3xl font-bold">📋 Pedidos Recibidos</h1>
+          <div class="flex gap-3 text-sm">
+            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full">Pagado = Stripe</span>
+            <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pendiente = WhatsApp</span>
+          </div>
+        </div>
         <div id="lista-pedidos" class="space-y-6"></div>`;
 
       db.collection('pedidos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
@@ -320,26 +326,43 @@
         } else {
           snapshot.forEach(doc => {
             const p = doc.data();
+            const esStripe = p.metodo === 'Stripe' || p.estado === 'Pagado';
+            const estadoClass = esStripe 
+              ? 'bg-green-100 text-green-700' 
+              : 'bg-yellow-100 text-yellow-700';
+            const metodoIcon = esStripe 
+              ? '<i class="fas fa-credit-card mr-1"></i> Stripe' 
+              : '<i class="fab fa-whatsapp mr-1"></i> WhatsApp';
+
             html += `
-              <div class="bg-white rounded-3xl shadow p-6">
-                <div class="flex justify-between">
+              <div class="bg-white rounded-3xl shadow p-6 ${esStripe ? 'border-l-4 border-green-500' : ''}">
+                <div class="flex justify-between items-start">
                   <div>
-                    <p class="text-sm text-gray-500">${p.fecha.toDate().toLocaleString('es-GT')}</p>
-                    <p class="font-bold">${p.cliente || 'Cliente WhatsApp'}</p>
+                    <p class="text-sm text-gray-500">${p.fecha?.toDate ? p.fecha.toDate().toLocaleString('es-GT') : ''}</p>
+                    <p class="font-bold text-lg">${p.cliente || 'Cliente'}</p>
+                    <p class="text-sm text-gray-600 mt-1">${metodoIcon}</p>
                   </div>
-                  <span class="px-4 py-1 bg-green-100 text-green-700 rounded-full text-sm">${p.estado || 'Pendiente'}</span>
+                  <span class="px-4 py-1 ${estadoClass} rounded-full text-sm font-medium">
+                    ${p.estado || 'Pendiente'}
+                  </span>
                 </div>
+
                 <div class="mt-4 space-y-1 text-sm">
-                  ${p.productos.map(item => `
+                  ${(p.productos || []).map(item => `
                     <div class="flex justify-between">
                       <span>${item.nombre} × ${item.cantidad}</span>
                       <span>Q${(item.precio * item.cantidad).toFixed(2)}</span>
                     </div>
                   `).join('')}
                 </div>
-                <div class="mt-6 pt-4 border-t flex justify-between font-bold">
-                  <span>Total:</span>
-                  <span class="text-green-600">Q${p.total.toFixed(2)}</span>
+
+                <div class="mt-6 pt-4 border-t flex justify-between items-center">
+                  <div class="text-xs text-gray-400">
+                    ${p.sessionId ? 'Session: ' + p.sessionId.substring(0, 18) + '...' : ''}
+                  </div>
+                  <div class="font-bold text-lg">
+                    Total: <span class="text-green-600">Q${Number(p.total || 0).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>`;
           });
