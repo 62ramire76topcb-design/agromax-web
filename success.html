@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pago Exitoso - AGROMAXGTM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+
+  <div class="bg-white max-w-lg w-full mx-4 rounded-3xl shadow-2xl p-10 text-center">
+    <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+      <i class="fas fa-check text-5xl text-green-600"></i>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-800 mb-3">¡Pago exitoso!</h1>
+    <p class="text-gray-600 mb-2">Gracias por tu compra en <strong>AGROMAXGTM</strong>.</p>
+    <p class="text-sm text-gray-500 mb-8" id="session-info">Procesando confirmación...</p>
+
+    <div id="pedido-info" class="hidden bg-gray-50 rounded-2xl p-5 mb-8 text-left"></div>
+
+    <a href="/" class="inline-block w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg transition">
+      Volver al catálogo
+    </a>
+
+    <p class="text-xs text-gray-400 mt-6">
+      Si tienes dudas, contáctanos por WhatsApp: +502 4266 4744
+    </p>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEj22gE5UySwWVwIec6jpBiZ2nb1OBftM",
+      authDomain: "agromaxgt-app.firebaseapp.com",
+      projectId: "agromaxgt-app",
+      storageBucket: "agromaxgt-app.firebasestorage.app",
+      messagingSenderId: "648144313047",
+      appId: "1:648144313047:web:118a67464d99f2d0462e92"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    async function procesarPagoExitoso() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session_id');
+
+      if (sessionId) {
+        document.getElementById('session-info').textContent = 'ID de sesión: ' + sessionId.substring(0, 20) + '...';
+      }
+
+      // Recuperar carrito pendiente (si existe)
+      const carritoPendiente = JSON.parse(localStorage.getItem('carritoPendienteStripe') || '[]');
+
+      if (carritoPendiente.length > 0) {
+        let total = 0;
+        const productos = carritoPendiente.map(item => {
+          total += item.precio * item.cantidad;
+          return {
+            nombre: item.nombre,
+            cantidad: item.cantidad,
+            precio: item.precio
+          };
+        });
+
+        // Guardar pedido pagado en Firestore
+        try {
+          await db.collection('pedidos').add({
+            cliente: 'Cliente Web - Stripe',
+            productos: productos,
+            total: total,
+            fecha: new Date(),
+            estado: 'Pagado',
+            metodo: 'Stripe',
+            sessionId: sessionId || null
+          });
+
+          // Mostrar resumen
+          const infoDiv = document.getElementById('pedido-info');
+          infoDiv.classList.remove('hidden');
+          infoDiv.innerHTML = `
+            <p class="font-semibold mb-2">Resumen del pedido:</p>
+            ${productos.map(p => `<p class="text-sm">• ${p.nombre} × ${p.cantidad} = Q${(p.precio * p.cantidad).toFixed(2)}</p>`).join('')}
+            <p class="font-bold mt-3 text-green-700">Total: Q${total.toFixed(2)}</p>
+          `;
+        } catch (e) {
+          console.error('Error guardando pedido:', e);
+        }
+
+        // Limpiar carritos
+        localStorage.removeItem('carritoPendienteStripe');
+        localStorage.removeItem('carritoAGROMAXGTM');
+      }
+    }
+
+    window.onload = procesarPagoExitoso;
+  </script>
+</body>
+</html>
