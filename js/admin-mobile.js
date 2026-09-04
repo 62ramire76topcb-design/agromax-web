@@ -2,16 +2,12 @@
 // Layout responsive del Admin en teléfono (menú hamburguesa + tamaños compactos)
 
 (function () {
-  const originalMostrarPanel = window.mostrarPanelPrincipal;
-
   window.mostrarPanelPrincipal = function () {
     document.getElementById('app').innerHTML = `
       <div class="flex h-screen relative">
 
-        <!-- Overlay móvil -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden" onclick="cerrarSidebarAdmin()"></div>
 
-        <!-- Sidebar -->
         <div id="admin-sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-64 md:w-72 bg-white border-r shadow-xl overflow-y-auto transform -translate-x-full md:translate-x-0 transition-transform duration-200">
           <div class="p-4 md:p-6 border-b bg-green-700 text-white flex items-center justify-between">
             <div class="flex items-center gap-2 md:gap-3 min-w-0">
@@ -26,6 +22,8 @@
 
           <nav class="p-3 md:p-4 space-y-0.5 text-sm md:text-base">
             <a onclick="navegarAdmin('dashboard')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home w-5 text-center text-sm"></i> Dashboard</a>
+            <a onclick="navegarAdmin('reportes')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-chart-bar w-5 text-center text-sm"></i> Reportes</a>
+            <a onclick="navegarAdmin('clientes')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-users w-5 text-center text-sm"></i> Clientes</a>
             <a onclick="navegarAdmin('agregar')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus w-5 text-center text-sm"></i> Agregar Producto</a>
             <a onclick="navegarAdmin('masiva')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-file-csv w-5 text-center text-sm"></i> Subida Masiva</a>
             <a href="compras.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-truck w-5 text-center text-sm"></i> Compras</a>
@@ -44,24 +42,19 @@
           </nav>
         </div>
 
-        <!-- Contenido -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <!-- Top bar móvil -->
           <div class="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b sticky top-0 z-30">
             <button onclick="abrirSidebarAdmin()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 text-gray-700">
               <i class="fas fa-bars"></i>
             </button>
             <div class="font-bold text-green-700">AGROMAXGTM</div>
           </div>
-
           <div class="flex-1 overflow-auto p-4 md:p-8" id="main-content"></div>
         </div>
       </div>
     `;
 
-    if (typeof mostrarSeccion === 'function') {
-      mostrarSeccion('dashboard');
-    }
+    if (typeof mostrarSeccion === 'function') mostrarSeccion('dashboard');
   };
 
   window.abrirSidebarAdmin = function () {
@@ -82,6 +75,4 @@
     cerrarSidebarAdmin();
     if (typeof mostrarSeccion === 'function') mostrarSeccion(seccion);
   };
-
-  // Si el panel ya se mostró antes de cargar este script, no forzamos recarga
 })();
