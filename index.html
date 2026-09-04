@@ -11,7 +11,6 @@
 </head>
 <body class="bg-gray-50">
 
-  <!-- HEADER -->
   <header class="bg-white shadow-md sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -21,7 +20,6 @@
           <p class="text-[10px] sm:text-xs text-green-600 hidden sm:block">Producimos con pasión, trabajamos por el futuro</p>
         </div>
       </div>
-      
       <div class="flex items-center gap-2 sm:gap-4 shrink-0">
         <button onclick="toggleCart()" class="relative flex items-center gap-1 sm:gap-2 bg-gray-100 hover:bg-gray-200 px-3 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-medium text-sm sm:text-base">
           <i class="fas fa-shopping-cart text-lg sm:text-2xl"></i>
@@ -36,21 +34,18 @@
     </div>
   </header>
 
-  <!-- HERO -->
   <section class="bg-gradient-to-br from-green-700 to-green-800 text-white py-8 sm:py-12 md:py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center">
       <h2 class="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-4 leading-tight">Catálogo de Insumos Agrícolas</h2>
       <p class="text-sm sm:text-lg md:text-xl mb-4 sm:mb-8 opacity-90">Calidad profesional para el campo guatemalteco</p>
-      
       <div class="max-w-2xl mx-auto">
-        <input id="buscador" type="text" placeholder="Buscar productos..." 
+        <input id="buscador" type="text" placeholder="Buscar productos..."
                class="w-full px-4 sm:pl-14 sm:pr-6 py-3 sm:py-5 rounded-2xl sm:rounded-3xl text-base sm:text-lg focus:outline-none text-gray-900"
                onkeyup="filtrarProductos()">
       </div>
     </div>
   </section>
 
-  <!-- FILTROS -->
   <section class="py-4 sm:py-8 bg-white border-b">
     <div class="max-w-7xl mx-auto px-3 sm:px-6">
       <div class="flex flex-wrap gap-2 sm:gap-3 justify-center" id="tabs">
@@ -64,7 +59,6 @@
     </div>
   </section>
 
-  <!-- PRODUCTOS -->
   <section class="py-6 sm:py-12">
     <div class="max-w-7xl mx-auto px-3 sm:px-6">
       <div id="lista-productos" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 md:gap-8"></div>
@@ -84,20 +78,64 @@
           <span>Total:</span>
           <span id="cart-total" class="text-green-600">Q0.00</span>
         </div>
-
-        <button onclick="pagarConStripe()" id="btn-stripe"
+        <button onclick="abrirFormularioCheckout('stripe')" id="btn-stripe"
                 class="w-full bg-blue-600 hover:bg-blue-700 py-3.5 sm:py-5 rounded-2xl text-white font-bold text-base sm:text-lg mb-2 sm:mb-3 flex items-center justify-center gap-2">
           <i class="fas fa-credit-card"></i> Pagar con Tarjeta
         </button>
-
-        <button onclick="enviarPedidoWhatsApp()" class="w-full bg-green-600 hover:bg-green-700 py-3.5 sm:py-5 rounded-2xl text-white font-bold text-base sm:text-lg">
+        <button onclick="abrirFormularioCheckout('whatsapp')" class="w-full bg-green-600 hover:bg-green-700 py-3.5 sm:py-5 rounded-2xl text-white font-bold text-base sm:text-lg">
           <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Scripts modulares -->
+  <!-- FORMULARIO DATOS DE CONTACTO / ENVÍO -->
+  <div id="checkout-modal" class="hidden fixed inset-0 bg-black/70 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[92vh] flex flex-col">
+      <div class="p-4 sm:p-5 border-b flex justify-between items-center">
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold">Datos para envío y factura</h2>
+          <p class="text-xs text-gray-500">Completa para continuar con el pedido</p>
+        </div>
+        <button onclick="cerrarFormularioCheckout()" class="text-3xl text-gray-400 leading-none">×</button>
+      </div>
+      <div class="flex-1 overflow-auto p-4 sm:p-5 space-y-3">
+        <div>
+          <label class="text-xs text-gray-600">Nombre completo *</label>
+          <input id="ck-nombre" type="text" class="w-full p-3 border rounded-xl text-sm" placeholder="Nombre y apellido">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-gray-600">Teléfono *</label>
+            <input id="ck-telefono" type="tel" class="w-full p-3 border rounded-xl text-sm" placeholder="502 0000 0000">
+          </div>
+          <div>
+            <label class="text-xs text-gray-600">NIT (factura)</label>
+            <input id="ck-nit" type="text" class="w-full p-3 border rounded-xl text-sm" placeholder="CF o NIT">
+          </div>
+        </div>
+        <div>
+          <label class="text-xs text-gray-600">Correo</label>
+          <input id="ck-email" type="email" class="w-full p-3 border rounded-xl text-sm" placeholder="correo@ejemplo.com">
+        </div>
+        <div>
+          <label class="text-xs text-gray-600">Dirección de envío *</label>
+          <textarea id="ck-direccion" rows="2" class="w-full p-3 border rounded-xl text-sm" placeholder="Calle, colonia, municipio, departamento"></textarea>
+        </div>
+        <div>
+          <label class="text-xs text-gray-600">Referencia / notas</label>
+          <input id="ck-referencia" type="text" class="w-full p-3 border rounded-xl text-sm" placeholder="Ej. Portón verde, llamar al llegar">
+        </div>
+        <p id="ck-error" class="hidden text-red-600 text-sm"></p>
+      </div>
+      <div class="p-4 sm:p-5 border-t">
+        <button id="ck-continuar" onclick="continuarCheckout()" class="w-full py-3.5 rounded-2xl text-white font-bold bg-green-600 hover:bg-green-700">
+          Continuar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="./js/firebase-config.js"></script>
   <script src="./js/catalogo.js"></script>
 </body>
