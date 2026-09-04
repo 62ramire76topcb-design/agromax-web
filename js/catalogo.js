@@ -36,15 +36,20 @@ function mostrarCarrito() {
     const subtotal = item.precio * item.cantidad;
     total += subtotal;
     html += `
-      <div class="flex gap-4 border-b pb-6">
-        <img src="${item.imageUrl || 'https://picsum.photos/id/201/600/400'}" class="w-24 h-24 object-cover rounded-2xl">
-        <div class="flex-1">
-          <h4 class="font-bold">${item.nombre}</h4>
-          <p class="text-green-600">Q${item.precio} × ${item.cantidad}</p>
+      <div class="flex gap-3 sm:gap-4 border-b pb-4 sm:pb-6">
+        <img src="${item.imageUrl || 'https://picsum.photos/id/201/600/400'}" class="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-xl sm:rounded-2xl shrink-0">
+        <div class="flex-1 min-w-0">
+          <h4 class="font-bold text-sm sm:text-base truncate">${item.nombre}</h4>
+          <p class="text-green-600 text-sm">Q${item.precio} × ${item.cantidad}</p>
+          <div class="flex gap-2 mt-2 sm:hidden">
+            <button onclick="cambiarCantidad(${index}, -1)" class="px-3 py-1 border rounded-lg text-sm">-</button>
+            <span class="text-sm">${item.cantidad}</span>
+            <button onclick="cambiarCantidad(${index}, 1)" class="px-3 py-1 border rounded-lg text-sm">+</button>
+          </div>
         </div>
-        <div class="text-right">
-          <p class="font-bold">Q${subtotal}</p>
-          <div class="flex gap-3 mt-4">
+        <div class="text-right shrink-0">
+          <p class="font-bold text-sm sm:text-base">Q${subtotal}</p>
+          <div class="hidden sm:flex gap-3 mt-4">
             <button onclick="cambiarCantidad(${index}, -1)" class="px-4 py-1 border rounded-lg">-</button>
             <span>${item.cantidad}</span>
             <button onclick="cambiarCantidad(${index}, 1)" class="px-4 py-1 border rounded-lg">+</button>
@@ -53,7 +58,7 @@ function mostrarCarrito() {
       </div>`;
   });
 
-  container.innerHTML = html || `<p class="text-center py-16 text-gray-400">Tu carrito está vacío</p>`;
+  container.innerHTML = html || `<p class="text-center py-12 sm:py-16 text-gray-400">Tu carrito está vacío</p>`;
   document.getElementById('cart-total').textContent = `Q${total.toFixed(2)}`;
 }
 
@@ -166,27 +171,27 @@ function renderProductos(categoria = 'all', busqueda = '') {
   if (busqueda) filtered = filtered.filter(p => p.nombre.toLowerCase().includes(busqueda));
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<p class="col-span-full text-center py-20 text-gray-500">No se encontraron productos</p>`;
+    grid.innerHTML = `<p class="col-span-full text-center py-12 sm:py-20 text-gray-500 text-sm sm:text-base">No se encontraron productos</p>`;
     return;
   }
 
   filtered.forEach((p) => {
     const globalIndex = allProductos.findIndex(prod => prod.nombre === p.nombre);
     const card = document.createElement('div');
-    card.className = "bg-white rounded-3xl overflow-hidden shadow hover:shadow-2xl transition-all";
+    card.className = "bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow hover:shadow-xl transition-all";
     card.innerHTML = `
-      <img src="${p.imageUrl || 'https://picsum.photos/id/201/600/400'}" class="w-full h-52 object-cover">
-      <div class="p-6">
-        <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">${p.categoria}</span>
-        <h3 class="font-bold text-xl mt-3 mb-1">${p.nombre}</h3>
-        <p class="text-sm text-gray-500 mb-4">${p.unidad || ''}</p>
-        <p class="text-3xl font-extrabold text-green-600">Q${Number(p.precio).toLocaleString('es-GT')}</p>
+      <img src="${p.imageUrl || 'https://picsum.photos/id/201/600/400'}" class="w-full h-32 sm:h-44 md:h-52 object-cover">
+      <div class="p-3 sm:p-5 md:p-6">
+        <span class="text-[10px] sm:text-xs bg-green-100 text-green-700 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">${p.categoria}</span>
+        <h3 class="font-bold text-sm sm:text-lg md:text-xl mt-2 sm:mt-3 mb-0.5 sm:mb-1 line-clamp-2">${p.nombre}</h3>
+        <p class="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-4 truncate">${p.unidad || ''}</p>
+        <p class="text-lg sm:text-2xl md:text-3xl font-extrabold text-green-600">Q${Number(p.precio).toLocaleString('es-GT')}</p>
         
-        <div class="mt-6 flex gap-3">
-          <button onclick="agregarAlCarrito(${globalIndex})" class="flex-1 bg-green-600 text-white py-4 rounded-2xl font-medium">
-            Agregar al Carrito
+        <div class="mt-3 sm:mt-5 flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <button onclick="agregarAlCarrito(${globalIndex})" class="flex-1 bg-green-600 text-white py-2.5 sm:py-3.5 md:py-4 rounded-xl sm:rounded-2xl font-medium text-xs sm:text-sm md:text-base">
+            Agregar
           </button>
-          <button onclick="contactarWhatsApp('${p.nombre}')" class="flex-1 border border-green-600 text-green-600 py-4 rounded-2xl font-medium">
+          <button onclick="contactarWhatsApp('${p.nombre.replace(/'/g, "\\'")}')" class="flex-1 border border-green-600 text-green-600 py-2.5 sm:py-3.5 md:py-4 rounded-xl sm:rounded-2xl font-medium text-xs sm:text-sm md:text-base">
             Consultar
           </button>
         </div>
