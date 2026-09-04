@@ -2,6 +2,9 @@
 
 let productoEditandoId = null;
 let productosCSV = [];
+let pedidosData = [];
+let filtroPedidos = 'todos';
+let unsubscribePedidos = null;
 
 function mostrarLogin() {
   document.getElementById('app').innerHTML = `
@@ -67,6 +70,10 @@ function mostrarPanelPrincipal() {
 }
 
 function mostrarSeccion(seccion) {
+  if (unsubscribePedidos) {
+    unsubscribePedidos();
+    unsubscribePedidos = null;
+  }
   if (seccion === 'dashboard') mostrarDashboard();
   else if (seccion === 'agregar') mostrarFormularioAgregar();
   else if (seccion === 'masiva') mostrarSubidaMasiva();
@@ -274,63 +281,178 @@ async function subirProductosMasivos() {
   }
 }
 
-async function mostrarPedidos() {
+/* ==================== GESTIÓN DE PEDIDOS ==================== */
+
+function estadoBadge(estado) {
+  const estilos = {
+    'Pendiente': 'bg-yellow-100 text-yellow-800',
+    'Pagado': 'bg-green-100 text-green-800',
+    'En proceso': 'bg-blue-100 text-blue-800',
+    'Entregado': 'bg-gray-100 text-gray-700',
+    'Cancelado': 'bg-red-100 text-red-700'
+  };
+  const cls = estilos[estado] || 'bg-gray-100 text-gray-600';
+  return `<span class="px-3 py-1 ${cls} rounded-full text-sm font-medium">${estado || 'Pendiente'}</span>`;
+}
+
+function renderListaPedidos() {
+  const lista = document.getElementById('lista-pedidos');
+  if (!lista) return;
+
+  let filtrados = pedidosData;
+  if (filtroPedidos !== 'todos') {
+    filtrados = pedidosData.filter(p => (p.estado || 'Pendiente') === filtroPedidos);
+  }
+
+  if (filtrados.length === 0) {
+    lista.innerHTML = `<p class="text-center py-16 text-gray-400">No hay pedidos con este filtro</p>`;
+    return;
+  }
+
+  let html = '';
+  filtrados.forEach(p => {
+    const esStripe = p.metodo === 'Stripe' || p.estado === 'Pagado';
+    const metodoIcon = esStripe
+      ? '<i class="fas fa-credit-card mr-1"></i> Stripe'
+      : '<i class="fab fa-whatsapp mr-1"></i> WhatsApp';
+    const estado = p.estado || 'Pendiente';
+
+    html += `
+      <div class="bg-white rounded-3xl shadow p-6 ${esStripe ? 'border-l-4 border-green-500' : 'border-l-4 border-yellow-400'}">
+        <div class="flex flex-wrap justify-between items-start gap-3">
+          <div>
+            <p class="text-sm text-gray-500">${p.fechaTexto || ''}</p>
+            <p class="font-bold text-lg">${p.cliente || 'Cliente'}</p>
+            <p class="text-sm text-gray-600 mt-1">${metodoIcon}</p>
+          </div>
+          <div class="text-right">
+            ${estadoBadge(estado)}
+          </div>
+        </div>
+
+        <div class="mt-4 space-y-1 text-sm">
+          ${(p.productos || []).map(item => `
+            <div class="flex justify-between">
+              <span>${item.nombre} × ${item.cantidad}</span>
+              <span>Q${(item.precio * item.cantidad).toFixed(2)}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="mt-4 pt-4 border-t flex flex-wrap justify-between items-center gap-3">
+          <div class="text-xs text-gray-400">
+            ${p.sessionId ? 'Session: ' + p.sessionId.substring(0, 16) + '...' : 'ID: ' + p.id.substring(0, 8)}
+          </div>
+          <div class="font-bold text-lg">
+            Total: <span class="text-green-600">Q${Number(p.total || 0).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <!-- Acciones de estado -->
+        <div class="mt-4 flex flex-wrap gap-2">
+          ${estado !== 'En proceso' ? `<button onclick="cambiarEstadoPedido('${p.id}', 'En proceso')" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-sm font-medium"><i class="fas fa-truck mr-1"></i> En proceso</button>` : ''}
+          ${estado !== 'Entregado' ? `<button onclick="cambiarEstadoPedido('${p.id}', 'Entregado')" class="px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-sm font-medium"><i class="fas fa-check mr-1"></i> Entregado</button>` : ''}
+          ${estado !== 'Pendiente' && estado !== 'Pagado' ? `<button onclick="cambiarEstadoPedido('${p.id}', '${esStripe ? 'Pagado' : 'Pendiente'}')" class="px-3 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-xl text-sm font-medium"><i class="fas fa-undo mr-1"></i> Reabrir</button>` : ''}
+          ${estado !== 'Cancelado' ? `<button onclick="cambiarEstadoPedido('${p.id}', 'Cancelado')" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl text-sm font-medium"><i class="fas fa-times mr-1"></i> Cancelar</button>` : ''}
+          <button onclick="eliminarPedido('${p.id}')" class="px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl text-sm font-medium ml-auto"><i class="fas fa-trash mr-1"></i> Eliminar</button>
+        </div>
+      </div>`;
+  });
+
+  lista.innerHTML = html;
+}
+
+function setFiltroPedidos(filtro) {
+  filtroPedidos = filtro;
+  document.querySelectorAll('.filtro-pedido').forEach(btn => {
+    btn.classList.remove('bg-green-600', 'text-white');
+    btn.classList.add('bg-white', 'text-gray-700');
+  });
+  const activo = document.getElementById('filtro-' + filtro);
+  if (activo) {
+    activo.classList.remove('bg-white', 'text-gray-700');
+    activo.classList.add('bg-green-600', 'text-white');
+  }
+  renderListaPedidos();
+}
+
+async function cambiarEstadoPedido(id, nuevoEstado) {
+  try {
+    await db.collection('pedidos').doc(id).update({
+      estado: nuevoEstado,
+      actualizado: new Date()
+    });
+  } catch (e) {
+    alert('Error al actualizar: ' + e.message);
+  }
+}
+
+async function eliminarPedido(id) {
+  if (!confirm('¿Eliminar este pedido de forma permanente?')) return;
+  try {
+    await db.collection('pedidos').doc(id).delete();
+  } catch (e) {
+    alert('Error al eliminar: ' + e.message);
+  }
+}
+
+function mostrarPedidos() {
   const content = document.getElementById('main-content');
+  filtroPedidos = 'todos';
+
   content.innerHTML = `
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold">📋 Pedidos Recibidos</h1>
-      <div class="flex gap-3 text-sm">
-        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full">Pagado = Stripe</span>
-        <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full">Pendiente = WhatsApp</span>
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold mb-4">📋 Gestión de Pedidos</h1>
+      <p class="text-gray-500 text-sm mb-4">Administra pedidos del catálogo (WhatsApp y Stripe)</p>
+
+      <div class="flex flex-wrap gap-2" id="filtros-pedidos">
+        <button id="filtro-todos" onclick="setFiltroPedidos('todos')" class="filtro-pedido px-4 py-2 rounded-xl text-sm font-medium bg-green-600 text-white">Todos</button>
+        <button id="filtro-Pendiente" onclick="setFiltroPedidos('Pendiente')" class="filtro-pedido px-4 py-2 rounded-xl text-sm font-medium bg-white text-gray-700 border">Pendiente</button>
+        <button id="filtro-Pagado" onclick="setFiltroPedidos('Pagado')" class="filtro-pedido px-4 py-2 rounded-xl text-sm font-medium bg-white text-gray-700 border">Pagado</button>
+        <button id="filtro-En proceso" onclick="setFiltroPedidos('En proceso')" class="filtro-pedido px-4 py-2 rounded-xl text-sm font-medium bg-white text-gray-700 border">En proceso</button>
+        <button id="filtro-Entregado" onclick="setFiltroPedidos('Entregado')" class="filtro-pedido px-4 py-2 rounded-xl text-sm font-medium bg-white text-gray-700 border">Entregado</button>
+        <button id="filtro-Cancelado" onclick="setFiltroPedidos('Cancelado')" class="filtro-pedido px-4 py-2 rounded-xl text-sm font-medium bg-white text-gray-700 border">Cancelado</button>
       </div>
     </div>
-    <div id="lista-pedidos" class="space-y-6"></div>`;
 
-  db.collection('pedidos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
-    let html = '';
-    if (snapshot.empty) {
-      html = `<p class="text-center py-20 text-gray-400">Aún no hay pedidos</p>`;
-    } else {
-      snapshot.forEach(doc => {
-        const p = doc.data();
-        const esStripe = p.metodo === 'Stripe' || p.estado === 'Pagado';
-        const estadoClass = esStripe ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
-        const metodoIcon = esStripe
-          ? '<i class="fas fa-credit-card mr-1"></i> Stripe'
-          : '<i class="fab fa-whatsapp mr-1"></i> WhatsApp';
+    <div id="resumen-pedidos" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
+    <div id="lista-pedidos" class="space-y-4"></div>`;
 
-        html += `
-          <div class="bg-white rounded-3xl shadow p-6 ${esStripe ? 'border-l-4 border-green-500' : ''}">
-            <div class="flex justify-between items-start">
-              <div>
-                <p class="text-sm text-gray-500">${p.fecha?.toDate ? p.fecha.toDate().toLocaleString('es-GT') : ''}</p>
-                <p class="font-bold text-lg">${p.cliente || 'Cliente'}</p>
-                <p class="text-sm text-gray-600 mt-1">${metodoIcon}</p>
-              </div>
-              <span class="px-4 py-1 ${estadoClass} rounded-full text-sm font-medium">
-                ${p.estado || 'Pendiente'}
-              </span>
-            </div>
-            <div class="mt-4 space-y-1 text-sm">
-              ${(p.productos || []).map(item => `
-                <div class="flex justify-between">
-                  <span>${item.nombre} × ${item.cantidad}</span>
-                  <span>Q${(item.precio * item.cantidad).toFixed(2)}</span>
-                </div>
-              `).join('')}
-            </div>
-            <div class="mt-6 pt-4 border-t flex justify-between items-center">
-              <div class="text-xs text-gray-400">
-                ${p.sessionId ? 'Session: ' + p.sessionId.substring(0, 18) + '...' : ''}
-              </div>
-              <div class="font-bold text-lg">
-                Total: <span class="text-green-600">Q${Number(p.total || 0).toFixed(2)}</span>
-              </div>
-            </div>
-          </div>`;
+  unsubscribePedidos = db.collection('pedidos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
+    pedidosData = [];
+    snapshot.forEach(doc => {
+      const p = doc.data();
+      pedidosData.push({
+        id: doc.id,
+        ...p,
+        fechaTexto: p.fecha?.toDate ? p.fecha.toDate().toLocaleString('es-GT') : ''
       });
+    });
+
+    // Resumen rápido
+    const resumen = document.getElementById('resumen-pedidos');
+    if (resumen) {
+      const contar = (est) => pedidosData.filter(p => (p.estado || 'Pendiente') === est).length;
+      resumen.innerHTML = `
+        <div class="bg-white p-4 rounded-2xl shadow text-center">
+          <p class="text-2xl font-bold text-gray-800">${pedidosData.length}</p>
+          <p class="text-xs text-gray-500">Total</p>
+        </div>
+        <div class="bg-yellow-50 p-4 rounded-2xl shadow text-center">
+          <p class="text-2xl font-bold text-yellow-700">${contar('Pendiente')}</p>
+          <p class="text-xs text-gray-500">Pendientes</p>
+        </div>
+        <div class="bg-green-50 p-4 rounded-2xl shadow text-center">
+          <p class="text-2xl font-bold text-green-700">${contar('Pagado')}</p>
+          <p class="text-xs text-gray-500">Pagados</p>
+        </div>
+        <div class="bg-blue-50 p-4 rounded-2xl shadow text-center">
+          <p class="text-2xl font-bold text-blue-700">${contar('En proceso')}</p>
+          <p class="text-xs text-gray-500">En proceso</p>
+        </div>`;
     }
-    document.getElementById('lista-pedidos').innerHTML = html;
+
+    renderListaPedidos();
   });
 }
 
