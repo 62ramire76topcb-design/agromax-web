@@ -1,10 +1,13 @@
-// ticket.js - QR apunta a tu página web
-function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, cliente = "Consumidor Final", nit = "") {
-  
+// ticket.js
+function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, cliente = "Consumidor Final", nit = "", extras = {}) {
   const webUrl = "https://agromax-web.vercel.app";
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(webUrl)}`;
 
-  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=720,scrollbars=yes");
+  const folio = extras.folio || ("T-" + Date.now().toString().slice(-8));
+  const cajero = extras.cajero || "";
+  const nota = extras.nota || "";
+
+  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=780,scrollbars=yes");
 
   let productosHTML = "";
   carrito.forEach(p => {
@@ -16,13 +19,12 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
           <small>${p.cantidad} × Q${Number(p.precio).toFixed(2)}</small>
         </div>
         <div style="text-align:right;font-weight:bold;">Q${subtotal}</div>
-      </div>
-    `;
+      </div>`;
   });
 
-  const fecha = new Date().toLocaleString('es-GT', { 
-    year: 'numeric', month: '2-digit', day: '2-digit', 
-    hour: '2-digit', minute: '2-digit' 
+  const fecha = new Date().toLocaleString('es-GT', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
   });
 
   win.document.write(`
@@ -30,55 +32,45 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
     <html lang="es">
     <head>
       <meta charset="UTF-8">
-      <title>Ticket AGROMAXGTM</title>
+      <title>Ticket ${folio}</title>
       <style>
-        body { 
-          font-family: 'Courier New', monospace; 
-          width: 300px; 
-          margin: 0 auto; 
-          padding: 20px 15px; 
-          font-size: 15px;
-          line-height: 1.4;
-        }
+        body { font-family: 'Courier New', monospace; width: 300px; margin: 0 auto; padding: 20px 15px; font-size: 14px; line-height: 1.4; }
         h1 { text-align:center; margin:10px 0 5px; font-size:20px; }
         .center { text-align:center; }
         hr { border:1px dashed #333; margin:12px 0; }
         .total { font-size:18px; font-weight:bold; margin:15px 0; }
         .footer { margin-top:20px; font-size:13px; }
         img.qr { display:block; margin:15px auto; border:1px solid #ddd; }
+        .muted { color:#555; font-size:12px; }
       </style>
     </head>
     <body>
       <h1>🌱 AGROMAXGTM</h1>
       <p class="center">Caja Mostrador</p>
       <p class="center">${fecha}</p>
-      
+      <p class="center muted">Folio: <strong>${folio}</strong></p>
+      ${cajero ? `<p class="center muted">Cajero: ${cajero}</p>` : ''}
       <hr>
       <p><strong>Nombre:</strong> ${cliente}</p>
       ${nit ? `<p><strong>NIT:</strong> ${nit}</p>` : ''}
       <hr>
-      
       ${productosHTML}
-      
       <hr>
-      <div class="total">TOTAL: Q${total.toFixed(2)}</div>
-      
+      <div class="total">TOTAL: Q${Number(total).toFixed(2)}</div>
       <p><strong>Método:</strong> ${metodoPago}</p>
       ${metodoPago === "Efectivo" ? `
-        <p>Recibido: Q${montoRecibido.toFixed(2)}</p>
-        <p><strong>Cambio: Q${cambio.toFixed(2)}</strong></p>
+        <p>Recibido: Q${Number(montoRecibido).toFixed(2)}</p>
+        <p><strong>Cambio: Q${Number(cambio).toFixed(2)}</strong></p>
       ` : ''}
-      
+      ${nota ? `<hr><p class="muted"><strong>Nota:</strong> ${nota}</p>` : ''}
       <div class="center">
-        <img src="${qrUrl}" class="qr" width="180" alt="QR Sitio Web">
+        <img src="${qrUrl}" class="qr" width="160" alt="QR">
         <p style="font-size:12px;margin-top:5px;">Escanea para ver nuestro catálogo</p>
       </div>
-
       <div class="footer center">
         <p>¡Gracias por su compra!</p>
         <p>AGROMAXGTM • Guatemala</p>
       </div>
-
       <script>window.print();</script>
     </body>
     </html>
@@ -86,4 +78,23 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
 
   win.document.close();
   win.focus();
+}
+
+/** Reimprimir desde un documento de venta guardado */
+function reimprimirTicketVenta(v) {
+  const carrito = (v.productos || []).map(p => ({
+    nombre: p.nombre,
+    precio: p.precio,
+    cantidad: p.cantidad
+  }));
+  abrirTicket(
+    carrito,
+    Number(v.total) || 0,
+    v.metodoPago || '',
+    Number(v.montoRecibido) || 0,
+    Number(v.cambio) || 0,
+    v.cliente || 'Consumidor Final',
+    v.nit || '',
+    { folio: v.folio || '', cajero: v.cajero || '', nota: v.nota || '' }
+  );
 }
