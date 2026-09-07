@@ -30,24 +30,27 @@
   </div>
 
   <nav class="p-4 space-y-2">
-    <a onclick="view('venta')" class="block p-3 hover:bg-green-50 rounded-xl">
+    <a onclick="view('venta')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-cash-register"></i> Nueva Venta
     </a>
-    <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl">
+    <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-clock"></i> Ventas Pendientes
     </a>
-    <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl">
-      <i class="fas fa-history"></i> Historial Caja
+    <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+      <i class="fas fa-history"></i> Mi historial
+    </a>
+    <a onclick="cerrarTurnoCaja()" class="block p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer mt-6">
+      <i class="fas fa-lock"></i> Cerrar turno
     </a>
   </nav>
 </div>
 
-<div class="flex-1 p-8 overflow-auto" id="app"></div>
+<div class="flex-1 p-4 md:p-8 overflow-auto" id="app"></div>
 
 </div>
 
-<!-- Scripts modulares -->
 <script src="./js/firebase-config.js"></script>
+<script src="./js/pos-turno.js"></script>
 <script src="./js/pos.js"></script>
 </body>
 </html>
