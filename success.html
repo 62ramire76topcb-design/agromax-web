@@ -42,19 +42,13 @@
     async function procesarPagoExitoso() {
       const params = new URLSearchParams(window.location.search);
       const sessionId = params.get('session_id');
-
-      // Datos guardados ANTES de ir a Stripe
       const pendiente = JSON.parse(localStorage.getItem('pedidoPendienteStripe') || 'null');
       const datos = (pendiente && pendiente.datos) || JSON.parse(localStorage.getItem('datosPendienteStripe') || localStorage.getItem('datosClienteCatalogo') || '{}');
 
       if (!pendiente || !pendiente.trackingCode) {
-        // Fallback: si no hay pendiente, intentar carrito antiguo
-        const carrito = JSON.parse(localStorage.getItem('carritoPendienteStripe') || '[]');
-        if (carrito.length === 0) {
-          document.getElementById('session-info').textContent =
-            'Si ya pagaste, revisa tu código en Admin o contáctanos por WhatsApp.';
-          return;
-        }
+        document.getElementById('session-info').textContent =
+          'Si ya pagaste, revisa tu código en Admin o contáctanos por WhatsApp.';
+        return;
       }
 
       const trackingCode = pendiente.trackingCode;
@@ -64,21 +58,21 @@
       const fechaEstimadaISO = pendiente.fechaEstimadaISO;
 
       try {
-        // Marcar pedido como Pagado
         if (pedidoId) {
           await db.collection('pedidos').doc(pedidoId).update({
             estado: 'Pagado',
             sessionId: sessionId || null,
             pagadoEn: new Date(),
+            stockPendiente: true,
+            stockDescontado: false,
             historial: firebase.firestore.FieldValue.arrayUnion({
               estado: 'Pagado',
               fecha: new Date(),
-              nota: 'Pago confirmado con tarjeta (Stripe)'
+              nota: 'Pago confirmado con tarjeta (Stripe) · stock pendiente de descontar en Admin'
             })
           });
         }
 
-        // Orden de trabajo (opcional)
         try {
           await db.collection('ordenes_trabajo').add({
             pedidoId: pedidoId || null,
@@ -94,44 +88,23 @@
             estado: 'Pagado',
             metodo: 'Stripe',
             fecha: new Date(),
-            fechaEstimada: fechaEstimadaISO ? new Date(fechaEstimadaISO) : null
+            fechaEstimada: fechaEstimadaISO ? new Date(fechaEstimadaISO) : null,
+            stockPendiente: true
           });
-        } catch (e) {
-          console.warn('ordenes_trabajo:', e);
-        }
+        } catch (e) { console.warn('ordenes_trabajo:', e); }
 
-        const resumen = {
-          trackingCode: trackingCode,
-          total: total,
-          productos: productos,
-          fechaEstimadaISO: fechaEstimadaISO
-        };
-
-        if (sessionId) {
-          localStorage.setItem('stripeProcesado_' + sessionId, JSON.stringify(resumen));
-        }
-
+        const resumen = { trackingCode, total, productos, fechaEstimadaISO };
+        if (sessionId) localStorage.setItem('stripeProcesado_' + sessionId, JSON.stringify(resumen));
         mostrarResumen(resumen, datos);
 
-        // Limpiar
         localStorage.removeItem('pedidoPendienteStripe');
         localStorage.removeItem('carritoPendienteStripe');
         localStorage.removeItem('datosPendienteStripe');
         localStorage.removeItem('carritoAGROMAXGTM');
       } catch (e) {
         console.error(e);
-        // Aun así mostrar el código si lo tenemos
-        if (trackingCode) {
-          mostrarResumen({
-            trackingCode: trackingCode,
-            total: total,
-            productos: productos,
-            fechaEstimadaISO: fechaEstimadaISO
-          }, datos);
-        } else {
-          document.getElementById('session-info').textContent =
-            'Pago recibido. Contáctanos por WhatsApp para tu código de seguimiento.';
-        }
+        if (trackingCode) mostrarResumen({ trackingCode, total, productos, fechaEstimadaISO }, datos);
+        else document.getElementById('session-info').textContent = 'Pago recibido. Contáctanos por WhatsApp.';
       }
     }
 
@@ -140,51 +113,35 @@
         ? new Date(resumen.fechaEstimadaISO).toLocaleDateString('es-GT', {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
           })
-        : 'Por confirmar (te avisaremos)';
+        : 'Por confirmar';
 
       const linkSeg = 'https://agromax-web.vercel.app/seguimiento.html?codigo=' + encodeURIComponent(resumen.trackingCode);
 
-      const infoDiv = document.getElementById('pedido-info');
-      infoDiv.classList.remove('hidden');
-      infoDiv.innerHTML = `
+      document.getElementById('pedido-info').classList.remove('hidden');
+      document.getElementById('pedido-info').innerHTML = `
         <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-5 text-center">
           <p class="text-xs text-green-700 font-medium mb-1">📦 Tu código de seguimiento</p>
           <p class="text-3xl font-extrabold text-green-800 tracking-wide select-all">${resumen.trackingCode}</p>
-          <p class="text-xs text-green-700 mt-2">Guárdalo: con este código ves el estado de tu envío</p>
         </div>
-
         <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm">
-          <p class="font-bold text-amber-900 mb-1"><i class="fas fa-calendar-check mr-1"></i> Fecha estimada de llegada</p>
+          <p class="font-bold text-amber-900 mb-1">Fecha estimada de llegada</p>
           <p class="text-amber-900 capitalize font-semibold">${fechaEst}</p>
-          <p class="text-xs text-amber-700 mt-1">Puede variar según tu zona. Te actualizamos el estado en el seguimiento.</p>
         </div>
-
         <div class="bg-slate-50 rounded-2xl p-4 text-sm space-y-1">
-          <p class="font-semibold mb-2">Datos de envío / factura</p>
           <p><b>Cliente:</b> ${datos.nombre || ''}</p>
           <p><b>Teléfono:</b> ${datos.telefono || ''}</p>
           <p><b>NIT:</b> ${datos.nit || 'CF'}</p>
           <p><b>Dirección:</b> ${datos.direccion || ''}</p>
-          ${datos.referencia ? `<p><b>Referencia:</b> ${datos.referencia}</p>` : ''}
           <hr class="my-2">
           ${(resumen.productos || []).map(p => `<p>• ${p.nombre} × ${p.cantidad}</p>`).join('')}
           <p class="font-bold text-green-700 mt-2">Total pagado: Q${Number(resumen.total || 0).toFixed(2)}</p>
-        </div>
-      `;
+        </div>`;
 
       const btn = document.getElementById('btn-seguimiento');
       btn.href = linkSeg;
       btn.classList.remove('hidden');
 
-      // WhatsApp para que el cliente se guarde el código
-      const msg =
-        `✅ *AGROMAXGTM - Pedido confirmado*\n\n` +
-        `Código de seguimiento: *${resumen.trackingCode}*\n` +
-        `Llegada estimada: ${fechaEst}\n` +
-        `Ver estado: ${linkSeg}\n\n` +
-        `Cliente: ${datos.nombre || ''}\n` +
-        `Total: Q${Number(resumen.total || 0).toFixed(2)}`;
-
+      const msg = `✅ *AGROMAXGTM - Pedido confirmado*\n\nCódigo: *${resumen.trackingCode}*\nLlegada estimada: ${fechaEst}\nVer: ${linkSeg}`;
       const wa = document.getElementById('btn-whatsapp');
       wa.href = 'https://wa.me/50242664744?text=' + encodeURIComponent(msg);
       wa.classList.remove('hidden');
