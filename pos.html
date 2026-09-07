@@ -39,10 +39,22 @@
     <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-history w-5"></i> Mi historial
     </a>
-    <a onclick="cerrarTurnoCaja()" class="block p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer mt-6">
+    <a onclick="view('dashboard-caja')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+      <i class="fas fa-chart-line w-5"></i> Dashboard caja
+    </a>
+    <a onclick="view('vencer')" class="block p-3 hover:bg-amber-50 text-amber-800 rounded-xl cursor-pointer">
+      <i class="fas fa-hourglass-half w-5"></i> Próximos a vencer
+    </a>
+    <a onclick="imprimirCorteDia()" class="block p-3 hover:bg-indigo-50 text-indigo-700 rounded-xl cursor-pointer">
+      <i class="fas fa-file-alt w-5"></i> Documento del día
+    </a>
+    <a onclick="cerrarTurnoCaja()" class="block p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer mt-4">
       <i class="fas fa-lock w-5"></i> Cerrar turno
     </a>
-    <p class="px-3 pt-4 text-[10px] text-gray-400">F2 = Finalizar venta</p>
+    <p class="px-3 pt-4 text-[10px] text-gray-400 leading-relaxed">
+      F2 = Finalizar venta<br>
+      Jornada: 1:00 a.m. → 12:00 a.m.
+    </p>
   </nav>
 </div>
 
@@ -54,5 +66,6 @@
 <script src="./js/pos-turno.js"></script>
 <script src="./js/pos.js"></script>
 <script src="./js/pos-extras.js"></script>
+<script src="./js/pos-modulos.js"></script>
 </body>
 </html>
