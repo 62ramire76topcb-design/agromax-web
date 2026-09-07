@@ -29,8 +29,6 @@ window.AGROMAX_ROLES = {
   }
 };
 
-// Dashboard SOLO admin (*) y supervisor
-// Cajero: productos (solo ver), clientes, ventas, caja -> pos.html
 window.AGROMAX_PERMISOS = {
   admin: ['*'],
   supervisor: [
@@ -64,7 +62,7 @@ window.puedeEditarProductos = function () {
 };
 
 function primeraSeccionPermitida() {
-  var orden = ['dashboard', 'caja', 'productos', 'clientes', 'ventas', 'ordenes', 'pedidos'];
+  var orden = ['dashboard', 'productos', 'clientes', 'ventas', 'ordenes', 'pedidos', 'caja'];
   for (var i = 0; i < orden.length; i++) {
     if (tienePermiso(orden[i])) return orden[i];
   }
@@ -134,7 +132,6 @@ function aplicarPermisosMenu() {
     }
   });
 
-  // Caja siempre apunta a POS
   document.querySelectorAll('a[data-permiso="caja"]').forEach(function (a) {
     a.setAttribute('href', 'pos.html');
   });
@@ -172,33 +169,24 @@ function aplicarPermisosMenu() {
       return;
     }
 
+    // Evitar que el panel base abra dashboard sin permiso
+    window._omitirDashboardInicial = !tienePermiso('dashboard');
+
     if (typeof originalPanel === 'function') originalPanel();
 
     setTimeout(function () {
       aplicarPermisosMenu();
-
-      // Si no tiene dashboard, abrir la primera sección permitida
-      if (!tienePermiso('dashboard')) {
+      if (window._omitirDashboardInicial) {
+        window._omitirDashboardInicial = false;
         var destino = primeraSeccionPermitida();
         if (destino === 'caja') {
-          // Abrir POS en la misma ventana
           window.location.href = 'pos.html';
           return;
         }
-        if (typeof mostrarSeccion === 'function') {
-          // evitar alerta: llamar original si hace falta
-          if (tienePermiso(destino)) {
-            if (typeof window._mostrarSeccionBase === 'function') {
-              window._mostrarSeccionBase(destino);
-            } else if (typeof mostrarSeccion === 'function') {
-              // Forzar sin doble chequeo usando flag
-              window._skipPermisoOnce = destino;
-              mostrarSeccion(destino);
-            }
-          }
-        }
+        window._skipPermisoOnce = destino;
+        if (typeof mostrarSeccion === 'function') mostrarSeccion(destino);
       }
-    }, 80);
+    }, 100);
   };
 
   var originalSeccion = window.mostrarSeccion;
@@ -208,6 +196,12 @@ function aplicarPermisosMenu() {
     if (window._skipPermisoOnce === seccion) {
       window._skipPermisoOnce = null;
       if (typeof originalSeccion === 'function') return originalSeccion(seccion);
+      return;
+    }
+
+    // Si el panel intenta abrir dashboard al inicio y no hay permiso, ignorar en silencio
+    if (seccion === 'dashboard' && window._omitirDashboardInicial) {
+      return;
     }
 
     if (seccion === 'usuarios') {
