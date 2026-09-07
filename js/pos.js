@@ -5,20 +5,12 @@ let cajeroActual = "";
 let clientesFrecuentes = [];
 window.cajeroActual = "";
 
-/* AUTH + INICIALIZACIÓN */
+/* AUTH: login UI; el nombre de cajero lo resuelve pos-auth-user.js */
 auth.onAuthStateChanged(user => {
   if (!user) {
     mostrarLoginPOS();
-  } else {
-    const ultimoCajero = localStorage.getItem("ultimoCajero");
-    if (ultimoCajero) {
-      cajeroActual = ultimoCajero;
-      window.cajeroActual = ultimoCajero;
-      iniciarSesionCajero(ultimoCajero);
-    } else {
-      mostrarSeleccionCajero();
-    }
   }
+  // Si hay usuario, pos-auth-user.js toma el control (nombre desde cuenta)
 });
 
 function mostrarLoginPOS() {
@@ -35,7 +27,7 @@ function mostrarLoginPOS() {
         <button onclick="loginPOS()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
           Ingresar a Caja
         </button>
-        <p class="text-center text-xs text-gray-500 mt-6">Solo para personal de mostrador</p>
+        <p class="text-center text-xs text-gray-500 mt-6">El cajero será el usuario de la cuenta</p>
       </div>
     </div>`;
 }
@@ -80,26 +72,21 @@ async function loginPOS() {
 }
 
 function mostrarSeleccionCajero() {
-  document.getElementById("app").innerHTML = `
-    <div class="min-h-screen flex items-center justify-center bg-gray-100">
-      <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full">
-        <div class="flex justify-center mb-6">
-          <div class="w-20 h-20 bg-green-700 rounded-3xl flex items-center justify-center text-white text-6xl">👤</div>
-        </div>
-        <h1 class="text-3xl font-bold text-center mb-2">Bienvenido a Caja</h1>
-        <p class="text-center text-green-600 mb-8">¿Quién está atendiendo hoy?</p>
-        <input id="nombreCajero" type="text" placeholder="Ej: Juan Pérez, María López, CAJERO-01"
-               class="w-full p-4 border rounded-2xl mb-6 text-center text-lg focus:outline-none focus:border-green-500">
-        <button onclick="confirmarCajero()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
-          Continuar
-        </button>
-      </div>
-    </div>`;
+  // Compatibilidad: ya no se pide nombre; usa usuario logueado
+  const u = auth.currentUser;
+  if (u && typeof obtenerNombreUsuarioCaja === 'function') {
+    obtenerNombreUsuarioCaja(u).then(n => iniciarSesionCajero(n));
+  } else if (u) {
+    iniciarSesionCajero(u.displayName || (u.email ? u.email.split('@')[0] : 'Cajero'));
+  } else {
+    mostrarLoginPOS();
+  }
 }
 
 async function iniciarSesionCajero(nombre) {
   cajeroActual = nombre;
   window.cajeroActual = nombre;
+  localStorage.setItem("ultimoCajero", nombre);
   cargarClientesFrecuentes();
   if (typeof cargarTurnoAbierto === 'function') {
     const t = await cargarTurnoAbierto(nombre);
@@ -116,21 +103,16 @@ async function iniciarSesionCajero(nombre) {
 }
 
 function confirmarCajero() {
-  const nombre = document.getElementById("nombreCajero").value.trim();
-  if (!nombre) {
-    alert("❌ Por favor ingresa tu nombre o código de cajero");
-    return;
-  }
-  localStorage.setItem("ultimoCajero", nombre);
-  iniciarSesionCajero(nombre);
+  mostrarSeleccionCajero();
 }
 
 function cambiarCajero() {
-  if (confirm("¿Cambiar de cajero? Si hay turno abierto, ciérralo antes si es otro responsable.")) {
+  if (confirm("¿Cerrar sesión de este usuario?")) {
     localStorage.removeItem("ultimoCajero");
+    localStorage.removeItem("turnoCajaId");
     cajeroActual = "";
     window.cajeroActual = "";
-    mostrarSeleccionCajero();
+    auth.signOut();
   }
 }
 
@@ -168,11 +150,12 @@ function buscarClienteEnVivo() {
 
 /* ================= VIEWS ================= */
 function view(v) {
-  if (!cajeroActual) {
-    alert("❌ Debes ingresar tu nombre o código de cajero primero");
-    mostrarSeleccionCajero();
+  if (!cajeroActual && !window.cajeroActual) {
+    alert("❌ Debes iniciar sesión primero");
+    mostrarLoginPOS();
     return;
   }
+  if (!cajeroActual && window.cajeroActual) cajeroActual = window.cajeroActual;
 
   const app = document.getElementById("app");
   const turnoTxt = (window.turnoActual && window.turnoActual.montoInicial != null)
@@ -184,10 +167,10 @@ function view(v) {
       <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h1 class="text-2xl md:text-3xl font-bold">🛒 Nueva Venta</h1>
         <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm text-gray-600">Cajero:</span>
+          <span class="text-sm text-gray-600">Usuario:</span>
           <span class="bg-green-100 text-green-700 px-3 py-1.5 rounded-2xl font-medium text-sm">${cajeroActual}${turnoTxt}</span>
-          <button onclick="cambiarCajero()" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-3 py-1.5 rounded-2xl text-sm font-medium">
-            <i class="fas fa-user-edit"></i> Cambiar
+          <button onclick="cambiarCajero()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-2xl text-sm font-medium">
+            <i class="fas fa-sign-out-alt"></i> Salir
           </button>
           <button onclick="cerrarTurnoCaja()" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-2xl text-sm font-medium">
             <i class="fas fa-lock"></i> Cerrar turno
@@ -270,7 +253,10 @@ function view(v) {
     render();
   }
 
-  if (v === "pendientes") cargarPendientes();
+  if (v === "pendientes") {
+    if (typeof cargarPendientesMejoradas === 'function') cargarPendientesMejoradas();
+    else cargarPendientes();
+  }
   if (v === "historial") {
     if (typeof cargarHistorialCajero === 'function') cargarHistorialCajero();
     else cargarHistorial();
@@ -341,7 +327,7 @@ async function guardarPendiente() {
     fecha: new Date(),
     productos: carrito,
     estado: "pendiente",
-    cajero: cajeroActual || "Sin registrar"
+    cajero: cajeroActual || window.cajeroActual || "Sin registrar"
   });
   alert("✅ Venta guardada como pendiente");
   carrito = [];
@@ -412,10 +398,11 @@ async function finalizarVenta() {
         metodoPago: metodoPago,
         montoRecibido: metodoPago === "Efectivo" ? montoRecibido : 0,
         cambio: metodoPago === "Efectivo" ? cambio : 0,
-        cajero: cajeroActual || "Sin registrar",
+        cajero: cajeroActual || window.cajeroActual || "Sin registrar",
         cliente: document.getElementById("nombreCliente").value.trim() || "Consumidor Final",
         nit: document.getElementById("nitCliente").value.trim() || "",
-        turnoId: (window.turnoActual && window.turnoActual.id) || null
+        turnoId: (window.turnoActual && window.turnoActual.id) || null,
+        userId: (auth.currentUser && auth.currentUser.uid) || null
       });
     });
     alert("✅ Venta finalizada y stock actualizado correctamente");
@@ -435,7 +422,6 @@ function restaurarBoton(btn, textoOriginal) {
   btn.innerHTML = textoOriginal;
 }
 
-/* ================= PENDIENTES ================= */
 function cargarPendientes() {
   document.getElementById("app").innerHTML = `
     <h1 class="text-3xl font-bold mb-6">Ventas Pendientes</h1>
@@ -473,25 +459,6 @@ async function cargarPendiente(id) {
   }
 }
 
-/* ================= HISTORIAL (fallback) ================= */
 function cargarHistorial() {
   if (typeof cargarHistorialCajero === 'function') return cargarHistorialCajero();
-  document.getElementById("app").innerHTML = `
-    <h1 class="text-3xl font-bold mb-6">Historial Caja</h1>
-    <div id="hist"></div>
-  `;
-  db.collection("ventas").orderBy("fecha", "desc").limit(50).onSnapshot(snap => {
-    let html = "";
-    snap.forEach(doc => {
-      const v = doc.data();
-      if (cajeroActual && v.cajero !== cajeroActual) return;
-      html += `
-        <div class="bg-white p-4 rounded-xl shadow mb-3">
-          <div class="font-bold text-lg">Total: Q${v.total || 0}</div>
-          <div class="text-sm">Cliente: ${v.cliente || 'Consumidor Final'}</div>
-          <div class="text-xs text-gray-500 mt-2">${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}</div>
-        </div>`;
-    });
-    document.getElementById("hist").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>Sin historial</p>";
-  });
 }
