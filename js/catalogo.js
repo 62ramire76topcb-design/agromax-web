@@ -142,11 +142,55 @@ async function continuarCheckout() {
 
 async function pagarConStripe(datos) {
   if (carrito.length === 0) return alert('El carrito está vacío');
+
   const btn = document.getElementById('ck-continuar');
   const textoOriginal = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando pedido...';
+
   try {
+    // 1) Crear pedido + código ANTES de ir a Stripe (así no se pierde)
+    const trackingCode = generarTrackingCode();
+    const fechaEstimada = fechaEstimadaDefault();
+    const ahora = new Date();
+    let total = 0;
+    const productos = carrito.map(item => {
+      total += item.precio * item.cantidad;
+      return { nombre: item.nombre, cantidad: item.cantidad, precio: item.precio };
+    });
+
+    const ref = await db.collection('pedidos').add({
+      cliente: datos.nombre,
+      telefono: datos.telefono,
+      nit: datos.nit,
+      email: datos.email || '',
+      direccion: datos.direccion,
+      referencia: datos.referencia || '',
+      productos: productos,
+      total: total,
+      fecha: ahora,
+      estado: 'Esperando pago',
+      metodo: 'Stripe',
+      trackingCode: trackingCode,
+      fechaEstimada: fechaEstimada,
+      historial: [{ estado: 'Esperando pago', fecha: ahora, nota: 'Pedido creado, redirigiendo a Stripe' }]
+    });
+
+    // Guardar para la página de éxito
+    localStorage.setItem('pedidoPendienteStripe', JSON.stringify({
+      pedidoId: ref.id,
+      trackingCode: trackingCode,
+      total: total,
+      productos: productos,
+      fechaEstimadaISO: fechaEstimada.toISOString(),
+      datos: datos
+    }));
+    localStorage.setItem('carritoPendienteStripe', JSON.stringify(carrito));
+    localStorage.setItem('datosPendienteStripe', JSON.stringify(datos));
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abriendo pago...';
+
+    // 2) Crear sesión Stripe
     const response = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -157,15 +201,18 @@ async function pagarConStripe(datos) {
         nit: datos.nit,
         email: datos.email,
         direccion: datos.direccion,
-        referencia: datos.referencia
+        referencia: datos.referencia,
+        trackingCode: trackingCode,
+        pedidoId: ref.id
       })
     });
+
     const data = await response.json();
     if (data.url) {
-      localStorage.setItem('carritoPendienteStripe', JSON.stringify(carrito));
-      localStorage.setItem('datosPendienteStripe', JSON.stringify(datos));
       window.location.href = data.url;
-    } else throw new Error(data.error || 'No se pudo crear la sesión de pago');
+    } else {
+      throw new Error(data.error || 'No se pudo crear la sesión de pago');
+    }
   } catch (error) {
     console.error(error);
     alert('❌ Error al iniciar el pago: ' + error.message);
