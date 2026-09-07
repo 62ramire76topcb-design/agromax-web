@@ -4,7 +4,20 @@
 const whatsappNumber = "50242664744";
 let allProductos = [];
 let carrito = JSON.parse(localStorage.getItem('carritoAGROMAXGTM')) || [];
-let checkoutMetodo = 'stripe'; // 'stripe' | 'whatsapp'
+let checkoutMetodo = 'stripe';
+
+function generarTrackingCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return 'AGM-' + s;
+}
+
+function fechaEstimadaDefault() {
+  const d = new Date();
+  d.setDate(d.getDate() + 5);
+  return d;
+}
 
 function actualizarContador() {
   const count = carrito.reduce((sum, item) => sum + item.cantidad, 0);
@@ -17,7 +30,6 @@ function agregarAlCarrito(index) {
   const existente = carrito.find(item => item.nombre === producto.nombre);
   if (existente) existente.cantidad++;
   else carrito.push({ ...producto, cantidad: 1 });
-
   localStorage.setItem('carritoAGROMAXGTM', JSON.stringify(carrito));
   actualizarContador();
   alert(`✅ ${producto.nombre} agregado al carrito`);
@@ -32,7 +44,6 @@ function mostrarCarrito() {
   const container = document.getElementById('cart-items');
   let html = '';
   let total = 0;
-
   carrito.forEach((item, index) => {
     const subtotal = item.precio * item.cantidad;
     total += subtotal;
@@ -58,7 +69,6 @@ function mostrarCarrito() {
         </div>
       </div>`;
   });
-
   container.innerHTML = html || `<p class="text-center py-12 sm:py-16 text-gray-400">Tu carrito está vacío</p>`;
   document.getElementById('cart-total').textContent = `Q${total.toFixed(2)}`;
 }
@@ -74,8 +84,6 @@ function cambiarCantidad(index, delta) {
 function abrirFormularioCheckout(metodo) {
   if (carrito.length === 0) return alert('El carrito está vacío');
   checkoutMetodo = metodo;
-
-  // Prefill si hay datos guardados
   const saved = JSON.parse(localStorage.getItem('datosClienteCatalogo') || '{}');
   document.getElementById('ck-nombre').value = saved.nombre || '';
   document.getElementById('ck-telefono').value = saved.telefono || '';
@@ -84,7 +92,6 @@ function abrirFormularioCheckout(metodo) {
   document.getElementById('ck-direccion').value = saved.direccion || '';
   document.getElementById('ck-referencia').value = saved.referencia || '';
   document.getElementById('ck-error').classList.add('hidden');
-
   const btn = document.getElementById('ck-continuar');
   if (metodo === 'stripe') {
     btn.className = 'w-full py-3.5 rounded-2xl text-white font-bold bg-blue-600 hover:bg-blue-700';
@@ -93,7 +100,6 @@ function abrirFormularioCheckout(metodo) {
     btn.className = 'w-full py-3.5 rounded-2xl text-white font-bold bg-green-600 hover:bg-green-700';
     btn.innerHTML = '<i class="fab fa-whatsapp mr-2"></i> Enviar pedido';
   }
-
   document.getElementById('checkout-modal').classList.remove('hidden');
 }
 
@@ -123,41 +129,29 @@ async function continuarCheckout() {
   const datos = obtenerDatosCheckout();
   const err = validarDatosCheckout(datos);
   const errEl = document.getElementById('ck-error');
-
   if (err) {
     errEl.textContent = err;
     errEl.classList.remove('hidden');
     return;
   }
   errEl.classList.add('hidden');
-
   localStorage.setItem('datosClienteCatalogo', JSON.stringify(datos));
-
-  if (checkoutMetodo === 'stripe') {
-    await pagarConStripe(datos);
-  } else {
-    await enviarPedidoWhatsApp(datos);
-  }
+  if (checkoutMetodo === 'stripe') await pagarConStripe(datos);
+  else await enviarPedidoWhatsApp(datos);
 }
 
 async function pagarConStripe(datos) {
   if (carrito.length === 0) return alert('El carrito está vacío');
-
   const btn = document.getElementById('ck-continuar');
   const textoOriginal = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-
   try {
     const response = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        items: carrito.map(item => ({
-          nombre: item.nombre,
-          precio: item.precio,
-          cantidad: item.cantidad
-        })),
+        items: carrito.map(item => ({ nombre: item.nombre, precio: item.precio, cantidad: item.cantidad })),
         cliente: datos.nombre,
         telefono: datos.telefono,
         nit: datos.nit,
@@ -166,16 +160,12 @@ async function pagarConStripe(datos) {
         referencia: datos.referencia
       })
     });
-
     const data = await response.json();
-
     if (data.url) {
       localStorage.setItem('carritoPendienteStripe', JSON.stringify(carrito));
       localStorage.setItem('datosPendienteStripe', JSON.stringify(datos));
       window.location.href = data.url;
-    } else {
-      throw new Error(data.error || 'No se pudo crear la sesión de pago');
-    }
+    } else throw new Error(data.error || 'No se pudo crear la sesión de pago');
   } catch (error) {
     console.error(error);
     alert('❌ Error al iniciar el pago: ' + error.message);
@@ -187,6 +177,12 @@ async function pagarConStripe(datos) {
 async function enviarPedidoWhatsApp(datos) {
   if (carrito.length === 0) return alert('El carrito está vacío');
 
+  const trackingCode = generarTrackingCode();
+  const fechaEstimada = fechaEstimadaDefault();
+  const fechaEstTexto = fechaEstimada.toLocaleDateString('es-GT');
+
+  let total = 0;
+  const productosPedido = [];
   let mensaje = `Hola AGROMAXGTM, este es mi pedido:\n\n`;
   mensaje += `*Cliente:* ${datos.nombre}\n`;
   mensaje += `*Teléfono:* ${datos.telefono}\n`;
@@ -196,9 +192,6 @@ async function enviarPedidoWhatsApp(datos) {
   if (datos.referencia) mensaje += `*Referencia:* ${datos.referencia}\n`;
   mensaje += `\n*Productos:*\n`;
 
-  let total = 0;
-  const productosPedido = [];
-
   carrito.forEach(item => {
     const subtotal = item.precio * item.cantidad;
     mensaje += `• ${item.nombre} × ${item.cantidad} = Q${subtotal}\n`;
@@ -207,7 +200,11 @@ async function enviarPedidoWhatsApp(datos) {
   });
 
   mensaje += `\n*Total: Q${total.toFixed(2)}*`;
+  mensaje += `\n\n*Código de seguimiento:* ${trackingCode}`;
+  mensaje += `\n*Seguimiento:* https://agromax-web.vercel.app/seguimiento.html?codigo=${trackingCode}`;
+  mensaje += `\n*Llegada estimada:* ${fechaEstTexto}`;
 
+  const ahora = new Date();
   try {
     await db.collection('pedidos').add({
       cliente: datos.nombre,
@@ -218,9 +215,12 @@ async function enviarPedidoWhatsApp(datos) {
       referencia: datos.referencia || '',
       productos: productosPedido,
       total: total,
-      fecha: new Date(),
+      fecha: ahora,
       estado: 'Pendiente',
-      metodo: 'WhatsApp'
+      metodo: 'WhatsApp',
+      trackingCode: trackingCode,
+      fechaEstimada: fechaEstimada,
+      historial: [{ estado: 'Pendiente', fecha: ahora, nota: 'Pedido enviado por WhatsApp' }]
     });
   } catch (e) {
     console.error('Error guardando pedido:', e);
@@ -254,16 +254,13 @@ function filtrarProductos() {
 function renderProductos(categoria = 'all', busqueda = '') {
   const grid = document.getElementById('lista-productos');
   grid.innerHTML = '';
-
   let filtered = allProductos;
   if (categoria !== 'all') filtered = filtered.filter(p => p.categoria === categoria);
   if (busqueda) filtered = filtered.filter(p => p.nombre.toLowerCase().includes(busqueda));
-
   if (filtered.length === 0) {
     grid.innerHTML = `<p class="col-span-full text-center py-12 sm:py-20 text-gray-500 text-sm sm:text-base">No se encontraron productos</p>`;
     return;
   }
-
   filtered.forEach((p) => {
     const globalIndex = allProductos.findIndex(prod => prod.nombre === p.nombre);
     const card = document.createElement('div');
