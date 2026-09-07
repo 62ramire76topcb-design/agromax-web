@@ -10,11 +10,24 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
   const subtotal = Number(extras.subtotal != null ? extras.subtotal : (Number(total) + descuento));
   const promoNombre = extras.promoNombre || "";
 
-  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=800,scrollbars=yes");
+  // Guardar para WhatsApp desde POS
+  window._ultimaVentaTicket = {
+    productos: carrito,
+    total: total,
+    metodoPago: metodoPago,
+    cliente: cliente,
+    nit: nit,
+    folio: folio,
+    cajero: cajero,
+    descuento: descuento,
+    subtotal: subtotal
+  };
 
+  let productosTxt = "";
   let productosHTML = "";
   carrito.forEach(p => {
     const line = (p.precio * p.cantidad).toFixed(2);
+    productosTxt += `- ${p.nombre} x${p.cantidad} Q${line}\n`;
     productosHTML += `
       <div style="display:flex;justify-content:space-between;margin:8px 0;">
         <div style="flex:1;">
@@ -29,6 +42,20 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit'
   });
+
+  const waMsg = encodeURIComponent(
+    'AGROMAXGTM - Ticket\n' +
+    'Folio: ' + folio + '\n' +
+    'Fecha: ' + fecha + '\n' +
+    'Cliente: ' + cliente + (nit ? ' NIT ' + nit : '') + '\n' +
+    productosTxt +
+    (descuento > 0 ? 'Descuento: -Q' + descuento.toFixed(2) + '\n' : '') +
+    'TOTAL: Q' + Number(total).toFixed(2) + '\n' +
+    'Método: ' + metodoPago + '\n' +
+    '¡Gracias por su compra!\n' + webUrl
+  );
+
+  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=820,scrollbars=yes");
 
   win.document.write(`
     <!DOCTYPE html>
@@ -45,11 +72,14 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
         .footer { margin-top:20px; font-size:13px; }
         img.qr { display:block; margin:15px auto; border:1px solid #ddd; }
         .muted { color:#555; font-size:12px; }
+        .wa { display:block; text-align:center; margin:12px 0; padding:10px; background:#25D366; color:#fff; text-decoration:none; border-radius:8px; font-family:Arial; font-weight:bold; }
+        @media print { .wa, .noprint { display:none !important; } }
       </style>
     </head>
     <body>
       <h1>🌱 AGROMAXGTM</h1>
       <p class="center">Caja Mostrador</p>
+      <p class="center muted">Guatemala</p>
       <p class="center">${fecha}</p>
       <p class="center muted">Folio: <strong>${folio}</strong></p>
       ${cajero ? `<p class="center muted">Cajero: ${cajero}</p>` : ''}
@@ -72,6 +102,7 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
         <img src="${qrUrl}" class="qr" width="160" alt="QR">
         <p style="font-size:12px;margin-top:5px;">Escanea para ver nuestro catálogo</p>
       </div>
+      <a class="wa noprint" href="https://wa.me/?text=${waMsg}" target="_blank">Enviar por WhatsApp</a>
       <div class="footer center">
         <p>¡Gracias por su compra!</p>
         <p>AGROMAXGTM • Guatemala</p>
