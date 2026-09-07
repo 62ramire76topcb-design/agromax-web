@@ -14,7 +14,7 @@ window.AGROMAX_ROLES = {
   },
   cajero: {
     label: 'Cajero',
-    desc: 'Caja, ventas y pedidos',
+    desc: 'Caja (POS), listado de productos, clientes y ventas',
     color: 'bg-green-100 text-green-800'
   },
   bodega: {
@@ -29,6 +29,8 @@ window.AGROMAX_ROLES = {
   }
 };
 
+// Dashboard SOLO admin (*) y supervisor
+// Cajero: productos (solo ver), clientes, ventas, caja -> pos.html
 window.AGROMAX_PERMISOS = {
   admin: ['*'],
   supervisor: [
@@ -37,40 +39,52 @@ window.AGROMAX_PERMISOS = {
     'compras', 'inventario', 'ventas', 'bonificaciones', 'alquileres', 'caja', 'scan'
   ],
   cajero: [
-    'dashboard', 'pedidos', 'ordenes', 'clientes', 'ventas', 'caja'
+    'productos', 'clientes', 'ventas', 'caja'
   ],
   bodega: [
-    'dashboard', 'ordenes', 'productos', 'agregar', 'masiva',
+    'ordenes', 'productos', 'agregar', 'masiva',
     'compras', 'inventario', 'scan'
   ],
   vendedor: [
-    'dashboard', 'ordenes', 'pedidos', 'clientes', 'productos'
+    'ordenes', 'pedidos', 'clientes', 'productos'
   ]
 };
 
 window.usuarioActual = null;
 
 window.tienePermiso = function (clave) {
-  const u = window.usuarioActual;
+  var u = window.usuarioActual;
   if (!u || u.activo === false) return false;
-  const perms = window.AGROMAX_PERMISOS[u.role] || [];
+  var perms = window.AGROMAX_PERMISOS[u.role] || [];
   return perms.indexOf('*') >= 0 || perms.indexOf(clave) >= 0;
 };
 
+window.puedeEditarProductos = function () {
+  return tienePermiso('agregar') || tienePermiso('*');
+};
+
+function primeraSeccionPermitida() {
+  var orden = ['dashboard', 'caja', 'productos', 'clientes', 'ventas', 'ordenes', 'pedidos'];
+  for (var i = 0; i < orden.length; i++) {
+    if (tienePermiso(orden[i])) return orden[i];
+  }
+  return 'productos';
+}
+
 async function bootstrapPerfil(user) {
-  const ref = db.collection('usuarios').doc(user.uid);
-  const snap = await ref.get();
+  var ref = db.collection('usuarios').doc(user.uid);
+  var snap = await ref.get();
   if (snap.exists) return { uid: user.uid, ...snap.data() };
 
-  let esPrimero = false;
+  var esPrimero = false;
   try {
-    const admins = await db.collection('usuarios').where('role', '==', 'admin').limit(1).get();
+    var admins = await db.collection('usuarios').where('role', '==', 'admin').limit(1).get();
     esPrimero = admins.empty;
   } catch (e) {
     esPrimero = true;
   }
 
-  const perfil = {
+  var perfil = {
     email: user.email || '',
     nombre: (user.email || 'Usuario').split('@')[0],
     role: esPrimero ? 'admin' : 'vendedor',
@@ -120,6 +134,11 @@ function aplicarPermisosMenu() {
     }
   });
 
+  // Caja siempre apunta a POS
+  document.querySelectorAll('a[data-permiso="caja"]').forEach(function (a) {
+    a.setAttribute('href', 'pos.html');
+  });
+
   var badge = document.getElementById('user-role-badge');
   if (badge && window.usuarioActual) {
     var info = window.AGROMAX_ROLES[window.usuarioActual.role] || {
@@ -155,11 +174,42 @@ function aplicarPermisosMenu() {
 
     if (typeof originalPanel === 'function') originalPanel();
 
-    setTimeout(aplicarPermisosMenu, 80);
+    setTimeout(function () {
+      aplicarPermisosMenu();
+
+      // Si no tiene dashboard, abrir la primera sección permitida
+      if (!tienePermiso('dashboard')) {
+        var destino = primeraSeccionPermitida();
+        if (destino === 'caja') {
+          // Abrir POS en la misma ventana
+          window.location.href = 'pos.html';
+          return;
+        }
+        if (typeof mostrarSeccion === 'function') {
+          // evitar alerta: llamar original si hace falta
+          if (tienePermiso(destino)) {
+            if (typeof window._mostrarSeccionBase === 'function') {
+              window._mostrarSeccionBase(destino);
+            } else if (typeof mostrarSeccion === 'function') {
+              // Forzar sin doble chequeo usando flag
+              window._skipPermisoOnce = destino;
+              mostrarSeccion(destino);
+            }
+          }
+        }
+      }
+    }, 80);
   };
 
   var originalSeccion = window.mostrarSeccion;
+  window._mostrarSeccionBase = originalSeccion;
+
   window.mostrarSeccion = function (seccion) {
+    if (window._skipPermisoOnce === seccion) {
+      window._skipPermisoOnce = null;
+      if (typeof originalSeccion === 'function') return originalSeccion(seccion);
+    }
+
     if (seccion === 'usuarios') {
       if (!tienePermiso('usuarios') && !tienePermiso('*')) {
         alert('No tienes permiso para gestionar usuarios');
