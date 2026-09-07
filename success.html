@@ -30,9 +30,7 @@
       Volver al catálogo
     </a>
 
-    <p class="text-xs text-slate-400 mt-6">
-      WhatsApp: +502 4266 4744
-    </p>
+    <p class="text-xs text-slate-400 mt-6">WhatsApp: +502 4266 4744</p>
   </div>
 
   <script src="./js/firebase-config.js"></script>
@@ -46,7 +44,7 @@
 
     function fechaEstimadaDefault() {
       const d = new Date();
-      d.setDate(d.getDate() + 5); // 5 días hábiles aproximados
+      d.setDate(d.getDate() + 5);
       return d;
     }
 
@@ -61,11 +59,9 @@
       const carritoPendiente = JSON.parse(localStorage.getItem('carritoPendienteStripe') || '[]');
       const datos = JSON.parse(localStorage.getItem('datosPendienteStripe') || localStorage.getItem('datosClienteCatalogo') || '{}');
 
-      // Evitar duplicar si el usuario recarga
       const yaProcesado = sessionId && localStorage.getItem('stripeProcesado_' + sessionId);
       if (yaProcesado) {
-        const saved = JSON.parse(yaProcesado);
-        mostrarResumen(saved, datos);
+        mostrarResumen(JSON.parse(yaProcesado), datos);
         return;
       }
 
@@ -99,33 +95,33 @@
         sessionId: sessionId || null,
         trackingCode: trackingCode,
         fechaEstimada: fechaEstimada,
-        historial: [
-          { estado: 'Pagado', fecha: ahora, nota: 'Pago confirmado con tarjeta' }
-        ]
+        historial: [{ estado: 'Pagado', fecha: ahora, nota: 'Pago confirmado con tarjeta' }]
       };
 
       try {
         const ref = await db.collection('pedidos').add(pedidoData);
 
-        // Orden de trabajo (Admin) sincronizada
-        await db.collection('ordenes_trabajo').add({
-          pedidoId: ref.id,
-          trackingCode: trackingCode,
-          cliente: pedidoData.cliente,
-          telefono: pedidoData.telefono,
-          nit: pedidoData.nit,
-          email: pedidoData.email,
-          direccion: pedidoData.direccion,
-          referencia: pedidoData.referencia,
-          productos: productos,
-          total: total,
-          estado: 'Pagado',
-          metodo: 'Stripe',
-          fecha: ahora,
-          fechaEstimada: fechaEstimada,
-          prioridada: 'normal',
-          notasInternas: ''
-        });
+        // Orden de trabajo opcional (si las reglas de Firebase lo permiten)
+        try {
+          await db.collection('ordenes_trabajo').add({
+            pedidoId: ref.id,
+            trackingCode: trackingCode,
+            cliente: pedidoData.cliente,
+            telefono: pedidoData.telefono,
+            nit: pedidoData.nit,
+            email: pedidoData.email,
+            direccion: pedidoData.direccion,
+            referencia: pedidoData.referencia,
+            productos: productos,
+            total: total,
+            estado: 'Pagado',
+            metodo: 'Stripe',
+            fecha: ahora,
+            fechaEstimada: fechaEstimada
+          });
+        } catch (otErr) {
+          console.warn('ordenes_trabajo no guardada (revisar reglas Firebase):', otErr);
+        }
 
         const resumen = {
           trackingCode,
@@ -134,10 +130,7 @@
           fechaEstimadaISO: fechaEstimada.toISOString()
         };
 
-        if (sessionId) {
-          localStorage.setItem('stripeProcesado_' + sessionId, JSON.stringify(resumen));
-        }
-
+        if (sessionId) localStorage.setItem('stripeProcesado_' + sessionId, JSON.stringify(resumen));
         mostrarResumen(resumen, datos);
 
         localStorage.removeItem('carritoPendienteStripe');
@@ -164,13 +157,10 @@
           <p class="text-2xl font-extrabold text-green-800 tracking-wide">${resumen.trackingCode}</p>
           <p class="text-xs text-green-700 mt-2">Guárdalo para consultar el estado de tu envío</p>
         </div>
-
         <div class="bg-slate-50 rounded-2xl p-4 text-sm space-y-1">
           <p><i class="fas fa-calendar-alt text-green-600 w-5"></i> <b>Llegada estimada:</b></p>
           <p class="font-semibold text-slate-800 capitalize pl-6">${fechaEst}</p>
-          <p class="text-xs text-slate-500 pl-6">Te avisaremos si hay cambios</p>
         </div>
-
         <div class="bg-slate-50 rounded-2xl p-4 text-sm space-y-1">
           <p class="font-semibold mb-2">Datos de envío</p>
           <p><b>Cliente:</b> ${datos.nombre || ''}</p>
@@ -187,7 +177,6 @@
       btn.href = '/seguimiento.html?codigo=' + encodeURIComponent(resumen.trackingCode);
       btn.classList.remove('hidden');
       btn.classList.add('inline-block');
-
       document.getElementById('session-info').textContent = 'Pedido registrado correctamente';
     }
 
