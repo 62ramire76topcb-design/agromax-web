@@ -10,65 +10,73 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="./ticket.js"></script>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body.embed-mode { overflow: hidden; }
+  body.embed-mode #pos-shell { height: 100vh; }
+  /* En embed, ocultar "Cerrar sesión" del POS (se usa la del admin) */
+  body.embed-mode .pos-logout-link { display: none !important; }
+</style>
 </head>
 <body class="bg-gray-100">
 
 <div id="pos-shell" class="flex h-screen">
 
-<div id="pos-sidebar" class="hidden w-64 md:w-72 bg-white border-r shadow-xl overflow-y-auto shrink-0">
-  <div class="p-5 border-b bg-green-700 text-white">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-2xl">🌱</div>
+<div id="pos-sidebar" class="hidden w-56 md:w-64 bg-white border-r shadow-xl overflow-y-auto shrink-0">
+  <div class="p-4 border-b bg-green-700 text-white">
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-green-700 text-xl">🌱</div>
       <div>
-        <h1 class="text-xl font-bold">AGROMAXGTM</h1>
-        <p class="text-xs opacity-90">Caja - Mostrador</p>
+        <h1 class="text-lg font-bold">Caja</h1>
+        <p class="text-[10px] opacity-90">Mostrador</p>
       </div>
     </div>
   </div>
 
-  <nav class="p-3 space-y-1 text-sm">
-    <a onclick="irAVentaSeguro()" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+  <nav class="p-2 space-y-0.5 text-sm">
+    <a onclick="irAVentaSeguro()" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-cash-register w-5"></i> Nueva Venta
     </a>
-    <a onclick="view('productos-pos')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a onclick="view('productos-pos')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-boxes w-5"></i> Productos
     </a>
-    <a onclick="view('clientes-pos')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a onclick="view('clientes-pos')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-users w-5"></i> Clientes
     </a>
-    <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
-      <i class="fas fa-clock w-5"></i> Ventas Pendientes
+    <a onclick="view('pendientes')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
+      <i class="fas fa-clock w-5"></i> Pendientes
     </a>
-    <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a onclick="view('historial')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-history w-5"></i> Mi historial
     </a>
-    <a onclick="view('dashboard-caja')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
-      <i class="fas fa-chart-line w-5"></i> Dashboard caja
+    <a onclick="view('dashboard-caja')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
+      <i class="fas fa-chart-line w-5"></i> Dashboard
     </a>
-    <a onclick="view('vencer')" class="block p-3 hover:bg-amber-50 text-amber-800 rounded-xl cursor-pointer">
-      <i class="fas fa-hourglass-half w-5"></i> Próximos a vencer
+    <a onclick="view('vencer')" class="block p-2.5 hover:bg-amber-50 text-amber-800 rounded-xl cursor-pointer">
+      <i class="fas fa-hourglass-half w-5"></i> Por vencer
     </a>
-    <a onclick="imprimirCorteDia()" class="block p-3 hover:bg-indigo-50 text-indigo-700 rounded-xl cursor-pointer">
+    <a onclick="imprimirCorteDia()" class="block p-2.5 hover:bg-indigo-50 text-indigo-700 rounded-xl cursor-pointer">
       <i class="fas fa-file-alt w-5"></i> Documento del día
     </a>
-    <a data-solo-cajero onclick="cerrarTurnoCaja()" class="block p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer mt-4">
+    <a data-solo-cajero onclick="cerrarTurnoCaja()" class="block p-2.5 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer mt-3">
       <i class="fas fa-lock w-5"></i> Cerrar turno
     </a>
-    <a onclick="cambiarCajero()" class="block p-3 hover:bg-gray-100 text-gray-600 rounded-xl cursor-pointer">
+    <a onclick="cambiarCajero()" class="pos-logout-link block p-2.5 hover:bg-gray-100 text-gray-600 rounded-xl cursor-pointer">
       <i class="fas fa-sign-out-alt w-5"></i> Cerrar sesión
     </a>
-    <p class="px-3 pt-4 text-[10px] text-gray-400 leading-relaxed">
-      F2 = Finalizar venta<br>
-      Ventas = nombre del usuario<br>
-      Cajero: requiere abrir turno
-    </p>
   </nav>
 </div>
 
-<div class="flex-1 p-3 md:p-8 overflow-auto" id="app"></div>
+<div class="flex-1 p-2 md:p-4 overflow-auto" id="app"></div>
 
 </div>
 
+<script>
+  // Modo embebido dentro de admin
+  if (location.search.indexOf('embed=1') >= 0) {
+    document.body.classList.add('embed-mode');
+  }
+</script>
 <script src="./js/firebase-config.js"></script>
 <script src="./js/pos-turno.js"></script>
 <script src="./js/pos.js"></script>
