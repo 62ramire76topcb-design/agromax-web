@@ -14,7 +14,7 @@ window.AGROMAX_ROLES = {
   },
   cajero: {
     label: 'Cajero',
-    desc: 'Caja (POS), listado de productos, clientes y ventas',
+    desc: 'Caja (POS) directa: ventas de mostrador',
     color: 'bg-green-100 text-green-800'
   },
   bodega: {
@@ -37,7 +37,7 @@ window.AGROMAX_PERMISOS = {
     'compras', 'inventario', 'ventas', 'bonificaciones', 'alquileres', 'caja', 'scan'
   ],
   cajero: [
-    'productos', 'clientes', 'ventas', 'caja'
+    'caja', 'productos', 'clientes', 'ventas'
   ],
   bodega: [
     'ordenes', 'productos', 'agregar', 'masiva',
@@ -62,6 +62,8 @@ window.puedeEditarProductos = function () {
 };
 
 function primeraSeccionPermitida() {
+  // Cajero siempre va a POS
+  if (window.usuarioActual && window.usuarioActual.role === 'cajero') return 'caja';
   var orden = ['dashboard', 'productos', 'clientes', 'ventas', 'ordenes', 'pedidos', 'caja'];
   for (var i = 0; i < orden.length; i++) {
     if (tienePermiso(orden[i])) return orden[i];
@@ -169,7 +171,12 @@ function aplicarPermisosMenu() {
       return;
     }
 
-    // Evitar que el panel base abra dashboard sin permiso
+    // Cajero: ir directo a POS (evita panel admin intermedio)
+    if (window.usuarioActual && window.usuarioActual.role === 'cajero') {
+      window.location.replace('pos.html');
+      return;
+    }
+
     window._omitirDashboardInicial = !tienePermiso('dashboard');
 
     if (typeof originalPanel === 'function') originalPanel();
@@ -180,7 +187,7 @@ function aplicarPermisosMenu() {
         window._omitirDashboardInicial = false;
         var destino = primeraSeccionPermitida();
         if (destino === 'caja') {
-          window.location.href = 'pos.html';
+          window.location.replace('pos.html');
           return;
         }
         window._skipPermisoOnce = destino;
@@ -199,7 +206,6 @@ function aplicarPermisosMenu() {
       return;
     }
 
-    // Si el panel intenta abrir dashboard al inicio y no hay permiso, ignorar en silencio
     if (seccion === 'dashboard' && window._omitirDashboardInicial) {
       return;
     }
