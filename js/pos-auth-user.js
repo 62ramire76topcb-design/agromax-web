@@ -1,91 +1,198 @@
 // js/pos-auth-user.js
-// Cajero = usuario autenticado (sin pedir nombre)
-// Listados de clientes y productos en POS
+// Arranque de caja por rol:
+// - admin / supervisor → venta directa (sin fondo ni nombre manual)
+// - cajero → pide abrir turno con fondo
+// Ventas siempre con el nombre del usuario logueado
 
-window.obtenerNombreUsuarioCaja = async function (user) {
-  if (!user) return 'Cajero';
+window.rolCaja = null;
+window.perfilCaja = null;
+
+window.obtenerPerfilCaja = async function (user) {
+  if (!user) return null;
   try {
-    // 1) Perfil en colección usuarios
     var doc = await db.collection('usuarios').doc(user.uid).get();
     if (doc.exists) {
-      var d = doc.data();
-      if (d.nombre) return d.nombre;
-      if (d.displayName) return d.displayName;
+      var d = doc.data() || {};
+      return {
+        uid: user.uid,
+        email: user.email || d.email || '',
+        nombre: d.nombre || user.displayName || (user.email ? user.email.split('@')[0] : 'Usuario'),
+        role: d.role || 'cajero',
+        activo: d.activo !== false
+      };
     }
-  } catch (e) {}
-  if (user.displayName) return user.displayName;
-  if (user.email) return user.email.split('@')[0];
-  return 'Cajero';
+  } catch (e) {
+    console.warn('perfil caja:', e);
+  }
+  return {
+    uid: user.uid,
+    email: user.email || '',
+    nombre: user.displayName || (user.email ? user.email.split('@')[0] : 'Usuario'),
+    role: 'cajero',
+    activo: true
+  };
 };
 
-// Sustituye el flujo de auth de pos.js
-(function () {
-  // Esperar a que pos.js registre onAuthStateChanged y reescribir arranque
-  function boot() {
-    auth.onAuthStateChanged(async function (user) {
-      if (!user) {
-        if (typeof mostrarLoginPOS === 'function') mostrarLoginPOS();
-        return;
-      }
-      var nombre = await obtenerNombreUsuarioCaja(user);
-      window.cajeroActual = nombre;
-      if (typeof cajeroActual !== 'undefined') {
-        try { cajeroActual = nombre; } catch (e) {}
-      }
-      localStorage.setItem('ultimoCajero', nombre);
+window.obtenerNombreUsuarioCaja = async function (user) {
+  var p = await obtenerPerfilCaja(user);
+  return (p && p.nombre) || 'Cajero';
+};
 
-      if (typeof cargarClientesFrecuentes === 'function') cargarClientesFrecuentes();
+window.esRolSinTurno = function () {
+  var r = window.rolCaja || (window.perfilCaja && window.perfilCaja.role);
+  return r === 'admin' || r === 'supervisor';
+};
 
-      if (typeof cargarTurnoAbierto === 'function') {
-        var t = await cargarTurnoAbierto(nombre);
-        if (t) {
-          if (typeof view === 'function') view('venta');
-          return;
-        }
-      }
-      if (typeof mostrarAperturaTurno === 'function') {
-        mostrarAperturaTurno(nombre);
-      } else if (typeof view === 'function') {
-        view('venta');
-      }
-    });
+window.mostrarUICaja = function (visible) {
+  var side = document.getElementById('pos-sidebar');
+  var shell = document.getElementById('pos-shell');
+  if (side) side.classList.toggle('hidden', !visible);
+  if (shell) {
+    if (visible) shell.classList.add('flex');
+    else shell.classList.remove('flex');
+  }
+};
+
+window.aplicarMenuPorRol = function () {
+  var role = window.rolCaja || 'cajero';
+  // data-rol="cajero" se oculta para admin si quieres menú distinto; por ahora todos ven POS completo
+  document.querySelectorAll('[data-solo-cajero]').forEach(function (el) {
+    // Admin/supervisor no necesitan "abrir/cerrar turno" obligatorio
+    if (role === 'admin' || role === 'supervisor') {
+      el.classList.add('hidden');
+    } else {
+      el.classList.remove('hidden');
+    }
+  });
+};
+
+window.arrancarCajaConUsuario = async function (user) {
+  if (!user) {
+    mostrarUICaja(false);
+    if (typeof mostrarLoginPOS === 'function') mostrarLoginPOS();
+    return;
   }
 
-  // Cambiar cajero = cerrar sesión / cambiar usuario
-  window.cambiarCajero = function () {
-    if (confirm('¿Cerrar sesión de este usuario?')) {
-      localStorage.removeItem('ultimoCajero');
-      localStorage.removeItem('turnoCajaId');
-      window.cajeroActual = '';
-      auth.signOut();
-    }
-  };
+  var perfil = await obtenerPerfilCaja(user);
+  if (!perfil || perfil.activo === false) {
+    alert('Cuenta inactiva. Contacta al administrador.');
+    await auth.signOut();
+    return;
+  }
 
-  // Evitar que pos.js pida nombre: si llama mostrarSeleccionCajero, redirigir
-  window.mostrarSeleccionCajero = function () {
-    var u = auth.currentUser;
-    if (u) {
-      obtenerNombreUsuarioCaja(u).then(function (n) {
-        window.cajeroActual = n;
-        if (typeof iniciarSesionCajero === 'function') iniciarSesionCajero(n);
-        else if (typeof view === 'function') view('venta');
-      });
-    } else if (typeof mostrarLoginPOS === 'function') {
-      mostrarLoginPOS();
-    }
-  };
+  window.perfilCaja = perfil;
+  window.rolCaja = perfil.role;
+  window.cajeroActual = perfil.nombre;
+  try { cajeroActual = perfil.nombre; } catch (e) {}
+  localStorage.setItem('ultimoCajero', perfil.nombre);
 
+  mostrarUICaja(true);
+  aplicarMenuPorRol();
+
+  if (typeof cargarClientesFrecuentes === 'function') {
+    try { cargarClientesFrecuentes(); } catch (e) {}
+  }
+
+  // Admin y supervisor: directo a vender, sin turno
+  if (esRolSinTurno()) {
+    window.turnoActual = {
+      id: null,
+      cajero: perfil.nombre,
+      montoInicial: 0,
+      estado: 'libre',
+      abiertoEn: new Date()
+    };
+    localStorage.removeItem('turnoCajaId');
+    setTimeout(function () {
+      if (typeof irAVentaSeguro === 'function') irAVentaSeguro();
+      else if (typeof view === 'function') view('venta');
+    }, 30);
+    return;
+  }
+
+  // Cajero: requiere turno abierto
+  var t = null;
+  if (typeof cargarTurnoAbierto === 'function') {
+    t = await cargarTurnoAbierto(perfil.nombre);
+  }
+  if (t) {
+    setTimeout(function () {
+      if (typeof irAVentaSeguro === 'function') irAVentaSeguro();
+      else if (typeof view === 'function') view('venta');
+    }, 30);
+  } else if (typeof mostrarAperturaTurno === 'function') {
+    mostrarAperturaTurno(perfil.nombre);
+  } else if (typeof view === 'function') {
+    view('venta');
+  }
+};
+
+// Único listener de auth para POS
+(function () {
+  var started = false;
+  function boot() {
+    if (started) return;
+    started = true;
+    auth.onAuthStateChanged(function (user) {
+      arrancarCajaConUsuario(user);
+    });
+  }
   setTimeout(boot, 0);
 })();
 
-/* ===== Clientes (solo lectura + usar en venta) ===== */
+// Cerrar sesión limpio
+window.cambiarCajero = function () {
+  if (!confirm('¿Cerrar sesión?')) return;
+  localStorage.removeItem('ultimoCajero');
+  localStorage.removeItem('turnoCajaId');
+  window.cajeroActual = '';
+  window.turnoActual = null;
+  window.rolCaja = null;
+  window.perfilCaja = null;
+  try { cajeroActual = ''; } catch (e) {}
+  mostrarUICaja(false);
+  auth.signOut().then(function () {
+    if (typeof mostrarLoginPOS === 'function') mostrarLoginPOS();
+  });
+};
+
+// No pedir nombre manual
+window.mostrarSeleccionCajero = function () {
+  var u = auth.currentUser;
+  if (u) arrancarCajaConUsuario(u);
+  else if (typeof mostrarLoginPOS === 'function') {
+    mostrarUICaja(false);
+    mostrarLoginPOS();
+  }
+};
+
+// Evitar que pos.js fuerce turno a admin
+window.iniciarSesionCajero = async function (nombre) {
+  window.cajeroActual = nombre || window.cajeroActual;
+  try { cajeroActual = window.cajeroActual; } catch (e) {}
+  if (esRolSinTurno()) {
+    if (typeof irAVentaSeguro === 'function') irAVentaSeguro();
+    else if (typeof view === 'function') view('venta');
+    return;
+  }
+  if (typeof cargarTurnoAbierto === 'function') {
+    var t = await cargarTurnoAbierto(window.cajeroActual);
+    if (t) {
+      if (typeof irAVentaSeguro === 'function') irAVentaSeguro();
+      return;
+    }
+  }
+  if (typeof mostrarAperturaTurno === 'function') mostrarAperturaTurno(window.cajeroActual);
+};
+
+/* ===== Clientes ===== */
 window.cargarClientesPOS = async function () {
   var app = document.getElementById('app');
   if (!app) return;
   app.innerHTML =
     '<div class="flex justify-between items-center mb-4">' +
     '<h1 class="text-2xl font-bold">Clientes</h1>' +
-    '<button onclick="view(\'venta\')" class="text-sm bg-green-600 text-white px-4 py-2 rounded-xl">Volver a venta</button></div>' +
+    '<button onclick="irAVentaSeguro()" class="text-sm bg-green-600 text-white px-4 py-2 rounded-xl">Volver a venta</button></div>' +
     '<input id="filtroClientesPOS" placeholder="Buscar cliente o NIT..." class="w-full p-3 border rounded-xl mb-4" onkeyup="filtrarClientesPOS()">' +
     '<div id="listaClientesPOS" class="space-y-2">Cargando...</div>';
 
@@ -125,22 +232,23 @@ window.filtrarClientesPOS = function () {
 };
 
 window.usarClienteEnVenta = function (nombre, nit) {
-  view('venta');
+  if (typeof irAVentaSeguro === 'function') irAVentaSeguro();
+  else view('venta');
   setTimeout(function () {
     var n = document.getElementById('nombreCliente');
     var i = document.getElementById('nitCliente');
     if (n) n.value = nombre;
     if (i) i.value = nit || '';
-  }, 100);
+  }, 120);
 };
 
-/* ===== Productos (solo lectura) ===== */
+/* ===== Productos ===== */
 window.cargarProductosPOS = async function () {
   var app = document.getElementById('app');
   app.innerHTML =
     '<div class="flex justify-between items-center mb-4">' +
     '<h1 class="text-2xl font-bold">Productos</h1>' +
-    '<button onclick="view(\'venta\')" class="text-sm bg-green-600 text-white px-4 py-2 rounded-xl">Volver a venta</button></div>' +
+    '<button onclick="irAVentaSeguro()" class="text-sm bg-green-600 text-white px-4 py-2 rounded-xl">Volver a venta</button></div>' +
     '<input id="filtroProdPOS" placeholder="Buscar producto..." class="w-full p-3 border rounded-xl mb-4" onkeyup="filtrarProductosPOS()">' +
     '<div id="listaProdPOS" class="space-y-2">Cargando...</div>';
 
@@ -179,12 +287,11 @@ window.filtrarProductosPOS = function () {
       '<div class="text-right">' +
       '<div class="font-bold">Q' + Number(p.precio).toFixed(2) + '</div>' +
       '<button onclick="add(\'' + p.id + '\',\'' + p.nombre.replace(/'/g, "\\'") + '\',' + p.precio + ',' + p.stock +
-      ');view(\'venta\')" class="mt-1 text-xs bg-green-600 text-white px-2 py-1 rounded-lg">+ Venta</button>' +
+      ');irAVentaSeguro()" class="mt-1 text-xs bg-green-600 text-white px-2 py-1 rounded-lg">+ Venta</button>' +
       '</div></div>';
   }).join('') || '<p class="text-gray-400 text-center py-8">Sin productos</p>';
 };
 
-/* Hook view */
 (function () {
   function install() {
     if (typeof view !== 'function' || view.__authUser) return;
