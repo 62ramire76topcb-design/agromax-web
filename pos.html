@@ -33,6 +33,12 @@
     <a onclick="view('venta')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-cash-register w-5"></i> Nueva Venta
     </a>
+    <a onclick="view('productos-pos')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+      <i class="fas fa-boxes w-5"></i> Productos
+    </a>
+    <a onclick="view('clientes-pos')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
+      <i class="fas fa-users w-5"></i> Clientes
+    </a>
     <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-clock w-5"></i> Ventas Pendientes
     </a>
@@ -51,8 +57,12 @@
     <a onclick="cerrarTurnoCaja()" class="block p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer mt-4">
       <i class="fas fa-lock w-5"></i> Cerrar turno
     </a>
+    <a onclick="cambiarCajero()" class="block p-3 hover:bg-gray-100 text-gray-600 rounded-xl cursor-pointer">
+      <i class="fas fa-sign-out-alt w-5"></i> Cerrar sesión
+    </a>
     <p class="px-3 pt-4 text-[10px] text-gray-400 leading-relaxed">
       F2 = Finalizar venta<br>
+      Cajero = usuario logueado<br>
       Jornada: 1:00 a.m. → 12:00 a.m.
     </p>
   </nav>
@@ -67,5 +77,6 @@
 <script src="./js/pos.js"></script>
 <script src="./js/pos-extras.js"></script>
 <script src="./js/pos-modulos.js"></script>
+<script src="./js/pos-auth-user.js"></script>
 </body>
 </html>
