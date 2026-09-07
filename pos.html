@@ -14,8 +14,8 @@
   html, body { height: 100%; margin: 0; }
   body.embed-mode { overflow: hidden; }
   body.embed-mode #pos-shell { height: 100vh; }
-  /* En embed, ocultar "Cerrar sesión" del POS (se usa la del admin) */
   body.embed-mode .pos-logout-link { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 </style>
 </head>
 <body class="bg-gray-100">
@@ -72,7 +72,6 @@
 </div>
 
 <script>
-  // Modo embebido dentro de admin
   if (location.search.indexOf('embed=1') >= 0) {
     document.body.classList.add('embed-mode');
   }
@@ -85,5 +84,6 @@
 <script src="./js/pos-auth-user.js"></script>
 <script src="./js/pos-bonif.js"></script>
 <script src="./js/pos-descuento-venta.js"></script>
+<script src="./js/pos-ux.js"></script>
 </body>
 </html>
