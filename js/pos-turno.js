@@ -9,6 +9,27 @@ window.obtenerInicioHoy = function () {
   return d;
 };
 
+/** Navegar a venta sin reentrada infinita */
+window.irAVentaSeguro = function () {
+  if (window._navegandoVenta) return;
+  window._navegandoVenta = true;
+  try {
+    if (typeof view === 'function') {
+      view('venta');
+    }
+  } catch (e) {
+    console.error('irAVentaSeguro:', e);
+    var app = document.getElementById('app');
+    if (app) {
+      app.innerHTML = '<p class="p-8 text-center">Turno abierto. <button onclick="location.reload()" class="text-green-700 underline">Recargar</button></p>';
+    }
+  } finally {
+    setTimeout(function () {
+      window._navegandoVenta = false;
+    }, 300);
+  }
+};
+
 window.cargarTurnoAbierto = async function (cajero) {
   try {
     var snap = await db.collection('turnos_caja')
@@ -18,7 +39,14 @@ window.cargarTurnoAbierto = async function (cajero) {
       .get();
     if (!snap.empty) {
       var doc = snap.docs[0];
-      window.turnoActual = { id: doc.id, ...doc.data() };
+      var data = doc.data() || {};
+      window.turnoActual = {
+        id: doc.id,
+        cajero: data.cajero,
+        montoInicial: data.montoInicial,
+        estado: data.estado,
+        abiertoEn: data.abiertoEn
+      };
       localStorage.setItem('turnoCajaId', doc.id);
       return window.turnoActual;
     }
@@ -39,41 +67,66 @@ window.mostrarAperturaTurno = function (cajero) {
     '<div class="text-center mb-6">' +
     '<div class="w-16 h-16 bg-green-100 text-green-700 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3">💰</div>' +
     '<h2 class="text-2xl font-bold">Abrir turno de caja</h2>' +
-    '<p class="text-sm text-gray-500 mt-1">Cajero: <b>' + cajero + '</b></p></div>' +
+    '<p class="text-sm text-gray-500 mt-1">Cajero: <b>' + (cajero || '') + '</b></p></div>' +
     '<label class="block text-sm font-medium text-gray-700 mb-1">Efectivo inicial (fondo de caja)</label>' +
     '<input id="montoInicialTurno" type="number" min="0" step="0.01" value="0" ' +
     'class="w-full p-4 border rounded-2xl text-lg mb-4" placeholder="Ej: 200.00">' +
-    '<button onclick="abrirTurnoCaja()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold">' +
+    '<button type="button" id="btnAbrirTurno" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold">' +
     'Abrir turno y vender</button>' +
     '<p class="text-xs text-gray-400 text-center mt-4">Al cerrar el turno verás el resumen de ventas del día</p>' +
     '</div></div>';
+
+  var btn = document.getElementById('btnAbrirTurno');
+  if (btn) {
+    btn.onclick = function () {
+      abrirTurnoCaja();
+    };
+  }
 };
 
 window.abrirTurnoCaja = async function () {
-  var monto = parseFloat(document.getElementById('montoInicialTurno').value) || 0;
+  var input = document.getElementById('montoInicialTurno');
+  var monto = input ? (parseFloat(input.value) || 0) : 0;
   if (!window.cajeroActual) return alert('No hay cajero seleccionado');
 
+  var btn = document.getElementById('btnAbrirTurno');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Abriendo...';
+  }
+
   try {
-    var ref = await db.collection('turnos_caja').add({
-      cajero: window.cajeroActual,
-      montoInicial: monto,
+    var payload = {
+      cajero: String(window.cajeroActual),
+      montoInicial: Number(monto) || 0,
       estado: 'abierto',
       abiertoEn: new Date(),
       totalVentas: 0,
-      cantidadVentas: 0,
-      porMetodo: {}
-    });
+      cantidadVentas: 0
+    };
+
+    var ref = await db.collection('turnos_caja').add(payload);
+
     window.turnoActual = {
       id: ref.id,
-      cajero: window.cajeroActual,
-      montoInicial: monto,
+      cajero: payload.cajero,
+      montoInicial: payload.montoInicial,
       estado: 'abierto',
       abiertoEn: new Date()
     };
     localStorage.setItem('turnoCajaId', ref.id);
-    if (typeof view === 'function') view('venta');
+
+    // Navegar de forma diferida y con candado anti-bucle
+    setTimeout(function () {
+      irAVentaSeguro();
+    }, 50);
   } catch (e) {
-    alert('Error al abrir turno: ' + e.message);
+    console.error(e);
+    alert('Error al abrir turno: ' + (e.message || e));
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Abrir turno y vender';
+    }
   }
 };
 
@@ -135,15 +188,13 @@ window.cerrarTurnoCaja = async function () {
 
     window.turnoActual = null;
     localStorage.removeItem('turnoCajaId');
-    localStorage.removeItem('ultimoCajero');
-    window.cajeroActual = '';
-    if (typeof mostrarSeleccionCajero === 'function') mostrarSeleccionCajero();
+    // Mantener cajero logueado; solo cierra el turno
+    irAVentaSeguro();
   } catch (e) {
     alert('Error al cerrar turno: ' + e.message);
   }
 };
 
-/** Historial filtrado solo del cajero actual (y preferible del día) */
 window.cargarHistorialCajero = function () {
   var app = document.getElementById('app');
   if (!app) return;
@@ -181,10 +232,6 @@ window.cargarHistorialCajero = function () {
         '</div>' +
         '<div class="text-right">' +
         '<div class="text-sm">' + (v.metodoPago || 'N/A') + '</div>' +
-        (v.metodoPago === 'Efectivo'
-          ? '<div class="text-xs text-gray-600">Recibido: Q' + (v.montoRecibido || 0) +
-            ' | Cambio: Q' + (v.cambio || 0) + '</div>'
-          : '') +
         '</div></div>' +
         '<div class="text-xs text-gray-500 mt-3">' +
         (fecha ? fecha.toLocaleString('es-GT') : '') +
@@ -198,7 +245,10 @@ window.cargarHistorialCajero = function () {
       '<div><p class="text-xs text-green-700">Total del día</p>' +
       '<p class="text-2xl font-bold text-green-800">Q' + totalDia.toFixed(2) + '</p></div></div>';
 
-    document.getElementById('hist').innerHTML =
-      resumen + (html || '<p class="text-gray-400 py-12 text-center">Aún no tienes ventas registradas</p>');
+    var hist = document.getElementById('hist');
+    if (hist) {
+      hist.innerHTML =
+        resumen + (html || '<p class="text-gray-400 py-12 text-center">Aún no tienes ventas registradas</p>');
+    }
   });
 };
