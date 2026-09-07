@@ -53,7 +53,7 @@ window.mostrarAperturaTurno = function (cajero) {
   if (typeof mostrarUICaja === 'function') mostrarUICaja(true);
 
   app.innerHTML =
-    '<div class="min-h-[70vh] flex items-center justify-center">' +
+    '<div class="min-h-[70vh] flex items-center justify-center p-4">' +
     '<div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full">' +
     '<div class="text-center mb-6">' +
     '<div class="w-16 h-16 bg-green-100 text-green-700 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3">💰</div>' +
@@ -64,7 +64,7 @@ window.mostrarAperturaTurno = function (cajero) {
     'class="w-full p-4 border rounded-2xl text-lg mb-4" placeholder="Ej: 200.00">' +
     '<button type="button" id="btnAbrirTurno" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold">' +
     'Abrir turno y vender</button>' +
-    '<p class="text-xs text-gray-400 text-center mt-4">Al cerrar el turno verás el resumen de ventas</p>' +
+    '<p class="text-xs text-gray-400 text-center mt-4">Al cerrar harás arqueo (efectivo contado)</p>' +
     '</div></div>';
 
   var btn = document.getElementById('btnAbrirTurno');
@@ -98,6 +98,7 @@ window.abrirTurnoCaja = async function () {
       abiertoEn: new Date()
     };
     localStorage.setItem('turnoCajaId', ref.id);
+    if (typeof actualizarBarraEstadoCaja === 'function') actualizarBarraEstadoCaja();
     setTimeout(function () { irAVentaSeguro(); }, 50);
   } catch (e) {
     console.error(e);
@@ -106,15 +107,38 @@ window.abrirTurnoCaja = async function () {
   }
 };
 
+/** Calcula resumen del turno actual */
+window.calcularResumenTurno = async function () {
+  var desde = window.turnoActual && window.turnoActual.abiertoEn;
+  if (desde && desde.toDate) desde = desde.toDate();
+  if (!(desde instanceof Date)) desde = new Date(desde || Date.now());
+
+  var snap = await db.collection('ventas').where('cajero', '==', window.cajeroActual).get();
+  var total = 0, cantidad = 0, porMetodo = {}, efectivo = 0;
+
+  snap.forEach(function (doc) {
+    var v = doc.data();
+    var f = v.fecha && v.fecha.toDate ? v.fecha.toDate() : null;
+    if (!f || f < desde) return;
+    var t = Number(v.total) || 0;
+    total += t;
+    cantidad++;
+    var m = v.metodoPago || 'Otro';
+    porMetodo[m] = (porMetodo[m] || 0) + t;
+    if (m === 'Efectivo') efectivo += t;
+  });
+
+  var esperado = (Number(window.turnoActual.montoInicial) || 0) + efectivo;
+  return { total: total, cantidad: cantidad, porMetodo: porMetodo, efectivo: efectivo, esperado: esperado, desde: desde };
+};
+
 window.cerrarTurnoCaja = async function () {
-  // Admin/supervisor: no usan turno formal
   if (typeof esRolSinTurno === 'function' && esRolSinTurno()) {
     alert('Admin/Supervisor no requieren cierre de turno. Las ventas ya quedan a tu nombre.');
     return;
   }
 
   if (!window.turnoActual || !window.turnoActual.id) {
-    // Sin turno: mostrar apertura
     if (typeof mostrarAperturaTurno === 'function') {
       mostrarAperturaTurno(window.cajeroActual);
     } else {
@@ -122,61 +146,104 @@ window.cerrarTurnoCaja = async function () {
     }
     return;
   }
-  if (!confirm('¿Cerrar turno de ' + window.cajeroActual + '?')) return;
 
   try {
-    var desde = window.turnoActual.abiertoEn;
-    if (desde && desde.toDate) desde = desde.toDate();
-    if (!(desde instanceof Date)) desde = new Date(desde || Date.now());
+    var r = await calcularResumenTurno();
+    var app = document.getElementById('app');
+    if (!app) return;
 
-    var snap = await db.collection('ventas').where('cajero', '==', window.cajeroActual).get();
-    var total = 0, cantidad = 0, porMetodo = {}, efectivo = 0;
+    var metodosHtml = Object.keys(r.porMetodo).map(function (m) {
+      return '<div class="flex justify-between text-sm"><span>' + m + '</span><b>Q' + r.porMetodo[m].toFixed(2) + '</b></div>';
+    }).join('') || '<p class="text-sm text-gray-400">Sin ventas en este turno</p>';
 
-    snap.forEach(function (doc) {
-      var v = doc.data();
-      var f = v.fecha && v.fecha.toDate ? v.fecha.toDate() : null;
-      if (!f || f < desde) return;
-      var t = Number(v.total) || 0;
-      total += t;
-      cantidad++;
-      var m = v.metodoPago || 'Otro';
-      porMetodo[m] = (porMetodo[m] || 0) + t;
-      if (m === 'Efectivo') efectivo += t;
-    });
+    app.innerHTML =
+      '<div class="min-h-[70vh] flex items-center justify-center p-4">' +
+      '<div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl max-w-md w-full">' +
+      '<h2 class="text-2xl font-bold mb-1">Arqueo de caja</h2>' +
+      '<p class="text-sm text-gray-500 mb-4">Cajero: <b>' + (window.cajeroActual || '') + '</b></p>' +
+      '<div class="bg-gray-50 rounded-2xl p-4 space-y-2 mb-4">' +
+      '<div class="flex justify-between text-sm"><span>Ventas</span><b>' + r.cantidad + '</b></div>' +
+      '<div class="flex justify-between text-sm"><span>Total vendido</span><b>Q' + r.total.toFixed(2) + '</b></div>' +
+      '<div class="flex justify-between text-sm"><span>Fondo inicial</span><b>Q' + Number(window.turnoActual.montoInicial || 0).toFixed(2) + '</b></div>' +
+      '<div class="flex justify-between text-sm"><span>Efectivo ventas</span><b>Q' + r.efectivo.toFixed(2) + '</b></div>' +
+      '<div class="flex justify-between text-base font-bold text-green-800 border-t pt-2"><span>Efectivo esperado</span><span>Q' + r.esperado.toFixed(2) + '</span></div>' +
+      '</div>' +
+      '<div class="mb-4 space-y-1">' + metodosHtml + '</div>' +
+      '<label class="block text-sm font-medium mb-1">Efectivo contado en caja</label>' +
+      '<input id="efectivoContado" type="number" step="0.01" min="0" value="' + r.esperado.toFixed(2) + '" ' +
+      'class="w-full p-4 border rounded-2xl text-lg mb-2" oninput="actualizarDiferenciaArqueo(' + r.esperado + ')">' +
+      '<p id="diffArqueo" class="text-sm mb-3 text-gray-600">Diferencia: Q0.00</p>' +
+      '<label class="block text-sm font-medium mb-1">Nota (opcional)</label>' +
+      '<input id="notaArqueo" class="w-full p-3 border rounded-xl mb-4" placeholder="Ej. faltante por cambio">' +
+      '<button type="button" onclick="confirmarCierreTurno()" class="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-bold">Confirmar cierre</button>' +
+      '<button type="button" onclick="irAVentaSeguro()" class="w-full mt-2 border py-3 rounded-2xl text-sm">Volver a vender</button>' +
+      '</div></div>';
 
-    var esperado = (Number(window.turnoActual.montoInicial) || 0) + efectivo;
+    window._resumenTurnoPendiente = r;
+  } catch (e) {
+    alert('Error al preparar arqueo: ' + e.message);
+  }
+};
 
+window.actualizarDiferenciaArqueo = function (esperado) {
+  var contado = parseFloat((document.getElementById('efectivoContado') || {}).value) || 0;
+  var diff = contado - Number(esperado || 0);
+  var el = document.getElementById('diffArqueo');
+  if (!el) return;
+  var txt = 'Diferencia: Q' + diff.toFixed(2);
+  if (Math.abs(diff) < 0.01) {
+    el.className = 'text-sm mb-3 text-green-700 font-medium';
+    el.textContent = txt + ' (cuadrado)';
+  } else if (diff < 0) {
+    el.className = 'text-sm mb-3 text-red-600 font-medium';
+    el.textContent = txt + ' (faltante)';
+  } else {
+    el.className = 'text-sm mb-3 text-amber-700 font-medium';
+    el.textContent = txt + ' (sobrante)';
+  }
+};
+
+window.confirmarCierreTurno = async function () {
+  if (!window.turnoActual || !window.turnoActual.id || !window._resumenTurnoPendiente) return;
+  var r = window._resumenTurnoPendiente;
+  var contado = parseFloat((document.getElementById('efectivoContado') || {}).value) || 0;
+  var nota = ((document.getElementById('notaArqueo') || {}).value || '').trim();
+  var diferencia = contado - r.esperado;
+
+  if (!confirm('Cerrar turno con diferencia Q' + diferencia.toFixed(2) + '?')) return;
+
+  try {
     await db.collection('turnos_caja').doc(window.turnoActual.id).update({
       estado: 'cerrado',
       cerradoEn: new Date(),
-      totalVentas: total,
-      cantidadVentas: cantidad,
-      porMetodo: porMetodo,
-      efectivoVentas: efectivo,
-      efectivoEsperado: esperado
+      totalVentas: r.total,
+      cantidadVentas: r.cantidad,
+      porMetodo: r.porMetodo,
+      efectivoVentas: r.efectivo,
+      efectivoEsperado: r.esperado,
+      efectivoContado: contado,
+      diferencia: diferencia,
+      notaArqueo: nota
     });
 
-    var detalleMetodos = Object.keys(porMetodo).map(function (m) {
-      return m + ': Q' + porMetodo[m].toFixed(2);
-    }).join('\n');
-
     alert(
-      '✅ Turno cerrado\n\n' +
-      'Ventas: ' + cantidad + '\n' +
-      'Total: Q' + total.toFixed(2) + '\n' +
-      (detalleMetodos ? detalleMetodos + '\n' : '') +
-      'Efectivo estimado: Q' + esperado.toFixed(2)
+      'Turno cerrado\n\n' +
+      'Ventas: ' + r.cantidad + '\n' +
+      'Total: Q' + r.total.toFixed(2) + '\n' +
+      'Esperado: Q' + r.esperado.toFixed(2) + '\n' +
+      'Contado: Q' + contado.toFixed(2) + '\n' +
+      'Diferencia: Q' + diferencia.toFixed(2)
     );
 
     window.turnoActual = null;
+    window._resumenTurnoPendiente = null;
     localStorage.removeItem('turnoCajaId');
-
-    // Volver a pantalla de abrir turno (sigue logueado)
+    if (typeof actualizarBarraEstadoCaja === 'function') actualizarBarraEstadoCaja();
     if (typeof mostrarAperturaTurno === 'function') {
       mostrarAperturaTurno(window.cajeroActual);
     }
   } catch (e) {
-    alert('Error al cerrar turno: ' + e.message);
+    alert('Error al cerrar: ' + e.message);
   }
 };
 
