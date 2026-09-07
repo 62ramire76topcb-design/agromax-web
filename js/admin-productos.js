@@ -1,5 +1,5 @@
 // js/admin-productos.js
-// (2) Búsqueda y filtros de productos
+// (2) Búsqueda y filtros de productos (+ solo lectura para cajero)
 
 let _productosCache = [];
 let _filtroCat = 'all';
@@ -7,13 +7,21 @@ let _filtroStock = 'all';
 let _busquedaProd = '';
 
 window.mostrarTablaProductos = function () {
+  const puedeEditar = typeof puedeEditarProductos === 'function'
+    ? puedeEditarProductos()
+    : (typeof tienePermiso === 'function' ? (tienePermiso('agregar') || tienePermiso('*')) : true);
+
   const content = document.getElementById('main-content');
   content.innerHTML = `
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-      <h1 class="text-2xl md:text-3xl font-bold">Productos</h1>
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold">Productos</h1>
+        ${!puedeEditar ? '<p class="text-xs text-gray-500 mt-1">Solo consulta · no puedes editar ni eliminar</p>' : ''}
+      </div>
+      ${puedeEditar ? `
       <button onclick="mostrarSeccion('agregar')" class="bg-green-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium">
         <i class="fas fa-plus mr-1"></i> Nuevo
-      </button>
+      </button>` : ''}
     </div>
 
     <div class="bg-white rounded-2xl shadow p-4 mb-4 space-y-3">
@@ -34,14 +42,17 @@ window.mostrarTablaProductos = function () {
           <option value="agotado">Agotados (0)</option>
           <option value="ok">Stock OK (≥10)</option>
         </select>
+        ${puedeEditar ? `
         <button onclick="exportarProductosCSV()" class="p-2 border rounded-xl text-sm hover:bg-gray-50">
           <i class="fas fa-file-csv mr-1"></i> Exportar CSV
-        </button>
+        </button>` : ''}
       </div>
     </div>
 
     <div id="tabla-productos" class="bg-white rounded-2xl shadow overflow-x-auto"></div>
   `;
+
+  window._productosSoloLectura = !puedeEditar;
 
   db.collection('productos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
     _productosCache = [];
@@ -76,12 +87,14 @@ function renderTablaProductosAdmin() {
     return;
   }
 
+  const soloLectura = !!window._productosSoloLectura;
+
   let html = `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left">
     <th class="p-3">Producto</th>
     <th class="p-3 hidden sm:table-cell">Categoría</th>
     <th class="p-3 text-center">Stock</th>
     <th class="p-3 text-right">Precio</th>
-    <th class="p-3">Acciones</th>
+    ${soloLectura ? '' : '<th class="p-3">Acciones</th>'}
   </tr></thead><tbody>`;
 
   lista.forEach(p => {
@@ -92,10 +105,11 @@ function renderTablaProductosAdmin() {
       <td class="p-3 hidden sm:table-cell text-gray-500">${p.categoria || ''}</td>
       <td class="p-3 text-center ${stockClass}">${stock}</td>
       <td class="p-3 text-right font-bold">Q${Number(p.precio || 0).toFixed(2)}</td>
+      ${soloLectura ? '' : `
       <td class="p-3 whitespace-nowrap">
         <button onclick="editarProducto('${p.id}')" class="text-blue-600 mr-2 text-xs sm:text-sm">Editar</button>
         <button onclick="eliminarProducto('${p.id}')" class="text-red-600 text-xs sm:text-sm">Eliminar</button>
-      </td>
+      </td>`}
     </tr>`;
   });
 
@@ -112,5 +126,5 @@ window.exportarProductosCSV = function () {
   lista.forEach(p => {
     csv += `"${(p.nombre || '').replace(/"/g, '""')}",${p.precio || 0},${p.stock || 0},"${p.unidad || ''}","${p.categoria || ''}"\n`;
   });
-  descargarCSV('productos-agromax.csv', csv);
+  if (typeof descargarCSV === 'function') descargarCSV('productos-agromax.csv', csv);
 };
