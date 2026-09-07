@@ -1,5 +1,5 @@
 // js/admin-roles.js
-// Roles de usuario + permisos + gestión de usuarios
+// Roles + permisos. Un solo acceso: admin.html (sin forzar pos.html)
 
 window.AGROMAX_ROLES = {
   admin: {
@@ -14,7 +14,7 @@ window.AGROMAX_ROLES = {
   },
   cajero: {
     label: 'Cajero',
-    desc: 'Caja (POS) directa: ventas de mostrador',
+    desc: 'Productos, clientes, ventas y caja en el panel',
     color: 'bg-green-100 text-green-800'
   },
   bodega: {
@@ -37,7 +37,7 @@ window.AGROMAX_PERMISOS = {
     'compras', 'inventario', 'ventas', 'bonificaciones', 'alquileres', 'caja', 'scan'
   ],
   cajero: [
-    'caja', 'productos', 'clientes', 'ventas'
+    'productos', 'clientes', 'ventas', 'caja'
   ],
   bodega: [
     'ordenes', 'productos', 'agregar', 'masiva',
@@ -62,9 +62,8 @@ window.puedeEditarProductos = function () {
 };
 
 function primeraSeccionPermitida() {
-  // Cajero siempre va a POS
-  if (window.usuarioActual && window.usuarioActual.role === 'cajero') return 'caja';
-  var orden = ['dashboard', 'productos', 'clientes', 'ventas', 'ordenes', 'pedidos', 'caja'];
+  // Todo se queda en admin.html — orden de llegada por rol
+  var orden = ['dashboard', 'ventas', 'productos', 'clientes', 'ordenes', 'pedidos', 'caja'];
   for (var i = 0; i < orden.length; i++) {
     if (tienePermiso(orden[i])) return orden[i];
   }
@@ -134,8 +133,11 @@ function aplicarPermisosMenu() {
     }
   });
 
+  // Caja: seccion interna del admin (no redirige solo)
   document.querySelectorAll('a[data-permiso="caja"]').forEach(function (a) {
-    a.setAttribute('href', 'pos.html');
+    a.removeAttribute('href');
+    a.setAttribute('onclick', "navegarAdmin('caja')");
+    a.classList.add('cursor-pointer');
   });
 
   var badge = document.getElementById('user-role-badge');
@@ -152,6 +154,23 @@ function aplicarPermisosMenu() {
       info.color + '">' + info.label + '</span>';
   }
 }
+
+/** Caja dentro de admin: iframe a pos o acceso rápido */
+window.mostrarSeccionCaja = function () {
+  var content = document.getElementById('main-content');
+  if (!content) return;
+  var nombre = (window.usuarioActual && window.usuarioActual.nombre) || 'Usuario';
+  content.innerHTML =
+    '<div class="mb-6">' +
+    '<h1 class="text-2xl md:text-3xl font-bold mb-1">Caja / Mostrador</h1>' +
+    '<p class="text-sm text-gray-500">Sesión: <b>' + nombre + '</b> · Las ventas se registran con este nombre</p></div>' +
+    '<div class="bg-white rounded-3xl shadow p-6 max-w-xl space-y-4">' +
+    '<p class="text-gray-600 text-sm">Abre el módulo de caja en esta misma sesión. No necesitas otro usuario.</p>' +
+    '<a href="pos.html" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-bold">' +
+    '<i class="fas fa-cash-register"></i> Abrir módulo de caja</a>' +
+    '<p class="text-xs text-gray-400">También puedes usar Productos, Clientes y Ventas desde el menú lateral sin salir de admin.</p>' +
+    '</div>';
+};
 
 (function () {
   var originalPanel = window.mostrarPanelPrincipal;
@@ -171,12 +190,7 @@ function aplicarPermisosMenu() {
       return;
     }
 
-    // Cajero: ir directo a POS (evita panel admin intermedio)
-    if (window.usuarioActual && window.usuarioActual.role === 'cajero') {
-      window.location.replace('pos.html');
-      return;
-    }
-
+    // Nunca redirigir a pos.html automáticamente
     window._omitirDashboardInicial = !tienePermiso('dashboard');
 
     if (typeof originalPanel === 'function') originalPanel();
@@ -187,7 +201,8 @@ function aplicarPermisosMenu() {
         window._omitirDashboardInicial = false;
         var destino = primeraSeccionPermitida();
         if (destino === 'caja') {
-          window.location.replace('pos.html');
+          window._skipPermisoOnce = 'caja';
+          mostrarSeccionCaja();
           return;
         }
         window._skipPermisoOnce = destino;
@@ -202,12 +217,21 @@ function aplicarPermisosMenu() {
   window.mostrarSeccion = function (seccion) {
     if (window._skipPermisoOnce === seccion) {
       window._skipPermisoOnce = null;
+      if (seccion === 'caja') return mostrarSeccionCaja();
       if (typeof originalSeccion === 'function') return originalSeccion(seccion);
       return;
     }
 
     if (seccion === 'dashboard' && window._omitirDashboardInicial) {
       return;
+    }
+
+    if (seccion === 'caja') {
+      if (!tienePermiso('caja') && !tienePermiso('*')) {
+        alert('No tienes permiso de caja');
+        return;
+      }
+      return mostrarSeccionCaja();
     }
 
     if (seccion === 'usuarios') {
