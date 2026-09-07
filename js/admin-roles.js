@@ -1,5 +1,6 @@
 // js/admin-roles.js
-// Roles + permisos. Un solo acceso: admin.html (sin forzar pos.html)
+// Roles + permisos. Un solo acceso: admin.html
+// Cajero solo ve modulo Caja (POS embebido)
 
 window.AGROMAX_ROLES = {
   admin: {
@@ -9,22 +10,22 @@ window.AGROMAX_ROLES = {
   },
   supervisor: {
     label: 'Supervisor',
-    desc: 'Operación completa sin gestionar usuarios',
+    desc: 'Operacion completa sin gestionar usuarios',
     color: 'bg-blue-100 text-blue-800'
   },
   cajero: {
     label: 'Cajero',
-    desc: 'Productos, clientes, ventas y caja en el panel',
+    desc: 'Solo modulo de caja (mostrador POS)',
     color: 'bg-green-100 text-green-800'
   },
   bodega: {
     label: 'Bodega',
-    desc: 'Inventario, productos, compras y órdenes',
+    desc: 'Inventario, productos, compras y ordenes',
     color: 'bg-amber-100 text-amber-800'
   },
   vendedor: {
     label: 'Vendedor',
-    desc: 'Pedidos, órdenes y clientes',
+    desc: 'Pedidos, ordenes y clientes',
     color: 'bg-teal-100 text-teal-800'
   }
 };
@@ -37,7 +38,7 @@ window.AGROMAX_PERMISOS = {
     'compras', 'inventario', 'ventas', 'bonificaciones', 'alquileres', 'caja', 'scan'
   ],
   cajero: [
-    'productos', 'clientes', 'ventas', 'caja'
+    'caja'
   ],
   bodega: [
     'ordenes', 'productos', 'agregar', 'masiva',
@@ -62,7 +63,7 @@ window.puedeEditarProductos = function () {
 };
 
 function primeraSeccionPermitida() {
-  // Todo se queda en admin.html — orden de llegada por rol
+  if (window.usuarioActual && window.usuarioActual.role === 'cajero') return 'caja';
   var orden = ['dashboard', 'ventas', 'productos', 'clientes', 'ordenes', 'pedidos', 'caja'];
   for (var i = 0; i < orden.length; i++) {
     if (tienePermiso(orden[i])) return orden[i];
@@ -133,7 +134,6 @@ function aplicarPermisosMenu() {
     }
   });
 
-  // Caja: seccion interna del admin (no redirige solo)
   document.querySelectorAll('a[data-permiso="caja"]').forEach(function (a) {
     a.removeAttribute('href');
     a.setAttribute('onclick', "navegarAdmin('caja')");
@@ -155,22 +155,7 @@ function aplicarPermisosMenu() {
   }
 }
 
-/** Caja dentro de admin: iframe a pos o acceso rápido */
-window.mostrarSeccionCaja = function () {
-  var content = document.getElementById('main-content');
-  if (!content) return;
-  var nombre = (window.usuarioActual && window.usuarioActual.nombre) || 'Usuario';
-  content.innerHTML =
-    '<div class="mb-6">' +
-    '<h1 class="text-2xl md:text-3xl font-bold mb-1">Caja / Mostrador</h1>' +
-    '<p class="text-sm text-gray-500">Sesión: <b>' + nombre + '</b> · Las ventas se registran con este nombre</p></div>' +
-    '<div class="bg-white rounded-3xl shadow p-6 max-w-xl space-y-4">' +
-    '<p class="text-gray-600 text-sm">Abre el módulo de caja en esta misma sesión. No necesitas otro usuario.</p>' +
-    '<a href="pos.html" class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-bold">' +
-    '<i class="fas fa-cash-register"></i> Abrir módulo de caja</a>' +
-    '<p class="text-xs text-gray-400">También puedes usar Productos, Clientes y Ventas desde el menú lateral sin salir de admin.</p>' +
-    '</div>';
-};
+// mostrarSeccionCaja esta definida en admin-caja.js (POS completo embebido)
 
 (function () {
   var originalPanel = window.mostrarPanelPrincipal;
@@ -184,13 +169,12 @@ window.mostrarSeccionCaja = function () {
     await cargarPerfilUsuario(user);
 
     if (window.usuarioActual && window.usuarioActual.activo === false) {
-      alert('Tu cuenta está desactivada. Contacta al administrador.');
+      alert('Tu cuenta esta desactivada. Contacta al administrador.');
       await auth.signOut();
       if (typeof mostrarLogin === 'function') mostrarLogin();
       return;
     }
 
-    // Nunca redirigir a pos.html automáticamente
     window._omitirDashboardInicial = !tienePermiso('dashboard');
 
     if (typeof originalPanel === 'function') originalPanel();
@@ -202,13 +186,13 @@ window.mostrarSeccionCaja = function () {
         var destino = primeraSeccionPermitida();
         if (destino === 'caja') {
           window._skipPermisoOnce = 'caja';
-          mostrarSeccionCaja();
+          if (typeof mostrarSeccionCaja === 'function') mostrarSeccionCaja();
           return;
         }
         window._skipPermisoOnce = destino;
         if (typeof mostrarSeccion === 'function') mostrarSeccion(destino);
       }
-    }, 100);
+    }, 120);
   };
 
   var originalSeccion = window.mostrarSeccion;
@@ -217,7 +201,10 @@ window.mostrarSeccionCaja = function () {
   window.mostrarSeccion = function (seccion) {
     if (window._skipPermisoOnce === seccion) {
       window._skipPermisoOnce = null;
-      if (seccion === 'caja') return mostrarSeccionCaja();
+      if (seccion === 'caja') {
+        if (typeof mostrarSeccionCaja === 'function') return mostrarSeccionCaja();
+        return;
+      }
       if (typeof originalSeccion === 'function') return originalSeccion(seccion);
       return;
     }
@@ -231,7 +218,8 @@ window.mostrarSeccionCaja = function () {
         alert('No tienes permiso de caja');
         return;
       }
-      return mostrarSeccionCaja();
+      if (typeof mostrarSeccionCaja === 'function') return mostrarSeccionCaja();
+      return;
     }
 
     if (seccion === 'usuarios') {
@@ -243,7 +231,7 @@ window.mostrarSeccionCaja = function () {
     }
 
     if (seccion && !tienePermiso(seccion) && !tienePermiso('*')) {
-      alert('No tienes permiso para esta sección');
+      alert('No tienes permiso para esta seccion');
       return;
     }
 
@@ -251,7 +239,7 @@ window.mostrarSeccionCaja = function () {
   };
 })();
 
-/* ========== GESTIÓN DE USUARIOS ========== */
+/* ========== GESTION DE USUARIOS ========== */
 
 window.mostrarGestionUsuarios = function () {
   var content = document.getElementById('main-content');
@@ -270,7 +258,7 @@ window.mostrarGestionUsuarios = function () {
 
   content.innerHTML =
     '<div class="mb-6 flex flex-wrap justify-between gap-3 items-start">' +
-    '<div><h1 class="text-2xl md:text-3xl font-bold mb-1">🔐 Usuarios y roles</h1>' +
+    '<div><h1 class="text-2xl md:text-3xl font-bold mb-1">Usuarios y roles</h1>' +
     '<p class="text-sm text-gray-500">Control de acceso al panel AGROMAXGTM</p></div>' +
     '<button onclick="mostrarFormUsuario()" class="px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium">' +
     '<i class="fas fa-user-plus mr-1"></i> Nuevo usuario</button></div>' +
@@ -285,8 +273,8 @@ window.mostrarGestionUsuarios = function () {
     '<input id="usr-nombre" class="w-full p-3 border rounded-xl mb-3" placeholder="Nombre completo">' +
     '<label class="text-xs text-gray-500">Correo</label>' +
     '<input id="usr-email" type="email" class="w-full p-3 border rounded-xl mb-3" placeholder="correo@ejemplo.com">' +
-    '<label class="text-xs text-gray-500" id="usr-pass-label">Contraseña temporal</label>' +
-    '<input id="usr-password" type="password" class="w-full p-3 border rounded-xl mb-3" placeholder="Mínimo 6 caracteres">' +
+    '<label class="text-xs text-gray-500" id="usr-pass-label">Contrasena temporal</label>' +
+    '<input id="usr-password" type="password" class="w-full p-3 border rounded-xl mb-3" placeholder="Minimo 6 caracteres">' +
     '<label class="text-xs text-gray-500">Rol</label>' +
     '<select id="usr-role" class="w-full p-3 border rounded-xl mb-3">' + optionsHtml + '</select>' +
     '<label class="flex items-center gap-2 text-sm mb-4"><input type="checkbox" id="usr-activo" checked> Activo</label>' +
@@ -306,7 +294,7 @@ async function cargarListaUsuarios() {
   try {
     var snap = await db.collection('usuarios').get();
     if (snap.empty) {
-      box.innerHTML = '<p class="text-center text-gray-400 py-12">No hay usuarios registrados aún</p>';
+      box.innerHTML = '<p class="text-center text-gray-400 py-12">No hay usuarios registrados aun</p>';
       return;
     }
 
@@ -335,7 +323,7 @@ async function cargarListaUsuarios() {
         '<td class="p-3 space-x-2">' +
         '<button onclick="editarUsuario(\'' + row.id + '\')" class="text-blue-600 text-xs font-medium">Editar</button>' +
         (row.yo
-          ? '<span class="text-xs text-gray-400">Tú</span>'
+          ? '<span class="text-xs text-gray-400">Tu</span>'
           : '<button onclick="toggleUsuarioActivo(\'' + row.id + '\', ' + (u.activo === false) + ')" class="text-xs font-medium ' +
             (u.activo === false ? 'text-green-600' : 'text-orange-600') + '">' +
             (u.activo === false ? 'Activar' : 'Desactivar') + '</button>') +
@@ -346,7 +334,7 @@ async function cargarListaUsuarios() {
     box.innerHTML = html;
   } catch (e) {
     box.innerHTML = '<p class="text-red-600 p-6">Error: ' + e.message +
-      '. Revisa las reglas de Firestore para la colección <b>usuarios</b>.</p>';
+      '. Revisa las reglas de Firestore para la coleccion <b>usuarios</b>.</p>';
   }
 }
 
@@ -376,7 +364,7 @@ window.editarUsuario = async function (uid) {
 };
 
 window.toggleUsuarioActivo = async function (uid, activar) {
-  if (!confirm(activar ? '¿Activar este usuario?' : '¿Desactivar este usuario?')) return;
+  if (!confirm(activar ? 'Activar este usuario?' : 'Desactivar este usuario?')) return;
   try {
     await db.collection('usuarios').doc(uid).update({ activo: !!activar, actualizado: new Date() });
     cargarListaUsuarios();
@@ -408,10 +396,10 @@ window.guardarUsuario = async function () {
         activo: activo,
         actualizado: new Date()
       });
-      alert('✅ Usuario actualizado');
+      alert('Usuario actualizado');
     } else {
       if (!email || !password || password.length < 6) {
-        err.textContent = 'Correo y contraseña (mín. 6) son obligatorios';
+        err.textContent = 'Correo y contrasena (min. 6) son obligatorios';
         err.classList.remove('hidden');
         return;
       }
@@ -432,15 +420,15 @@ window.guardarUsuario = async function () {
       });
 
       await secAuth.signOut();
-      alert('✅ Usuario creado. Ya puede iniciar sesión con su correo.');
+      alert('Usuario creado. Ya puede iniciar sesion con su correo.');
     }
 
     cerrarFormUsuario();
     cargarListaUsuarios();
   } catch (e) {
     var msg = e.message;
-    if (e.code === 'auth/email-already-in-use') msg = 'Ese correo ya está registrado';
-    if (e.code === 'auth/weak-password') msg = 'Contraseña muy débil';
+    if (e.code === 'auth/email-already-in-use') msg = 'Ese correo ya esta registrado';
+    if (e.code === 'auth/weak-password') msg = 'Contrasena muy debil';
     err.textContent = msg;
     err.classList.remove('hidden');
   }
