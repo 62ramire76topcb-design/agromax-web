@@ -9,84 +9,186 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
 
-  <div class="bg-white max-w-lg w-full rounded-3xl shadow-2xl p-8 sm:p-10 text-center">
-    <div class="w-20 h-20 sm:w-24 sm:h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-      <i class="fas fa-check text-4xl sm:text-5xl text-green-600"></i>
+  <div class="bg-white max-w-lg w-full rounded-3xl shadow-2xl p-6 sm:p-10 text-center">
+    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
+      <i class="fas fa-check text-4xl text-green-600"></i>
     </div>
 
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">¡Pago exitoso!</h1>
-    <p class="text-gray-600 mb-2">Gracias por tu compra en <strong>AGROMAXGTM</strong>.</p>
-    <p class="text-sm text-gray-500 mb-6" id="session-info">Procesando confirmación...</p>
+    <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">¡Pago exitoso!</h1>
+    <p class="text-slate-600 mb-1">Gracias por tu compra en <strong>AGROMAXGTM</strong>.</p>
+    <p class="text-sm text-slate-500 mb-5" id="session-info">Procesando confirmación...</p>
 
-    <div id="pedido-info" class="hidden bg-gray-50 rounded-2xl p-5 mb-6 text-left text-sm"></div>
+    <div id="pedido-info" class="hidden text-left space-y-4 mb-6"></div>
 
-    <a href="/" class="inline-block w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg transition">
+    <a id="btn-seguimiento" href="/seguimiento.html" class="hidden w-full mb-3 bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-2xl font-bold text-base transition">
+      <i class="fas fa-map-marker-alt mr-1"></i> Ver seguimiento de mi pedido
+    </a>
+
+    <a href="/" class="inline-block w-full border border-slate-200 hover:bg-slate-50 text-slate-700 py-3.5 rounded-2xl font-semibold transition">
       Volver al catálogo
     </a>
 
-    <p class="text-xs text-gray-400 mt-6">
-      Si tienes dudas, contáctanos por WhatsApp: +502 4266 4744
+    <p class="text-xs text-slate-400 mt-6">
+      WhatsApp: +502 4266 4744
     </p>
   </div>
 
   <script src="./js/firebase-config.js"></script>
   <script>
+    function generarTracking() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let s = '';
+      for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return 'AGM-' + s;
+    }
+
+    function fechaEstimadaDefault() {
+      const d = new Date();
+      d.setDate(d.getDate() + 5); // 5 días hábiles aproximados
+      return d;
+    }
+
     async function procesarPagoExitoso() {
       const params = new URLSearchParams(window.location.search);
       const sessionId = params.get('session_id');
 
       if (sessionId) {
-        document.getElementById('session-info').textContent = 'ID de sesión: ' + sessionId.substring(0, 22) + '...';
+        document.getElementById('session-info').textContent = 'Sesión: ' + sessionId.substring(0, 20) + '...';
       }
 
       const carritoPendiente = JSON.parse(localStorage.getItem('carritoPendienteStripe') || '[]');
       const datos = JSON.parse(localStorage.getItem('datosPendienteStripe') || localStorage.getItem('datosClienteCatalogo') || '{}');
 
-      if (carritoPendiente.length > 0) {
-        let total = 0;
-        const productos = carritoPendiente.map(item => {
-          total += item.precio * item.cantidad;
-          return { nombre: item.nombre, cantidad: item.cantidad, precio: item.precio };
+      // Evitar duplicar si el usuario recarga
+      const yaProcesado = sessionId && localStorage.getItem('stripeProcesado_' + sessionId);
+      if (yaProcesado) {
+        const saved = JSON.parse(yaProcesado);
+        mostrarResumen(saved, datos);
+        return;
+      }
+
+      if (carritoPendiente.length === 0) {
+        document.getElementById('session-info').textContent = 'Pedido registrado. Usa tu código de seguimiento si ya lo recibiste.';
+        return;
+      }
+
+      let total = 0;
+      const productos = carritoPendiente.map(item => {
+        total += item.precio * item.cantidad;
+        return { nombre: item.nombre, cantidad: item.cantidad, precio: item.precio };
+      });
+
+      const trackingCode = generarTracking();
+      const fechaEstimada = fechaEstimadaDefault();
+      const ahora = new Date();
+
+      const pedidoData = {
+        cliente: datos.nombre || 'Cliente Web - Stripe',
+        telefono: datos.telefono || '',
+        nit: datos.nit || 'CF',
+        email: datos.email || '',
+        direccion: datos.direccion || '',
+        referencia: datos.referencia || '',
+        productos: productos,
+        total: total,
+        fecha: ahora,
+        estado: 'Pagado',
+        metodo: 'Stripe',
+        sessionId: sessionId || null,
+        trackingCode: trackingCode,
+        fechaEstimada: fechaEstimada,
+        historial: [
+          { estado: 'Pagado', fecha: ahora, nota: 'Pago confirmado con tarjeta' }
+        ]
+      };
+
+      try {
+        const ref = await db.collection('pedidos').add(pedidoData);
+
+        // Orden de trabajo (Admin) sincronizada
+        await db.collection('ordenes_trabajo').add({
+          pedidoId: ref.id,
+          trackingCode: trackingCode,
+          cliente: pedidoData.cliente,
+          telefono: pedidoData.telefono,
+          nit: pedidoData.nit,
+          email: pedidoData.email,
+          direccion: pedidoData.direccion,
+          referencia: pedidoData.referencia,
+          productos: productos,
+          total: total,
+          estado: 'Pagado',
+          metodo: 'Stripe',
+          fecha: ahora,
+          fechaEstimada: fechaEstimada,
+          prioridada: 'normal',
+          notasInternas: ''
         });
 
-        try {
-          await db.collection('pedidos').add({
-            cliente: datos.nombre || 'Cliente Web - Stripe',
-            telefono: datos.telefono || '',
-            nit: datos.nit || 'CF',
-            email: datos.email || '',
-            direccion: datos.direccion || '',
-            referencia: datos.referencia || '',
-            productos: productos,
-            total: total,
-            fecha: new Date(),
-            estado: 'Pagado',
-            metodo: 'Stripe',
-            sessionId: sessionId || null
-          });
+        const resumen = {
+          trackingCode,
+          total,
+          productos,
+          fechaEstimadaISO: fechaEstimada.toISOString()
+        };
 
-          const infoDiv = document.getElementById('pedido-info');
-          infoDiv.classList.remove('hidden');
-          infoDiv.innerHTML = `
-            <p class="font-semibold mb-2">Resumen del pedido</p>
-            <p><b>Cliente:</b> ${datos.nombre || ''}</p>
-            <p><b>Teléfono:</b> ${datos.telefono || ''}</p>
-            <p><b>NIT:</b> ${datos.nit || 'CF'}</p>
-            <p><b>Dirección:</b> ${datos.direccion || ''}</p>
-            <hr class="my-3">
-            ${productos.map(p => `<p>• ${p.nombre} × ${p.cantidad} = Q${(p.precio * p.cantidad).toFixed(2)}</p>`).join('')}
-            <p class="font-bold mt-3 text-green-700">Total: Q${total.toFixed(2)}</p>
-          `;
-        } catch (e) {
-          console.error('Error guardando pedido:', e);
+        if (sessionId) {
+          localStorage.setItem('stripeProcesado_' + sessionId, JSON.stringify(resumen));
         }
+
+        mostrarResumen(resumen, datos);
 
         localStorage.removeItem('carritoPendienteStripe');
         localStorage.removeItem('datosPendienteStripe');
         localStorage.removeItem('carritoAGROMAXGTM');
+      } catch (e) {
+        console.error('Error guardando pedido:', e);
+        document.getElementById('session-info').textContent = 'Pago OK, pero hubo un error al registrar el seguimiento. Contáctanos por WhatsApp.';
       }
+    }
+
+    function mostrarResumen(resumen, datos) {
+      const fechaEst = resumen.fechaEstimadaISO
+        ? new Date(resumen.fechaEstimadaISO).toLocaleDateString('es-GT', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+          })
+        : 'Por confirmar';
+
+      const infoDiv = document.getElementById('pedido-info');
+      infoDiv.classList.remove('hidden');
+      infoDiv.innerHTML = `
+        <div class="bg-green-50 border border-green-100 rounded-2xl p-4 text-center">
+          <p class="text-xs text-green-700 font-medium mb-1">Tu código de seguimiento</p>
+          <p class="text-2xl font-extrabold text-green-800 tracking-wide">${resumen.trackingCode}</p>
+          <p class="text-xs text-green-700 mt-2">Guárdalo para consultar el estado de tu envío</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-4 text-sm space-y-1">
+          <p><i class="fas fa-calendar-alt text-green-600 w-5"></i> <b>Llegada estimada:</b></p>
+          <p class="font-semibold text-slate-800 capitalize pl-6">${fechaEst}</p>
+          <p class="text-xs text-slate-500 pl-6">Te avisaremos si hay cambios</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-4 text-sm space-y-1">
+          <p class="font-semibold mb-2">Datos de envío</p>
+          <p><b>Cliente:</b> ${datos.nombre || ''}</p>
+          <p><b>Teléfono:</b> ${datos.telefono || ''}</p>
+          <p><b>NIT:</b> ${datos.nit || 'CF'}</p>
+          <p><b>Dirección:</b> ${datos.direccion || ''}</p>
+          <hr class="my-2">
+          ${(resumen.productos || []).map(p => `<p>• ${p.nombre} × ${p.cantidad}</p>`).join('')}
+          <p class="font-bold text-green-700 mt-2">Total: Q${Number(resumen.total || 0).toFixed(2)}</p>
+        </div>
+      `;
+
+      const btn = document.getElementById('btn-seguimiento');
+      btn.href = '/seguimiento.html?codigo=' + encodeURIComponent(resumen.trackingCode);
+      btn.classList.remove('hidden');
+      btn.classList.add('inline-block');
+
+      document.getElementById('session-info').textContent = 'Pedido registrado correctamente';
     }
 
     window.onload = procesarPagoExitoso;
