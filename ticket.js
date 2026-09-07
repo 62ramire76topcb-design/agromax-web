@@ -6,19 +6,22 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
   const folio = extras.folio || ("T-" + Date.now().toString().slice(-8));
   const cajero = extras.cajero || "";
   const nota = extras.nota || "";
+  const descuento = Number(extras.descuento || 0);
+  const subtotal = Number(extras.subtotal != null ? extras.subtotal : (Number(total) + descuento));
+  const promoNombre = extras.promoNombre || "";
 
-  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=780,scrollbars=yes");
+  const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=800,scrollbars=yes");
 
   let productosHTML = "";
   carrito.forEach(p => {
-    const subtotal = (p.precio * p.cantidad).toFixed(2);
+    const line = (p.precio * p.cantidad).toFixed(2);
     productosHTML += `
       <div style="display:flex;justify-content:space-between;margin:8px 0;">
         <div style="flex:1;">
           <strong>${p.nombre}</strong><br>
           <small>${p.cantidad} × Q${Number(p.precio).toFixed(2)}</small>
         </div>
-        <div style="text-align:right;font-weight:bold;">Q${subtotal}</div>
+        <div style="text-align:right;font-weight:bold;">Q${line}</div>
       </div>`;
   });
 
@@ -56,6 +59,8 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
       <hr>
       ${productosHTML}
       <hr>
+      <p>Subtotal: Q${Number(subtotal).toFixed(2)}</p>
+      ${descuento > 0 ? `<p>Descuento${promoNombre ? ' (' + promoNombre + ')' : ''}: -Q${descuento.toFixed(2)}</p>` : ''}
       <div class="total">TOTAL: Q${Number(total).toFixed(2)}</div>
       <p><strong>Método:</strong> ${metodoPago}</p>
       ${metodoPago === "Efectivo" ? `
@@ -80,21 +85,29 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
   win.focus();
 }
 
-/** Reimprimir desde un documento de venta guardado */
 function reimprimirTicketVenta(v) {
   const carrito = (v.productos || []).map(p => ({
     nombre: p.nombre,
     precio: p.precio,
     cantidad: p.cantidad
   }));
+  const descuento = Number(v.descuento || 0);
+  const total = Number(v.total) || 0;
   abrirTicket(
     carrito,
-    Number(v.total) || 0,
+    total,
     v.metodoPago || '',
     Number(v.montoRecibido) || 0,
     Number(v.cambio) || 0,
     v.cliente || 'Consumidor Final',
     v.nit || '',
-    { folio: v.folio || '', cajero: v.cajero || '', nota: v.nota || '' }
+    {
+      folio: v.folio || '',
+      cajero: v.cajero || '',
+      nota: v.nota || '',
+      descuento: descuento,
+      subtotal: Number(v.subtotal != null ? v.subtotal : total + descuento),
+      promoNombre: v.promoNombre || v.codigoPromo || ''
+    }
   );
 }
