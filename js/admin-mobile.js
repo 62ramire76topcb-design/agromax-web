@@ -19,25 +19,30 @@
             <button onclick="cerrarSidebarAdmin()" class="md:hidden text-white text-2xl leading-none px-2">&times;</button>
           </div>
 
+          <div id="user-role-badge" class="px-4 py-3 border-b bg-green-800 text-white text-sm">
+            <div class="text-xs opacity-80">Cargando usuario...</div>
+          </div>
+
           <nav class="p-3 md:p-4 space-y-0.5 text-sm md:text-base">
-            <a onclick="navegarAdmin('dashboard')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home w-5 text-center text-sm"></i> Dashboard</a>
-            <a onclick="navegarAdmin('ordenes')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-clipboard-list w-5 text-center text-sm"></i> Órdenes de trabajo</a>
-            <a onclick="navegarAdmin('pedidos')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer relative">
+            <a data-permiso="dashboard" onclick="navegarAdmin('dashboard')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-home w-5 text-center text-sm"></i> Dashboard</a>
+            <a data-permiso="ordenes" onclick="navegarAdmin('ordenes')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-clipboard-list w-5 text-center text-sm"></i> Órdenes de trabajo</a>
+            <a data-permiso="pedidos" onclick="navegarAdmin('pedidos')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer relative">
               <i class="fas fa-receipt w-5 text-center text-sm"></i> Pedidos
               <span id="badge-pedidos" class="hidden ml-auto bg-red-500 text-white text-xs font-bold min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full">0</span>
             </a>
-            <a onclick="navegarAdmin('reportes')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-chart-bar w-5 text-center text-sm"></i> Reportes</a>
-            <a onclick="navegarAdmin('clientes')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-users w-5 text-center text-sm"></i> Clientes</a>
-            <a onclick="navegarAdmin('agregar')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus w-5 text-center text-sm"></i> Agregar Producto</a>
-            <a onclick="navegarAdmin('masiva')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-file-csv w-5 text-center text-sm"></i> Subida Masiva</a>
-            <a href="compras.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-truck w-5 text-center text-sm"></i> Compras</a>
-            <a href="inventario.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-warehouse w-5 text-center text-sm"></i> Inventario</a>
-            <a href="ventas.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-cash-register w-5 text-center text-sm"></i> Ventas</a>
-            <a href="bonificaciones.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-gift w-5 text-center text-sm"></i> Bonificaciones</a>
-            <a href="alquileres.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-key w-5 text-center text-sm"></i> Alquileres</a>
-            <a href="caja.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-money-bill-wave w-5 text-center text-sm"></i> Caja</a>
-            <a href="scan.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-barcode w-5 text-center text-sm"></i> Scan</a>
-            <a onclick="navegarAdmin('productos')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list w-5 text-center text-sm"></i> Productos</a>
+            <a data-permiso="reportes" onclick="navegarAdmin('reportes')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-chart-bar w-5 text-center text-sm"></i> Reportes</a>
+            <a data-permiso="clientes" onclick="navegarAdmin('clientes')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-users w-5 text-center text-sm"></i> Clientes</a>
+            <a data-permiso="agregar" onclick="navegarAdmin('agregar')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-plus w-5 text-center text-sm"></i> Agregar Producto</a>
+            <a data-permiso="masiva" onclick="navegarAdmin('masiva')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-file-csv w-5 text-center text-sm"></i> Subida Masiva</a>
+            <a data-permiso="compras" href="compras.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-truck w-5 text-center text-sm"></i> Compras</a>
+            <a data-permiso="inventario" href="inventario.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-warehouse w-5 text-center text-sm"></i> Inventario</a>
+            <a data-permiso="ventas" href="ventas.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-cash-register w-5 text-center text-sm"></i> Ventas</a>
+            <a data-permiso="bonificaciones" href="bonificaciones.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-gift w-5 text-center text-sm"></i> Bonificaciones</a>
+            <a data-permiso="alquileres" href="alquileres.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-key w-5 text-center text-sm"></i> Alquileres</a>
+            <a data-permiso="caja" href="caja.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-money-bill-wave w-5 text-center text-sm"></i> Caja</a>
+            <a data-permiso="scan" href="scan.html" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-barcode w-5 text-center text-sm"></i> Scan</a>
+            <a data-permiso="productos" onclick="navegarAdmin('productos')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-list w-5 text-center text-sm"></i> Productos</a>
+            <a data-permiso="usuarios" id="link-usuarios" onclick="navegarAdmin('usuarios')" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-green-50 cursor-pointer"><i class="fas fa-user-shield w-5 text-center text-sm"></i> Usuarios y roles</a>
             <a onclick="logout()" class="flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl md:rounded-2xl hover:bg-red-50 text-red-600 mt-6 md:mt-10 cursor-pointer"><i class="fas fa-sign-out-alt w-5 text-center text-sm"></i> Cerrar Sesión</a>
           </nav>
         </div>
