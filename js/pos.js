@@ -3,6 +3,7 @@
 let carrito = [];
 let cajeroActual = "";
 let clientesFrecuentes = [];
+window.cajeroActual = "";
 
 /* AUTH + INICIALIZACIÓN */
 auth.onAuthStateChanged(user => {
@@ -12,8 +13,8 @@ auth.onAuthStateChanged(user => {
     const ultimoCajero = localStorage.getItem("ultimoCajero");
     if (ultimoCajero) {
       cajeroActual = ultimoCajero;
-      view("venta");
-      cargarClientesFrecuentes();
+      window.cajeroActual = ultimoCajero;
+      iniciarSesionCajero(ultimoCajero);
     } else {
       mostrarSeleccionCajero();
     }
@@ -58,20 +59,6 @@ async function cargarClientesFrecuentes() {
   }
 }
 
-function filtrarSugerencias() {
-  const input = document.getElementById("nombreCliente");
-  const datalist = document.getElementById("clientesSugerencias");
-  if (!datalist) return;
-  datalist.innerHTML = "";
-  const texto = input.value.toLowerCase().trim();
-  if (texto.length < 2) return;
-  clientesFrecuentes.filter(c => c.nombre.toLowerCase().includes(texto)).forEach(cliente => {
-    const option = document.createElement("option");
-    option.value = cliente.nombre;
-    datalist.appendChild(option);
-  });
-}
-
 document.addEventListener('change', function(e) {
   if (e.target.id === "nombreCliente") {
     const nombre = e.target.value.trim();
@@ -104,10 +91,28 @@ function mostrarSeleccionCajero() {
         <input id="nombreCajero" type="text" placeholder="Ej: Juan Pérez, María López, CAJERO-01"
                class="w-full p-4 border rounded-2xl mb-6 text-center text-lg focus:outline-none focus:border-green-500">
         <button onclick="confirmarCajero()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg">
-          Ingresar a Caja
+          Continuar
         </button>
       </div>
     </div>`;
+}
+
+async function iniciarSesionCajero(nombre) {
+  cajeroActual = nombre;
+  window.cajeroActual = nombre;
+  cargarClientesFrecuentes();
+  if (typeof cargarTurnoAbierto === 'function') {
+    const t = await cargarTurnoAbierto(nombre);
+    if (t) {
+      view("venta");
+      return;
+    }
+  }
+  if (typeof mostrarAperturaTurno === 'function') {
+    mostrarAperturaTurno(nombre);
+  } else {
+    view("venta");
+  }
 }
 
 function confirmarCajero() {
@@ -116,16 +121,15 @@ function confirmarCajero() {
     alert("❌ Por favor ingresa tu nombre o código de cajero");
     return;
   }
-  cajeroActual = nombre;
   localStorage.setItem("ultimoCajero", nombre);
-  view("venta");
-  cargarClientesFrecuentes();
+  iniciarSesionCajero(nombre);
 }
 
 function cambiarCajero() {
-  if (confirm("¿Cambiar de cajero?")) {
+  if (confirm("¿Cambiar de cajero? Si hay turno abierto, ciérralo antes si es otro responsable.")) {
     localStorage.removeItem("ultimoCajero");
     cajeroActual = "";
+    window.cajeroActual = "";
     mostrarSeleccionCajero();
   }
 }
@@ -171,23 +175,29 @@ function view(v) {
   }
 
   const app = document.getElementById("app");
+  const turnoTxt = (window.turnoActual && window.turnoActual.montoInicial != null)
+    ? ` · Fondo Q${Number(window.turnoActual.montoInicial).toFixed(2)}`
+    : '';
 
   if (v === "venta") {
     app.innerHTML = `
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">🛒 Nueva Venta</h1>
-        <div class="flex items-center gap-3">
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold">🛒 Nueva Venta</h1>
+        <div class="flex flex-wrap items-center gap-2">
           <span class="text-sm text-gray-600">Cajero:</span>
-          <span class="bg-green-100 text-green-700 px-4 py-2 rounded-2xl font-medium">${cajeroActual}</span>
-          <button onclick="cambiarCajero()" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-4 py-2 rounded-2xl text-sm font-medium flex items-center gap-2">
+          <span class="bg-green-100 text-green-700 px-3 py-1.5 rounded-2xl font-medium text-sm">${cajeroActual}${turnoTxt}</span>
+          <button onclick="cambiarCajero()" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-3 py-1.5 rounded-2xl text-sm font-medium">
             <i class="fas fa-user-edit"></i> Cambiar
+          </button>
+          <button onclick="cerrarTurnoCaja()" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-2xl text-sm font-medium">
+            <i class="fas fa-lock"></i> Cerrar turno
           </button>
         </div>
       </div>
 
-      <div class="bg-white p-6 rounded-3xl shadow mb-6">
+      <div class="bg-white p-4 md:p-6 rounded-3xl shadow mb-6">
         <h3 class="font-bold text-lg mb-4">Datos del Cliente</h3>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
             <input id="nombreCliente" type="text" placeholder="Escribe para buscar cliente..."
@@ -202,12 +212,12 @@ function view(v) {
         </div>
       </div>
 
-      <div class="grid grid-cols-12 gap-6">
-        <div class="col-span-7 bg-white p-6 rounded-3xl shadow">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-7 bg-white p-4 md:p-6 rounded-3xl shadow">
           <input id="search" placeholder="Buscar producto..." class="w-full p-4 border rounded-2xl" onkeyup="buscar()">
           <div id="results" class="mt-4"></div>
         </div>
-        <div class="col-span-5 bg-white p-6 rounded-3xl shadow">
+        <div class="lg:col-span-5 bg-white p-4 md:p-6 rounded-3xl shadow">
           <h2 class="text-xl font-bold mb-4">Carrito</h2>
           <div id="cart"></div>
           <div id="efectivoBox" class="mt-4 hidden">
@@ -235,7 +245,6 @@ function view(v) {
       </div>
     `;
 
-    // Event listeners para método de pago y cambio
     const metodoSelect = document.getElementById("metodoPago");
     if (metodoSelect) {
       metodoSelect.addEventListener("change", function() {
@@ -262,7 +271,10 @@ function view(v) {
   }
 
   if (v === "pendientes") cargarPendientes();
-  if (v === "historial") cargarHistorial();
+  if (v === "historial") {
+    if (typeof cargarHistorialCajero === 'function') cargarHistorialCajero();
+    else cargarHistorial();
+  }
 }
 
 /* ================= SEARCH ================= */
@@ -293,8 +305,10 @@ async function buscar() {
 function add(id, nombre, precio, stock) {
   if (stock <= 0) return alert("Sin stock disponible");
   let item = carrito.find(p => p.id === id);
-  if (item) item.cantidad++;
-  else carrito.push({ id, nombre, precio, cantidad: 1 });
+  if (item) {
+    if (item.cantidad + 1 > stock) return alert("Stock insuficiente");
+    item.cantidad++;
+  } else carrito.push({ id, nombre, precio, cantidad: 1 });
   render();
 }
 
@@ -400,7 +414,8 @@ async function finalizarVenta() {
         cambio: metodoPago === "Efectivo" ? cambio : 0,
         cajero: cajeroActual || "Sin registrar",
         cliente: document.getElementById("nombreCliente").value.trim() || "Consumidor Final",
-        nit: document.getElementById("nitCliente").value.trim() || ""
+        nit: document.getElementById("nitCliente").value.trim() || "",
+        turnoId: (window.turnoActual && window.turnoActual.id) || null
       });
     });
     alert("✅ Venta finalizada y stock actualizado correctamente");
@@ -430,6 +445,7 @@ function cargarPendientes() {
     let html = "";
     snap.forEach(doc => {
       const v = doc.data();
+      if (v.cajero && cajeroActual && v.cajero !== cajeroActual) return;
       html += `
         <div class="bg-white p-4 rounded-xl shadow mb-3 flex justify-between items-center">
           <div>
@@ -457,37 +473,23 @@ async function cargarPendiente(id) {
   }
 }
 
-/* ================= HISTORIAL ================= */
+/* ================= HISTORIAL (fallback) ================= */
 function cargarHistorial() {
+  if (typeof cargarHistorialCajero === 'function') return cargarHistorialCajero();
   document.getElementById("app").innerHTML = `
     <h1 class="text-3xl font-bold mb-6">Historial Caja</h1>
     <div id="hist"></div>
   `;
-  db.collection("ventas").orderBy("fecha", "desc").onSnapshot(snap => {
+  db.collection("ventas").orderBy("fecha", "desc").limit(50).onSnapshot(snap => {
     let html = "";
     snap.forEach(doc => {
       const v = doc.data();
+      if (cajeroActual && v.cajero !== cajeroActual) return;
       html += `
         <div class="bg-white p-4 rounded-xl shadow mb-3">
-          <div class="flex justify-between items-start">
-            <div>
-              <div class="font-bold text-lg">Total: Q${v.total || 0}</div>
-              <div class="text-sm text-gray-700">Cajero: <strong>${v.cajero || 'Desconocido'}</strong></div>
-              <div class="text-sm">Cliente: ${v.cliente || 'Consumidor Final'}</div>
-              ${v.nit ? `<div class="text-sm text-gray-600">NIT: ${v.nit}</div>` : ''}
-            </div>
-            <div class="text-right">
-              <div class="text-sm">${v.metodoPago || "N/A"}</div>
-              ${v.metodoPago === "Efectivo" ? `
-                <div class="text-xs text-gray-600">
-                  Recibido: Q${v.montoRecibido || 0} | Cambio: Q${v.cambio || 0}
-                </div>
-              ` : ''}
-            </div>
-          </div>
-          <div class="text-xs text-gray-500 mt-3">
-            ${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}
-          </div>
+          <div class="font-bold text-lg">Total: Q${v.total || 0}</div>
+          <div class="text-sm">Cliente: ${v.cliente || 'Consumidor Final'}</div>
+          <div class="text-xs text-gray-500 mt-2">${v.fecha?.toDate ? v.fecha.toDate().toLocaleString() : ''}</div>
         </div>`;
     });
     document.getElementById("hist").innerHTML = html || "<p class='text-gray-400 py-12 text-center'>Sin historial</p>";
