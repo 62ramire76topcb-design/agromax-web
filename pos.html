@@ -18,39 +18,41 @@
 
 <div class="flex h-screen">
 
-<div class="w-72 bg-white border-r shadow-xl overflow-y-auto">
-  <div class="p-6 border-b bg-green-700 text-white">
+<div class="w-64 md:w-72 bg-white border-r shadow-xl overflow-y-auto shrink-0">
+  <div class="p-5 border-b bg-green-700 text-white">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-3xl">🌱</div>
+      <div class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-green-700 text-2xl">🌱</div>
       <div>
-        <h1 class="text-2xl font-bold">AGROMAXGTM</h1>
-        <p class="text-xs">Caja Registradora - Mostrador</p>
+        <h1 class="text-xl font-bold">AGROMAXGTM</h1>
+        <p class="text-xs opacity-90">Caja - Mostrador</p>
       </div>
     </div>
   </div>
 
-  <nav class="p-4 space-y-2">
+  <nav class="p-3 space-y-1 text-sm">
     <a onclick="view('venta')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
-      <i class="fas fa-cash-register"></i> Nueva Venta
+      <i class="fas fa-cash-register w-5"></i> Nueva Venta
     </a>
     <a onclick="view('pendientes')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
-      <i class="fas fa-clock"></i> Ventas Pendientes
+      <i class="fas fa-clock w-5"></i> Ventas Pendientes
     </a>
     <a onclick="view('historial')" class="block p-3 hover:bg-green-50 rounded-xl cursor-pointer">
-      <i class="fas fa-history"></i> Mi historial
+      <i class="fas fa-history w-5"></i> Mi historial
     </a>
     <a onclick="cerrarTurnoCaja()" class="block p-3 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer mt-6">
-      <i class="fas fa-lock"></i> Cerrar turno
+      <i class="fas fa-lock w-5"></i> Cerrar turno
     </a>
+    <p class="px-3 pt-4 text-[10px] text-gray-400">F2 = Finalizar venta</p>
   </nav>
 </div>
 
-<div class="flex-1 p-4 md:p-8 overflow-auto" id="app"></div>
+<div class="flex-1 p-3 md:p-8 overflow-auto" id="app"></div>
 
 </div>
 
 <script src="./js/firebase-config.js"></script>
 <script src="./js/pos-turno.js"></script>
 <script src="./js/pos.js"></script>
+<script src="./js/pos-extras.js"></script>
 </body>
 </html>
