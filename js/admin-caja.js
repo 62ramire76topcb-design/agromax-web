@@ -1,5 +1,5 @@
 // js/admin-caja.js
-// Modulo Caja en admin: POS completo embebido a pantalla del area de trabajo
+// Modulo Caja en admin: POS completo embebido
 
 window.mostrarSeccionCaja = function () {
   var content = document.getElementById('main-content');
@@ -22,7 +22,7 @@ window.mostrarSeccionCaja = function () {
     '</div>' +
     '<div class="text-xs opacity-90">' + nombre + (role ? ' · ' + role : '') + '</div>' +
     '</div>' +
-    '<iframe id="iframe-caja-pos" src="pos.html?embed=1&v=3" title="Caja POS" ' +
+    '<iframe id="iframe-caja-pos" src="pos.html?embed=1&v=5" title="Caja POS" ' +
     'class="w-full flex-1 border-0 bg-white" style="min-height:75vh;height:100%" allow="clipboard-write"></iframe>' +
     '</div>';
 };
