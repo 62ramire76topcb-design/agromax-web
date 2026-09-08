@@ -18,6 +18,13 @@
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
   #search, #scanCodigo, #montoRecibido, #nombreCliente, #nitCliente { font-size: 16px; }
   button, .rounded-xl { min-height: 40px; }
+  /* En movil mostrar sidebar como drawer simple */
+  @media (max-width: 768px) {
+    #pos-sidebar:not(.hidden) {
+      position: fixed; z-index: 50; left: 0; top: 0; bottom: 0;
+      width: 240px; max-width: 80vw;
+    }
+  }
 </style>
 </head>
 <body class="bg-gray-100">
@@ -36,37 +43,37 @@
   </div>
 
   <nav class="p-2 space-y-0.5 text-sm">
-    <a onclick="irAVentaSeguro()" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="irAVentaSeguro();return false;" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer font-semibold text-green-800">
       <i class="fas fa-cash-register w-5"></i> Nueva Venta
     </a>
-    <a onclick="view('productos-pos')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="view('productos-pos');return false;" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-boxes w-5"></i> Productos
     </a>
-    <a onclick="view('clientes-pos')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="view('clientes-pos');return false;" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-users w-5"></i> Clientes
     </a>
-    <a onclick="view('pendientes')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="view('pendientes');return false;" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-clock w-5"></i> Pendientes
     </a>
-    <a onclick="view('historial')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="view('historial');return false;" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-history w-5"></i> Mi historial
     </a>
-    <a onclick="view('turnos')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="view('turnos');return false;" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-user-clock w-5"></i> Turnos
     </a>
-    <a onclick="view('dashboard-caja')" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="view('dashboard-caja');return false;" class="block p-2.5 hover:bg-green-50 rounded-xl cursor-pointer">
       <i class="fas fa-chart-line w-5"></i> Dashboard
     </a>
-    <a onclick="view('vencer')" class="block p-2.5 hover:bg-amber-50 text-amber-800 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="view('vencer');return false;" class="block p-2.5 hover:bg-amber-50 text-amber-800 rounded-xl cursor-pointer">
       <i class="fas fa-hourglass-half w-5"></i> Por vencer
     </a>
-    <a onclick="imprimirCorteDia()" class="block p-2.5 hover:bg-indigo-50 text-indigo-700 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="imprimirCorteDia();return false;" class="block p-2.5 hover:bg-indigo-50 text-indigo-700 rounded-xl cursor-pointer">
       <i class="fas fa-file-alt w-5"></i> Documento del día
     </a>
-    <a data-solo-cajero onclick="cerrarTurnoCaja()" class="block p-2.5 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer mt-3">
+    <a href="javascript:void(0)" data-solo-cajero onclick="cerrarTurnoCaja();return false;" class="block p-2.5 hover:bg-red-50 text-red-600 rounded-xl cursor-pointer mt-3">
       <i class="fas fa-lock w-5"></i> Cerrar turno
     </a>
-    <a onclick="cambiarCajero()" class="pos-logout-link block p-2.5 hover:bg-gray-100 text-gray-600 rounded-xl cursor-pointer">
+    <a href="javascript:void(0)" onclick="cambiarCajero();return false;" class="pos-logout-link block p-2.5 hover:bg-gray-100 text-gray-600 rounded-xl cursor-pointer">
       <i class="fas fa-sign-out-alt w-5"></i> Cerrar sesión
     </a>
     <p class="px-2 pt-3 text-[10px] text-gray-400 leading-relaxed">
@@ -94,5 +101,6 @@
 <script src="./js/pos-descuento-venta.js"></script>
 <script src="./js/pos-ux.js"></script>
 <script src="./js/pos-extras2.js"></script>
+<script src="./js/pos-fix-venta.js"></script>
 </body>
 </html>
