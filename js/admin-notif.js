@@ -1,5 +1,5 @@
 // js/admin-notif.js
-// Notificaciones en tiempo real de pedidos (no modifica admin.js)
+// Notificaciones en tiempo real de pedidos + campana del header
 
 (function () {
   let knownIds = new Set();
@@ -33,6 +33,13 @@
       toast.style.transition = 'opacity 0.4s';
       setTimeout(function () { toast.remove(); }, 400);
     }, 6000);
+
+    if (typeof pushAdminNotif === 'function') {
+      pushAdminNotif({ title: titulo, body: mensaje, type: tipo === 'pago' ? 'info' : 'ok' });
+    }
+    if (typeof adminToast === 'function') {
+      adminToast(titulo + ': ' + mensaje, tipo === 'pago' ? 'info' : 'ok');
+    }
   }
 
   function notificarNavegador(titulo, cuerpo) {
@@ -60,19 +67,6 @@
 
   function actualizarBadge(count) {
     var badge = document.getElementById('badge-pedidos');
-    if (!badge) {
-      var links = document.querySelectorAll('nav a');
-      for (var i = 0; i < links.length; i++) {
-        if (links[i].textContent.indexOf('Pedidos') !== -1) {
-          links[i].classList.add('relative');
-          badge = document.createElement('span');
-          badge.id = 'badge-pedidos';
-          badge.className = 'hidden ml-auto bg-red-500 text-white text-xs font-bold min-w-[22px] h-[22px] px-1.5 flex items-center justify-center rounded-full';
-          links[i].appendChild(badge);
-          break;
-        }
-      }
-    }
     if (!badge) return;
     if (count > 0) {
       badge.textContent = count > 99 ? '99+' : String(count);
@@ -96,7 +90,8 @@
       snapshot.forEach(function (doc) {
         var p = doc.data();
         var est = p.estado || 'Pendiente';
-        if (est === 'Pendiente' || est === 'Pagado' || est === 'En proceso') pendientes++;
+        if (est === 'Pendiente' || est === 'Pagado' || est === 'Enviado' || est === 'Enviado') pendientes++;
+        if (est === 'En proceso' || est === 'Preparando') pendientes++;
       });
 
       actualizarBadge(pendientes);
