@@ -36,17 +36,17 @@
             </a>
             <a data-permiso="clientes" data-seccion="clientes" onclick="navegarAdmin('clientes')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-users w-5 text-center text-slate-400 text-sm"></i> Clientes</a>
 
-            <div class="nav-group">Inventario</div>
+            <div class="nav-group">Inventario y compras</div>
             <a data-permiso="productos" data-seccion="productos" onclick="navegarAdmin('productos')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-boxes w-5 text-center text-slate-400 text-sm"></i> Productos</a>
             <a data-permiso="agregar" data-seccion="agregar" onclick="navegarAdmin('agregar')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-plus w-5 text-center text-slate-400 text-sm"></i> Agregar producto</a>
             <a data-permiso="masiva" data-seccion="masiva" onclick="navegarAdmin('masiva')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-file-csv w-5 text-center text-slate-400 text-sm"></i> Subida masiva</a>
             <a data-permiso="compras" href="compras.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-truck w-5 text-center text-slate-400 text-sm"></i> Compras</a>
-            <a data-permiso="inventario" href="inventario.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-warehouse w-5 text-center text-slate-400 text-sm"></i> Inventario</a>
             <a data-permiso="scan" href="scan.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-barcode w-5 text-center text-slate-400 text-sm"></i> Scan</a>
 
-            <div class="nav-group">Ventas y marketing</div>
+            <div class="nav-group">Ventas y finanzas</div>
             <a data-permiso="ventas" href="ventas.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-chart-pie w-5 text-center text-slate-400 text-sm"></i> Ventas</a>
             <a data-permiso="reportes" data-seccion="reportes" onclick="navegarAdmin('reportes')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-chart-bar w-5 text-center text-slate-400 text-sm"></i> Reportes</a>
+            <a data-permiso="contabilidad" data-seccion="contabilidad" onclick="navegarAdmin('contabilidad')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-balance-scale w-5 text-center text-slate-400 text-sm"></i> Contabilidad</a>
             <a data-permiso="bonificaciones" href="bonificaciones.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-gift w-5 text-center text-slate-400 text-sm"></i> Bonificaciones</a>
             <a data-permiso="alquileres" href="alquileres.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-key w-5 text-center text-slate-400 text-sm"></i> Alquileres</a>
 
@@ -57,7 +57,6 @@
         </aside>
 
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <!-- Header profesional -->
           <header class="bg-white border-b border-slate-200 px-3 md:px-6 py-2.5 flex items-center gap-3 sticky top-0 z-30 shadow-sm">
             <button onclick="abrirSidebarAdmin()" class="md:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700">
               <i class="fas fa-bars"></i>
