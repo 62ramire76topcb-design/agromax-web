@@ -20,7 +20,7 @@ window.AGROMAX_ROLES = {
   },
   bodega: {
     label: 'Bodega',
-    desc: 'Inventario, productos, compras y ordenes',
+    desc: 'Productos, compras y ordenes',
     color: 'bg-amber-100 text-amber-800'
   },
   vendedor: {
@@ -35,14 +35,14 @@ window.AGROMAX_PERMISOS = {
   supervisor: [
     'dashboard', 'ordenes', 'pedidos', 'reportes', 'clientes',
     'agregar', 'masiva', 'productos',
-    'compras', 'inventario', 'ventas', 'bonificaciones', 'alquileres', 'caja', 'scan'
+    'compras', 'contabilidad', 'ventas', 'bonificaciones', 'alquileres', 'caja', 'scan'
   ],
   cajero: [
     'caja'
   ],
   bodega: [
     'ordenes', 'productos', 'agregar', 'masiva',
-    'compras', 'inventario', 'scan'
+    'compras', 'scan'
   ],
   vendedor: [
     'ordenes', 'pedidos', 'clientes', 'productos'
@@ -64,7 +64,7 @@ window.puedeEditarProductos = function () {
 
 function primeraSeccionPermitida() {
   if (window.usuarioActual && window.usuarioActual.role === 'cajero') return 'caja';
-  var orden = ['dashboard', 'ventas', 'productos', 'clientes', 'ordenes', 'pedidos', 'caja'];
+  var orden = ['dashboard', 'ventas', 'productos', 'clientes', 'ordenes', 'pedidos', 'caja', 'contabilidad'];
   for (var i = 0; i < orden.length; i++) {
     if (tienePermiso(orden[i])) return orden[i];
   }
@@ -154,8 +154,6 @@ function aplicarPermisosMenu() {
       info.color + '">' + info.label + '</span>';
   }
 }
-
-// mostrarSeccionCaja esta definida en admin-caja.js (POS completo embebido)
 
 (function () {
   var originalPanel = window.mostrarPanelPrincipal;
