@@ -39,12 +39,9 @@
             <div class="nav-group">Inventario y compras</div>
             <a data-permiso="productos" data-seccion="productos" onclick="navegarAdmin('productos')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-boxes w-5 text-center text-slate-400 text-sm"></i> Productos</a>
             <a data-permiso="agregar" data-seccion="agregar" onclick="navegarAdmin('agregar')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-plus w-5 text-center text-slate-400 text-sm"></i> Agregar producto</a>
-            <a data-permiso="masiva" data-seccion="masiva" onclick="navegarAdmin('masiva')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-file-csv w-5 text-center text-slate-400 text-sm"></i> Subida masiva</a>
             <a data-permiso="compras" data-seccion="compras" onclick="navegarAdmin('compras')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-truck w-5 text-center text-slate-400 text-sm"></i> Compras</a>
-            <a data-permiso="scan" href="scan.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-barcode w-5 text-center text-slate-400 text-sm"></i> Scan</a>
 
-            <div class="nav-group">Ventas y finanzas</div>
-            <a data-permiso="ventas" href="ventas.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-chart-pie w-5 text-center text-slate-400 text-sm"></i> Ventas</a>
+            <div class="nav-group">Finanzas</div>
             <a data-permiso="reportes" data-seccion="reportes" onclick="navegarAdmin('reportes')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-chart-bar w-5 text-center text-slate-400 text-sm"></i> Reportes</a>
             <a data-permiso="contabilidad" data-seccion="contabilidad" onclick="navegarAdmin('contabilidad')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-balance-scale w-5 text-center text-slate-400 text-sm"></i> Contabilidad</a>
             <a data-permiso="bonificaciones" href="bonificaciones.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-gift w-5 text-center text-slate-400 text-sm"></i> Bonificaciones</a>
