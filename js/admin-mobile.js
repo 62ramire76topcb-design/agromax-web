@@ -27,6 +27,7 @@
             <div class="nav-group">Principal</div>
             <a data-permiso="dashboard" data-seccion="dashboard" onclick="navegarAdmin('dashboard')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-home w-5 text-center text-slate-400 text-sm"></i> Dashboard</a>
             <a data-permiso="caja" data-seccion="caja" onclick="navegarAdmin('caja')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-money-bill-wave w-5 text-center text-green-600 text-sm"></i> Caja (POS)</a>
+            <a data-permiso="notas" data-seccion="notas" onclick="navegarAdmin('notas')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-sticky-note w-5 text-center text-amber-500 text-sm"></i> Recordatorios</a>
 
             <div class="nav-group">Operación</div>
             <a data-permiso="ordenes" data-seccion="ordenes" onclick="navegarAdmin('ordenes')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-clipboard-list w-5 text-center text-slate-400 text-sm"></i> Órdenes</a>
@@ -41,11 +42,11 @@
             <a data-permiso="agregar" data-seccion="agregar" onclick="navegarAdmin('agregar')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-plus w-5 text-center text-slate-400 text-sm"></i> Agregar producto</a>
             <a data-permiso="compras" data-seccion="compras" onclick="navegarAdmin('compras')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-truck w-5 text-center text-slate-400 text-sm"></i> Compras</a>
 
-            <div class="nav-group">Finanzas</div>
+            <div class="nav-group">Finanzas y extras</div>
             <a data-permiso="reportes" data-seccion="reportes" onclick="navegarAdmin('reportes')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-chart-bar w-5 text-center text-slate-400 text-sm"></i> Reportes</a>
             <a data-permiso="contabilidad" data-seccion="contabilidad" onclick="navegarAdmin('contabilidad')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-balance-scale w-5 text-center text-slate-400 text-sm"></i> Contabilidad</a>
-            <a data-permiso="bonificaciones" href="bonificaciones.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-gift w-5 text-center text-slate-400 text-sm"></i> Bonificaciones</a>
-            <a data-permiso="alquileres" href="alquileres.html" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-key w-5 text-center text-slate-400 text-sm"></i> Alquileres</a>
+            <a data-permiso="bonificaciones" data-seccion="bonificaciones" onclick="navegarAdmin('bonificaciones')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-gift w-5 text-center text-slate-400 text-sm"></i> Bonificaciones</a>
+            <a data-permiso="alquileres" data-seccion="alquileres" onclick="navegarAdmin('alquileres')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-key w-5 text-center text-slate-400 text-sm"></i> Alquileres</a>
 
             <div class="nav-group">Sistema</div>
             <a data-permiso="usuarios" data-seccion="usuarios" id="link-usuarios" onclick="navegarAdmin('usuarios')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-user-shield w-5 text-center text-slate-400 text-sm"></i> Usuarios y roles</a>
