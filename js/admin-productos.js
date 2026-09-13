@@ -6,7 +6,7 @@ let _filtroCat = 'all';
 let _filtroStock = 'all';
 let _filtroCosto = 'all';
 let _busquedaProd = '';
-let _vistaProductos = 'lista'; // lista | grid
+let _vistaProductos = 'lista';
 let _ordenProd = 'fecha';
 
 function _costoDe(p) {
@@ -44,9 +44,6 @@ window.mostrarTablaProductos = function () {
         ${puedeEditar ? `
         <button type="button" onclick="mostrarSeccion('agregar')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm">
           <i class="fas fa-plus mr-1"></i> Nuevo producto
-        </button>
-        <button type="button" onclick="mostrarSeccion('masiva')" class="border border-slate-200 bg-white px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700">
-          <i class="fas fa-file-csv mr-1"></i> CSV
         </button>` : ''}
       </div>
     </div>
@@ -188,7 +185,6 @@ function renderTablaProductosAdmin() {
   const box = document.getElementById('tabla-productos');
   if (!box) return;
 
-  // KPIs
   const kpis = document.getElementById('prod-kpis');
   const resumen = document.getElementById('prod-resumen');
   if (kpis) {
@@ -265,7 +261,6 @@ function renderTablaProductosAdmin() {
     return;
   }
 
-  // Lista / tabla
   box.className = 'bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto';
   let html = `<table class="w-full text-sm"><thead class="sticky top-0 z-10"><tr class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
     <th class="p-3 font-semibold">Producto</th>
