@@ -9,6 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="./js/config-loader.js"></script>
 <script src="./ticket.js"></script>
 <style>
   html, body { height: 100%; margin: 0; }
@@ -23,9 +24,7 @@
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
     color: #94a3b8; padding: 12px 10px 4px; font-weight: 600;
   }
-  #pos-sidebar a {
-    transition: background 0.15s, color 0.15s;
-  }
+  #pos-sidebar a { transition: background 0.15s, color 0.15s; }
   #pos-sidebar a:hover { background: #f0fdf4; }
   .animate-fade { animation: fadeIn 0.2s ease; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
@@ -40,7 +39,6 @@
 <body class="bg-slate-100">
 
 <div id="pos-shell" class="flex h-screen">
-
 <aside id="pos-sidebar" class="hidden w-56 md:w-60 bg-white border-r border-slate-200 shadow-sm overflow-y-auto shrink-0">
   <div class="p-4 border-b bg-gradient-to-br from-green-700 to-green-800 text-white">
     <div class="flex items-center gap-2.5">
@@ -51,7 +49,6 @@
       </div>
     </div>
   </div>
-
   <nav class="p-2 pb-6 text-sm">
     <div class="nav-group">Operación</div>
     <a href="javascript:void(0)" onclick="irAVentaSeguro();return false;" class="block p-2.5 rounded-xl cursor-pointer font-semibold text-green-800 bg-green-50">
@@ -66,7 +63,6 @@
     <a href="javascript:void(0)" onclick="view('productos-pos');return false;" class="block p-2.5 rounded-xl cursor-pointer text-slate-700">
       <i class="fas fa-boxes w-5 text-slate-400"></i> Productos
     </a>
-
     <div class="nav-group">Control</div>
     <a href="javascript:void(0)" onclick="view('historial');return false;" class="block p-2.5 rounded-xl cursor-pointer text-slate-700">
       <i class="fas fa-history w-5 text-slate-400"></i> Mi historial
@@ -80,12 +76,10 @@
     <a href="javascript:void(0)" onclick="imprimirCorteDia();return false;" class="block p-2.5 rounded-xl cursor-pointer text-indigo-700">
       <i class="fas fa-file-alt w-5"></i> Documento del día
     </a>
-
     <div class="nav-group">Alertas</div>
     <a href="javascript:void(0)" onclick="view('vencer');return false;" class="block p-2.5 rounded-xl cursor-pointer text-amber-800">
       <i class="fas fa-hourglass-half w-5 text-amber-500"></i> Por vencer
     </a>
-
     <div class="border-t border-slate-100 mt-3 pt-2">
       <a href="javascript:void(0)" data-solo-cajero onclick="cerrarTurnoCaja();return false;" class="block p-2.5 rounded-xl cursor-pointer text-red-600">
         <i class="fas fa-lock w-5"></i> Cerrar turno
@@ -94,16 +88,11 @@
         <i class="fas fa-sign-out-alt w-5"></i> Cerrar sesión
       </a>
     </div>
-    <p class="px-2 pt-3 text-[10px] text-slate-400 leading-relaxed">
-      F2 Cobrar · F3 Buscar · Esc Vaciar
-    </p>
+    <p class="px-2 pt-3 text-[10px] text-slate-400 leading-relaxed">F2 Cobrar · F3 Buscar · Esc Vaciar</p>
   </nav>
 </aside>
-
 <div class="flex-1 p-2 md:p-4 overflow-auto" id="app"></div>
-
 </div>
-
 <script>
   if (location.search.indexOf('embed=1') >= 0) {
     document.body.classList.add('embed-mode');
