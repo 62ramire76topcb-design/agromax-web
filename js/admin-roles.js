@@ -229,10 +229,197 @@ function aplicarPermisosMenu() {
   };
 })();
 
-/* GESTION USUARIOS - se mantiene via original si existe en cadena; copia minima si falta */
-if (typeof window.mostrarGestionUsuarios !== 'function') {
-  window.mostrarGestionUsuarios = function () {
-    var content = document.getElementById('main-content');
-    if (content) content.innerHTML = '<p class="p-6">Gestion de usuarios no cargada.</p>';
-  };
+/* ========== GESTION DE USUARIOS ========== */
+
+window.mostrarGestionUsuarios = function () {
+  var content = document.getElementById('main-content');
+  if (!content) return;
+
+  var rolesHtml = Object.keys(AGROMAX_ROLES).map(function (r) {
+    var info = AGROMAX_ROLES[r];
+    return '<div class="bg-white rounded-2xl p-3 border shadow-sm">' +
+      '<span class="px-2 py-0.5 rounded-full text-xs font-semibold ' + info.color + '">' + info.label + '</span>' +
+      '<p class="text-xs text-gray-500 mt-2">' + info.desc + '</p></div>';
+  }).join('');
+
+  var optionsHtml = Object.keys(AGROMAX_ROLES).map(function (r) {
+    return '<option value="' + r + '">' + AGROMAX_ROLES[r].label + '</option>';
+  }).join('');
+
+  content.innerHTML =
+    '<div class="mb-6 flex flex-wrap justify-between gap-3 items-start">' +
+    '<div><h1 class="text-2xl md:text-3xl font-bold mb-1">Usuarios y roles</h1>' +
+    '<p class="text-sm text-gray-500">Control de acceso al panel AGROMAXGTM</p></div>' +
+    '<button onclick="mostrarFormUsuario()" class="px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium">' +
+    '<i class="fas fa-user-plus mr-1"></i> Nuevo usuario</button></div>' +
+    '<div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">' + rolesHtml + '</div>' +
+    '<div id="lista-usuarios" class="bg-white rounded-3xl shadow overflow-hidden">' +
+    '<p class="text-center text-gray-400 py-10"><i class="fas fa-spinner fa-spin"></i> Cargando...</p></div>' +
+    '<div id="modal-usuario" class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">' +
+    '<div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">' +
+    '<h2 class="text-xl font-bold mb-4" id="modal-usuario-titulo">Nuevo usuario</h2>' +
+    '<input type="hidden" id="usr-uid">' +
+    '<label class="text-xs text-gray-500">Nombre</label>' +
+    '<input id="usr-nombre" class="w-full p-3 border rounded-xl mb-3" placeholder="Nombre completo">' +
+    '<label class="text-xs text-gray-500">Correo</label>' +
+    '<input id="usr-email" type="email" class="w-full p-3 border rounded-xl mb-3" placeholder="correo@ejemplo.com">' +
+    '<label class="text-xs text-gray-500" id="usr-pass-label">Contrasena temporal</label>' +
+    '<input id="usr-password" type="password" class="w-full p-3 border rounded-xl mb-3" placeholder="Minimo 6 caracteres">' +
+    '<label class="text-xs text-gray-500">Rol</label>' +
+    '<select id="usr-role" class="w-full p-3 border rounded-xl mb-3">' + optionsHtml + '</select>' +
+    '<label class="flex items-center gap-2 text-sm mb-4"><input type="checkbox" id="usr-activo" checked> Activo</label>' +
+    '<p id="usr-error" class="hidden text-red-600 text-sm mb-3"></p>' +
+    '<div class="flex gap-2">' +
+    '<button onclick="guardarUsuario()" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-medium">Guardar</button>' +
+    '<button onclick="cerrarFormUsuario()" class="px-4 py-3 border rounded-xl">Cancelar</button>' +
+    '</div></div></div>';
+
+  cargarListaUsuarios();
+};
+
+async function cargarListaUsuarios() {
+  var box = document.getElementById('lista-usuarios');
+  if (!box) return;
+
+  try {
+    var snap = await db.collection('usuarios').get();
+    if (snap.empty) {
+      box.innerHTML = '<p class="text-center text-gray-400 py-12">No hay usuarios registrados aun</p>';
+      return;
+    }
+
+    var rows = [];
+    snap.forEach(function (doc) {
+      var u = doc.data();
+      var info = AGROMAX_ROLES[u.role] || { label: u.role || '?', color: 'bg-gray-100 text-gray-700' };
+      var yo = window.usuarioActual && window.usuarioActual.uid === doc.id;
+      var creado = u.creado && u.creado.toDate ? u.creado.toDate().getTime() : 0;
+      rows.push({ id: doc.id, u: u, info: info, yo: yo, creado: creado });
+    });
+    rows.sort(function (a, b) { return b.creado - a.creado; });
+
+    var html = '<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left">' +
+      '<th class="p-3">Usuario</th><th class="p-3">Rol</th><th class="p-3">Estado</th><th class="p-3">Acciones</th>' +
+      '</tr></thead><tbody>';
+
+    rows.forEach(function (row) {
+      var u = row.u;
+      html += '<tr class="border-t hover:bg-gray-50">' +
+        '<td class="p-3"><div class="font-medium">' + (u.nombre || '-') + '</div>' +
+        '<div class="text-xs text-gray-500">' + (u.email || '') + '</div></td>' +
+        '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ' + row.info.color + '">' +
+        row.info.label + '</span></td>' +
+        '<td class="p-3">' + (u.activo === false ? '<span class="text-red-600">Inactivo</span>' : '<span class="text-green-600">Activo</span>') + '</td>' +
+        '<td class="p-3 space-x-2">' +
+        '<button onclick="editarUsuario(\'' + row.id + '\')" class="text-blue-600 text-xs font-medium">Editar</button>' +
+        (row.yo
+          ? '<span class="text-xs text-gray-400">Tu</span>'
+          : '<button onclick="toggleUsuarioActivo(\'' + row.id + '\', ' + (u.activo === false) + ')" class="text-xs font-medium ' +
+            (u.activo === false ? 'text-green-600' : 'text-orange-600') + '">' +
+            (u.activo === false ? 'Activar' : 'Desactivar') + '</button>') +
+        '</td></tr>';
+    });
+
+    html += '</tbody></table>';
+    box.innerHTML = html;
+  } catch (e) {
+    box.innerHTML = '<p class="text-red-600 p-6">Error: ' + e.message +
+      '. Revisa las reglas de Firestore para la coleccion <b>usuarios</b>.</p>';
+  }
 }
+
+window.mostrarFormUsuario = function (data) {
+  document.getElementById('modal-usuario').classList.remove('hidden');
+  document.getElementById('modal-usuario-titulo').textContent = data ? 'Editar usuario' : 'Nuevo usuario';
+  document.getElementById('usr-uid').value = data ? data.uid : '';
+  document.getElementById('usr-nombre').value = data ? (data.nombre || '') : '';
+  document.getElementById('usr-email').value = data ? (data.email || '') : '';
+  document.getElementById('usr-email').disabled = !!data;
+  document.getElementById('usr-password').value = '';
+  document.getElementById('usr-pass-label').style.display = data ? 'none' : 'block';
+  document.getElementById('usr-password').style.display = data ? 'none' : 'block';
+  document.getElementById('usr-role').value = data ? (data.role || 'vendedor') : 'vendedor';
+  document.getElementById('usr-activo').checked = data ? data.activo !== false : true;
+  document.getElementById('usr-error').classList.add('hidden');
+};
+
+window.cerrarFormUsuario = function () {
+  document.getElementById('modal-usuario').classList.add('hidden');
+};
+
+window.editarUsuario = async function (uid) {
+  var doc = await db.collection('usuarios').doc(uid).get();
+  if (!doc.exists) return alert('Usuario no encontrado');
+  mostrarFormUsuario({ uid: uid, ...doc.data() });
+};
+
+window.toggleUsuarioActivo = async function (uid, activar) {
+  if (!confirm(activar ? 'Activar este usuario?' : 'Desactivar este usuario?')) return;
+  try {
+    await db.collection('usuarios').doc(uid).update({ activo: !!activar, actualizado: new Date() });
+    cargarListaUsuarios();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+};
+
+window.guardarUsuario = async function () {
+  var uid = document.getElementById('usr-uid').value;
+  var nombre = document.getElementById('usr-nombre').value.trim();
+  var email = document.getElementById('usr-email').value.trim().toLowerCase();
+  var password = document.getElementById('usr-password').value;
+  var role = document.getElementById('usr-role').value;
+  var activo = document.getElementById('usr-activo').checked;
+  var err = document.getElementById('usr-error');
+
+  if (!nombre) {
+    err.textContent = 'Ingresa el nombre';
+    err.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    if (uid) {
+      await db.collection('usuarios').doc(uid).update({
+        nombre: nombre,
+        role: role,
+        activo: activo,
+        actualizado: new Date()
+      });
+      alert('Usuario actualizado');
+    } else {
+      if (!email || !password || password.length < 6) {
+        err.textContent = 'Correo y contrasena (min. 6) son obligatorios';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      var secondary = firebase.apps.find(function (a) { return a.name === 'Secondary'; })
+        || firebase.initializeApp(firebase.app().options, 'Secondary');
+      var secAuth = secondary.auth();
+      var cred = await secAuth.createUserWithEmailAndPassword(email, password);
+      var newUid = cred.user.uid;
+
+      await db.collection('usuarios').doc(newUid).set({
+        email: email,
+        nombre: nombre,
+        role: role,
+        activo: activo,
+        creado: new Date(),
+        actualizado: new Date()
+      });
+
+      await secAuth.signOut();
+      alert('Usuario creado. Ya puede iniciar sesion con su correo.');
+    }
+
+    cerrarFormUsuario();
+    cargarListaUsuarios();
+  } catch (e) {
+    var msg = e.message;
+    if (e.code === 'auth/email-already-in-use') msg = 'Ese correo ya esta registrado';
+    if (e.code === 'auth/weak-password') msg = 'Contrasena muy debil';
+    err.textContent = msg;
+    err.classList.remove('hidden');
+  }
+};
