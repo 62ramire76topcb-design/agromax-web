@@ -59,6 +59,7 @@
             <a data-permiso="alquileres" data-seccion="alquileres" onclick="navegarAdmin('alquileres')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-key w-5 text-center text-slate-400 text-sm"></i> Alquileres</a>
 
             <div class="nav-group">Sistema</div>
+            <a data-permiso="config" data-seccion="config" onclick="navegarAdmin('config')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-cog w-5 text-center text-slate-400 text-sm"></i> Configuración</a>
             <a data-permiso="auditoria" data-seccion="auditoria" onclick="navegarAdmin('auditoria')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-shield-alt w-5 text-center text-slate-400 text-sm"></i> Auditoría</a>
             <a data-permiso="usuarios" data-seccion="usuarios" id="link-usuarios" onclick="navegarAdmin('usuarios')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-user-shield w-5 text-center text-slate-400 text-sm"></i> Usuarios y roles</a>
             <a onclick="logout()" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-red-600 mt-2"><i class="fas fa-sign-out-alt w-5 text-center text-sm"></i> Cerrar sesión</a>
