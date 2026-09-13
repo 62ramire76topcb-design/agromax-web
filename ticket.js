@@ -1,7 +1,7 @@
 // ticket.js
 function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, cliente = "Consumidor Final", nit = "", extras = {}) {
   const webUrl = "https://agromax-web.vercel.app";
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(webUrl)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(webUrl)}`;
 
   const folio = extras.folio || ("T-" + Date.now().toString().slice(-8));
   const cajero = extras.cajero || "";
@@ -10,7 +10,6 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
   const subtotal = Number(extras.subtotal != null ? extras.subtotal : (Number(total) + descuento));
   const promoNombre = extras.promoNombre || "";
 
-  // Guardar para WhatsApp desde POS
   window._ultimaVentaTicket = {
     productos: carrito,
     total: total,
@@ -20,7 +19,9 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
     folio: folio,
     cajero: cajero,
     descuento: descuento,
-    subtotal: subtotal
+    subtotal: subtotal,
+    montoRecibido: montoRecibido,
+    cambio: cambio
   };
 
   let productosTxt = "";
@@ -29,12 +30,12 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
     const line = (p.precio * p.cantidad).toFixed(2);
     productosTxt += `- ${p.nombre} x${p.cantidad} Q${line}\n`;
     productosHTML += `
-      <div style="display:flex;justify-content:space-between;margin:8px 0;">
-        <div style="flex:1;">
-          <strong>${p.nombre}</strong><br>
-          <small>${p.cantidad} × Q${Number(p.precio).toFixed(2)}</small>
+      <div class="row">
+        <div class="left">
+          <div class="name">${p.nombre}</div>
+          <div class="muted">${p.cantidad} × Q${Number(p.precio).toFixed(2)}</div>
         </div>
-        <div style="text-align:right;font-weight:bold;">Q${line}</div>
+        <div class="right">Q${line}</div>
       </div>`;
   });
 
@@ -57,60 +58,64 @@ function abrirTicket(carrito, total, metodoPago, montoRecibido = 0, cambio = 0, 
 
   const win = window.open("", "Ticket AGROMAXGTM", "width=380,height=820,scrollbars=yes");
 
-  win.document.write(`
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-      <meta charset="UTF-8">
-      <title>Ticket ${folio}</title>
-      <style>
-        body { font-family: 'Courier New', monospace; width: 300px; margin: 0 auto; padding: 20px 15px; font-size: 14px; line-height: 1.4; }
-        h1 { text-align:center; margin:10px 0 5px; font-size:20px; }
-        .center { text-align:center; }
-        hr { border:1px dashed #333; margin:12px 0; }
-        .total { font-size:18px; font-weight:bold; margin:15px 0; }
-        .footer { margin-top:20px; font-size:13px; }
-        img.qr { display:block; margin:15px auto; border:1px solid #ddd; }
-        .muted { color:#555; font-size:12px; }
-        .wa { display:block; text-align:center; margin:12px 0; padding:10px; background:#25D366; color:#fff; text-decoration:none; border-radius:8px; font-family:Arial; font-weight:bold; }
-        @media print { .wa, .noprint { display:none !important; } }
-      </style>
-    </head>
-    <body>
-      <h1>🌱 AGROMAXGTM</h1>
-      <p class="center">Caja Mostrador</p>
-      <p class="center muted">Guatemala</p>
-      <p class="center">${fecha}</p>
-      <p class="center muted">Folio: <strong>${folio}</strong></p>
-      ${cajero ? `<p class="center muted">Cajero: ${cajero}</p>` : ''}
-      <hr>
-      <p><strong>Nombre:</strong> ${cliente}</p>
-      ${nit ? `<p><strong>NIT:</strong> ${nit}</p>` : ''}
-      <hr>
-      ${productosHTML}
-      <hr>
-      <p>Subtotal: Q${Number(subtotal).toFixed(2)}</p>
-      ${descuento > 0 ? `<p>Descuento${promoNombre ? ' (' + promoNombre + ')' : ''}: -Q${descuento.toFixed(2)}</p>` : ''}
-      <div class="total">TOTAL: Q${Number(total).toFixed(2)}</div>
-      <p><strong>Método:</strong> ${metodoPago}</p>
-      ${metodoPago === "Efectivo" ? `
-        <p>Recibido: Q${Number(montoRecibido).toFixed(2)}</p>
-        <p><strong>Cambio: Q${Number(cambio).toFixed(2)}</strong></p>
-      ` : ''}
-      ${nota ? `<hr><p class="muted"><strong>Nota:</strong> ${nota}</p>` : ''}
-      <div class="center">
-        <img src="${qrUrl}" class="qr" width="160" alt="QR">
-        <p style="font-size:12px;margin-top:5px;">Escanea para ver nuestro catálogo</p>
-      </div>
-      <a class="wa noprint" href="https://wa.me/?text=${waMsg}" target="_blank">Enviar por WhatsApp</a>
-      <div class="footer center">
-        <p>¡Gracias por su compra!</p>
-        <p>AGROMAXGTM • Guatemala</p>
-      </div>
-      <script>window.print();</script>
-    </body>
-    </html>
-  `);
+  win.document.write(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Ticket ${folio}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Courier New', Courier, monospace; width: 300px; margin: 0 auto; padding: 18px 14px; font-size: 13px; color: #111; }
+  .brand { text-align: center; border-bottom: 2px solid #166534; padding-bottom: 10px; margin-bottom: 10px; }
+  .brand h1 { margin: 0; font-size: 20px; letter-spacing: 1px; color: #166534; }
+  .brand .sub { font-size: 11px; color: #555; margin-top: 2px; }
+  .center { text-align: center; }
+  .muted { color: #555; font-size: 11px; }
+  .meta { margin: 8px 0; font-size: 12px; }
+  hr { border: none; border-top: 1px dashed #999; margin: 10px 0; }
+  .row { display: flex; justify-content: space-between; gap: 8px; margin: 6px 0; }
+  .left { flex: 1; } .name { font-weight: bold; } .right { font-weight: bold; white-space: nowrap; }
+  .totals { margin-top: 8px; }
+  .totals .row { margin: 3px 0; }
+  .grand { font-size: 17px; font-weight: bold; border-top: 2px solid #111; padding-top: 8px; margin-top: 8px; }
+  img.qr { display: block; margin: 12px auto 4px; }
+  .wa { display: block; text-align: center; margin: 12px 0; padding: 10px; background: #25D366; color: #fff; text-decoration: none; border-radius: 8px; font-family: Arial, sans-serif; font-weight: bold; font-size: 13px; }
+  .footer { text-align: center; margin-top: 14px; font-size: 12px; }
+  @media print { .wa, .noprint { display: none !important; } body { padding: 0; } }
+</style></head><body>
+  <div class="brand">
+    <h1>🌱 AGROMAXGTM</h1>
+    <div class="sub">Insumos agrícolas · Guatemala</div>
+    <div class="sub">Caja Mostrador</div>
+  </div>
+  <div class="center muted">${fecha}</div>
+  <div class="center meta"><strong>Folio ${folio}</strong></div>
+  ${cajero ? `<div class="center muted">Atendió: ${cajero}</div>` : ''}
+  <hr>
+  <div class="meta"><strong>Cliente:</strong> ${cliente}</div>
+  ${nit ? `<div class="meta"><strong>NIT:</strong> ${nit}</div>` : ''}
+  <hr>
+  ${productosHTML}
+  <hr>
+  <div class="totals">
+    <div class="row"><span>Subtotal</span><span>Q${Number(subtotal).toFixed(2)}</span></div>
+    ${descuento > 0 ? `<div class="row"><span>Descuento${promoNombre ? ' (' + promoNombre + ')' : ''}</span><span>-Q${descuento.toFixed(2)}</span></div>` : ''}
+    <div class="row grand"><span>TOTAL</span><span>Q${Number(total).toFixed(2)}</span></div>
+  </div>
+  <div class="meta" style="margin-top:10px"><strong>Pago:</strong> ${metodoPago}</div>
+  ${metodoPago === "Efectivo" ? `
+    <div class="meta">Recibido: Q${Number(montoRecibido).toFixed(2)}</div>
+    <div class="meta"><strong>Cambio: Q${Number(cambio).toFixed(2)}</strong></div>
+  ` : ''}
+  ${nota ? `<hr><div class="muted"><strong>Nota:</strong> ${nota}</div>` : ''}
+  <div class="center">
+    <img src="${qrUrl}" class="qr" width="140" height="140" alt="QR">
+    <div class="muted">Catálogo en línea</div>
+  </div>
+  <a class="wa noprint" href="https://wa.me/?text=${waMsg}" target="_blank">Enviar por WhatsApp</a>
+  <div class="footer">
+    <div>¡Gracias por su compra!</div>
+    <div class="muted">AGROMAXGTM · Guatemala</div>
+  </div>
+  <script>window.print();</script>
+</body></html>`);
 
   win.document.close();
   win.focus();
