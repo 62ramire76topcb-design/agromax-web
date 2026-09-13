@@ -1,5 +1,4 @@
 // js/admin-mobile.js
-// Layout profesional del Admin: sidebar agrupada + header
 
 (function () {
   window.mostrarPanelPrincipal = function () {
@@ -35,20 +34,32 @@
               <i class="fas fa-receipt w-5 text-center text-slate-400 text-sm"></i> Pedidos
               <span id="badge-pedidos" class="hidden ml-auto bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full">0</span>
             </a>
-            <a data-permiso="clientes" data-seccion="clientes" onclick="navegarAdmin('clientes')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-users w-5 text-center text-slate-400 text-sm"></i> Clientes</a>
+            <a data-permiso="clientes" data-seccion="clientes" onclick="navegarAdmin('clientes')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-users w-5 text-center text-slate-400 text-sm"></i> Clientes 360°</a>
+            <a data-permiso="cotizaciones" data-seccion="cotizaciones" onclick="navegarAdmin('cotizaciones')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-file-invoice w-5 text-center text-slate-400 text-sm"></i> Cotizaciones</a>
 
-            <div class="nav-group">Inventario y compras</div>
+            <div class="nav-group">Inventario</div>
             <a data-permiso="productos" data-seccion="productos" onclick="navegarAdmin('productos')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-boxes w-5 text-center text-slate-400 text-sm"></i> Productos</a>
             <a data-permiso="agregar" data-seccion="agregar" onclick="navegarAdmin('agregar')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-plus w-5 text-center text-slate-400 text-sm"></i> Agregar producto</a>
             <a data-permiso="compras" data-seccion="compras" onclick="navegarAdmin('compras')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-truck w-5 text-center text-slate-400 text-sm"></i> Compras</a>
+            <a data-permiso="bodegas" data-seccion="bodegas" onclick="navegarAdmin('bodegas')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-warehouse w-5 text-center text-slate-400 text-sm"></i> Bodegas</a>
+            <a data-permiso="lotes" data-seccion="lotes" onclick="navegarAdmin('lotes')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-flask w-5 text-center text-slate-400 text-sm"></i> Lotes / caducidad</a>
 
-            <div class="nav-group">Finanzas y extras</div>
+            <div class="nav-group">Finanzas</div>
             <a data-permiso="reportes" data-seccion="reportes" onclick="navegarAdmin('reportes')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-chart-bar w-5 text-center text-slate-400 text-sm"></i> Reportes</a>
             <a data-permiso="contabilidad" data-seccion="contabilidad" onclick="navegarAdmin('contabilidad')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-balance-scale w-5 text-center text-slate-400 text-sm"></i> Contabilidad</a>
+            <a data-permiso="cxc" data-seccion="cxc" onclick="navegarAdmin('cxc')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-hand-holding-usd w-5 text-center text-slate-400 text-sm"></i> Por cobrar</a>
+            <a data-permiso="cxp" data-seccion="cxp" onclick="navegarAdmin('cxp')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-file-invoice-dollar w-5 text-center text-slate-400 text-sm"></i> Por pagar</a>
+            <a data-permiso="gastos" data-seccion="gastos" onclick="navegarAdmin('gastos')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-receipt w-5 text-center text-slate-400 text-sm"></i> Gastos</a>
+
+            <div class="nav-group">Crecimiento</div>
+            <a data-permiso="precios" data-seccion="precios" onclick="navegarAdmin('precios')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-tags w-5 text-center text-slate-400 text-sm"></i> Lista precios</a>
+            <a data-permiso="comisiones" data-seccion="comisiones" onclick="navegarAdmin('comisiones')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-percent w-5 text-center text-slate-400 text-sm"></i> Comisiones</a>
+            <a data-permiso="metas" data-seccion="metas" onclick="navegarAdmin('metas')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-bullseye w-5 text-center text-slate-400 text-sm"></i> Metas</a>
             <a data-permiso="bonificaciones" data-seccion="bonificaciones" onclick="navegarAdmin('bonificaciones')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-gift w-5 text-center text-slate-400 text-sm"></i> Bonificaciones</a>
             <a data-permiso="alquileres" data-seccion="alquileres" onclick="navegarAdmin('alquileres')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-key w-5 text-center text-slate-400 text-sm"></i> Alquileres</a>
 
             <div class="nav-group">Sistema</div>
+            <a data-permiso="auditoria" data-seccion="auditoria" onclick="navegarAdmin('auditoria')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-shield-alt w-5 text-center text-slate-400 text-sm"></i> Auditoría</a>
             <a data-permiso="usuarios" data-seccion="usuarios" id="link-usuarios" onclick="navegarAdmin('usuarios')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-slate-700"><i class="fas fa-user-shield w-5 text-center text-slate-400 text-sm"></i> Usuarios y roles</a>
             <a onclick="logout()" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-red-600 mt-2"><i class="fas fa-sign-out-alt w-5 text-center text-sm"></i> Cerrar sesión</a>
           </nav>
@@ -64,7 +75,6 @@
               <div class="text-[10px] text-slate-400" id="admin-clock">—</div>
             </div>
             <div class="md:hidden font-bold text-green-700 text-sm">AGROMAX</div>
-
             <div class="ml-auto flex items-center gap-2">
               <button type="button" onclick="navegarAdmin('caja')" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700">
                 <i class="fas fa-cash-register"></i> Caja
@@ -84,7 +94,6 @@
               </div>
             </div>
           </header>
-
           <div class="flex-1 overflow-auto p-4 md:p-6" id="main-content"></div>
         </div>
       </div>
@@ -96,15 +105,15 @@
   };
 
   window.abrirSidebarAdmin = function () {
-    const sb = document.getElementById('admin-sidebar');
-    const ov = document.getElementById('sidebar-overlay');
+    var sb = document.getElementById('admin-sidebar');
+    var ov = document.getElementById('sidebar-overlay');
     if (sb) sb.classList.remove('-translate-x-full');
     if (ov) ov.classList.remove('hidden');
   };
 
   window.cerrarSidebarAdmin = function () {
-    const sb = document.getElementById('admin-sidebar');
-    const ov = document.getElementById('sidebar-overlay');
+    var sb = document.getElementById('admin-sidebar');
+    var ov = document.getElementById('sidebar-overlay');
     if (sb) sb.classList.add('-translate-x-full');
     if (ov) ov.classList.add('hidden');
   };
