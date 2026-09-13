@@ -11,14 +11,26 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
   <style>
+    body { background: #f1f5f9; }
+    .nav-group {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      padding: 14px 12px 4px;
+      font-weight: 600;
+    }
+    .nav-item { transition: background 0.15s, color 0.15s; }
+    .nav-item:hover { background: #f0fdf4; }
+    #main-content { scroll-behavior: smooth; }
     @media (max-width: 767px) {
-      #main-content h1 { font-size: 1.5rem !important; line-height: 1.3 !important; margin-bottom: 1rem !important; }
-      #main-content .text-4xl, #main-content .text-5xl { font-size: 1.75rem !important; }
-      #main-content .text-3xl { font-size: 1.35rem !important; }
+      #main-content h1 { font-size: 1.35rem !important; line-height: 1.3 !important; }
+      #main-content .text-4xl, #main-content .text-5xl { font-size: 1.5rem !important; }
+      #main-content .text-3xl { font-size: 1.25rem !important; }
     }
   </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-100">
 
   <div id="app" class="min-h-screen"></div>
 
@@ -27,6 +39,7 @@
   <script src="./js/admin-utils.js"></script>
   <script src="./js/admin.js"></script>
   <script src="./js/admin-security.js"></script>
+  <script src="./js/admin-ui-pro.js"></script>
   <script src="./js/admin-mobile.js"></script>
   <script src="./js/admin-roles.js"></script>
   <script src="./js/admin-caja.js"></script>
