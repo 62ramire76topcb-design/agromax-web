@@ -1,6 +1,4 @@
 // js/admin-caja.js
-// Modulo Caja en admin: POS completo embebido
-
 window.mostrarSeccionCaja = function () {
   var content = document.getElementById('main-content');
   if (!content) return;
@@ -16,14 +14,14 @@ window.mostrarSeccionCaja = function () {
 
   content.innerHTML =
     '<div class="flex flex-col h-full" style="height:100%;min-height:calc(100vh - 3.5rem)">' +
-    '<div class="px-3 py-2 bg-green-800 text-white flex flex-wrap items-center justify-between gap-2 shrink-0 text-sm">' +
-    '<div><i class="fas fa-money-bill-wave mr-1"></i> <b>Caja / Mostrador</b>' +
-    (esCajero ? ' <span class="opacity-80 text-xs">· tu espacio de trabajo</span>' : '') +
+    '<div class="px-3 py-2 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2 shrink-0 text-sm">' +
+    '<div><span class="text-green-400 font-bold">🌱</span> <b>Caja / Mostrador</b>' +
+    (esCajero ? ' <span class="opacity-70 text-xs">· tu espacio</span>' : '') +
     '</div>' +
-    '<div class="text-xs opacity-90">' + nombre + (role ? ' · ' + role : '') + '</div>' +
+    '<div class="text-xs opacity-80">' + nombre + (role ? ' · ' + role : '') + '</div>' +
     '</div>' +
-    '<iframe id="iframe-caja-pos" src="pos.html?embed=1&v=5" title="Caja POS" ' +
-    'class="w-full flex-1 border-0 bg-white" style="min-height:75vh;height:100%" allow="clipboard-write"></iframe>' +
+    '<iframe id="iframe-caja-pos" src="pos.html?embed=1&v=10" title="Caja POS" ' +
+    'class="w-full flex-1 border-0 bg-slate-100" style="min-height:75vh;height:100%" allow="clipboard-write"></iframe>' +
     '</div>';
 };
 
