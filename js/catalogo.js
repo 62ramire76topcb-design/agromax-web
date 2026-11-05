@@ -1,6 +1,6 @@
-// js/catalogo.js — carga versión completa del historial (restauración)
+// js/catalogo.js — restaura lógica completa (jsDelivr + historial GitHub)
 (function () {
-  var url = 'https://raw.githubusercontent.com/62ramire76topcb-design/agromax-web/e5a5f99a5845fe5041169c1e5fc2b2aa72423824/js/catalogo.js';
+  var url = 'https://cdn.jsdelivr.net/gh/62ramire76topcb-design/agromax-web@e5a5f99a5845fe5041169c1e5fc2b2aa72423824/js/catalogo.js';
   fetch(url)
     .then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
