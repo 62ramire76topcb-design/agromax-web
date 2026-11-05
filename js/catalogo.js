@@ -7,23 +7,20 @@
       return r.text();
     })
     .then(function (code) {
-      // Badges Más vendido / Recomendado
       code = code.replace(
         "if (p.oferta || p.promo) return '<span class=\"badge badge-sale\">Oferta</span>';",
         "if (p.masVendido || p.bestSeller) return '<span class=\"badge badge-best\">Más vendido</span>';\n  if (p.recomendado || p.destacado) return '<span class=\"badge badge-rec\">Recomendado</span>';\n  if (p.oferta || p.promo) return '<span class=\"badge badge-sale\">Oferta</span>';"
       );
-      // FAB WhatsApp dinámico
       code = code.replace(
         "var fab = document.querySelector('a[href*=\"wa.me\"]');\n  if (fab && fab.classList.contains('w-14')) {\n    fab.href = 'https://wa.me/' + whatsappNumber;\n  }",
         "document.querySelectorAll('a[href*=\"wa.me\"]').forEach(function (fab) {\n    fab.href = 'https://wa.me/' + whatsappNumber;\n  });"
       );
-      // Evitar depender de window.onload (ya pudo haber pasado)
       code = code.replace(
         /window\.onload\s*=\s*function\s*\(\s*\)\s*\{/,
         'function __agroCatalogBoot(){'
       );
       var s = document.createElement('script');
-      s.text = code + '\n;try{__agroCatalogBoot();}catch(e){console.error(e);}'
+      s.text = code + '\n;try{__agroCatalogBoot();}catch(e){console.error(e);}';
       document.head.appendChild(s);
     })
     .catch(function (e) {
